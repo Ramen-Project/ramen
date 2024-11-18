@@ -1,0 +1,42 @@
+version = 1
+requires-python = ">=3.12"
+
+[manifest]
+members = [
+    "ramen",
+    "ramen-cli",
+    "ramen-core",
+    "ramen-server",
+    "ramen-web",
+]
+
+[[package]]
+name = "ramen"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "ramen-web" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "ramen-web", virtual = "packages/ramen-web" }]
+
+[[package]]
+name = "ramen-cli"
+version = "0.1.0"
+source = { editable = "packages/ramen-cli" }
+
+[[package]]
+name = "ramen-core"
+version = "0.1.0"
+source = { editable = "packages/ramen-core" }
+
+[[package]]
+name = "ramen-server"
+version = "0.1.0"
+source = { editable = "packages/ramen-server" }
+
+[[package]]
+name = "ramen-web"
+version = "0.1.0"
+source = { virtual = "packages/ramen-web" }
