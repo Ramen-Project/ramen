@@ -9,7 +9,6 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "ramen-web"
 ]
 
 [project.scripts]
@@ -18,22 +17,28 @@ ramen = "ramen:entrypoint"
 [tool.uv.sources]
 ramen-core = { workspace = true }
 ramen-cli = { workspace = true }
-ramen-web = { workspace = true }
 
 [tool.uv.workspace]
 members = ["packages/*"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/ramen"]
+exclude = ["packages/ramen-web"]
 
 [build-system]
-requires = ["hatchling", "hatch-build-scripts"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[[tool.hatch.build.targets.wheel.hooks.build-scripts.scripts]]
-work_dir = "packages/ramen-web"
-commands = [ "bun install", "bun run build" ]
-artifacts = ["packages/ramen-web/dist"]
+[dependency-groups]
+dev = [
+    "rust-just>=1.36.0",
+]
+
+[tool.hatch.build.targets.wheel]
+artifacts = [
+    "artifacts/**/*"
+]
+
+[tool.hatch.build.force-include]
+"./artifacts" = "artifacts"
 
 [tool.hatch.build.targets.sdist]
 exclude = ["node_modules", "dist"]
+
