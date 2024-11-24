@@ -1,9 +1,23 @@
 # Ramen
 
+## Features
+
+* Graphical programming
+    * support generics
+* Virtual environment for each workspace/project
+* Headless graph execution
+* You can write your own library
+
 ## Quickstart
 
 ```sh
+# For basic packages
 pip install ramen
+```
+
+**Install all supported plugins**
+```sh
+pip install ramen[all]
 ```
 
 ## Build it yourself
@@ -17,3 +31,7 @@ $ git clone https://github.com/Pr0gCat/Ramen.git
 $ cd Ramen
 $ uv run just build
 ```
+
+## Development
+
+> Bruh: you must have `artifacts` folder in order to do `uv sync`.

@@ -9,27 +9,29 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "uv>=0.5.4",
 ]
 
 [project.scripts]
-ramen = "ramen:entrypoint"
+ramen = "ramen.app:entrypoint"
 
 [tool.uv.sources]
-ramen-core = { workspace = true }
-ramen-cli = { workspace = true }
+ramen-topping-torch = { workspace = true }
+ramen-topping-numpy = { workspace = true }
+ramen-topping-pandas = { workspace = true }
+ramen-topping-plots = { workspace = true }
 
 [tool.uv.workspace]
-members = ["packages/*"]
-exclude = ["packages/ramen-web"]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+members = ["toppings/*"]
 
 [dependency-groups]
 dev = [
     "rust-just>=1.36.0",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 artifacts = [
