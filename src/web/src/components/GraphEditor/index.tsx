@@ -9,7 +9,7 @@ export default function GraphEditor() {
         width: '100%',
         height: '100%',
         bottom: 0,
-        backgroundColor: '#eeeeee'
+        backgroundColor: '#e3e3e3'//'#252032'
     }
 
     return (

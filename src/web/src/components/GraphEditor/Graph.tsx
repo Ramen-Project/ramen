@@ -16,7 +16,6 @@ import { ConnectionLine, DefaultEdge } from './Edges';
 
 import { nodeTypes } from './Nodes';
 import { OpNodeProps } from './Nodes/OperationNode';
-import { IONodeProps } from './Nodes/VariableNode';
 
 import * as Constants from '../../constants';
 
@@ -24,51 +23,21 @@ const edgeTypes = {
   default: DefaultEdge
 }
 
-const initialNodes: Node<OpNodeProps | IONodeProps>[] = [
-  {
-    id: '1',
-    type: 'caster',
-    position: { x: 0, y: 0 },
-    data: {
-      name: 'toInt',
-      inputTypeId: 'bool',
-      ouputTypeId: 'str'
-    }
-  },
+const initialNodes: Node<OpNodeProps>[] = [
   {
     id: '2',
-    type: 'setter',
-    position: { x: 0, y: 50 },
-    data: {
-      varId: '1'
-    }
-  },
-  {
-    id: '3',
-    type: 'getter',
-    position: { x: 0, y: 100 },
-    data: {
-      varId: '1'
-    }
-  },
-  {
-    id: '5',
-    type: 'group',
-    position: { x: 0, y: 200 },
-    data: {},
-    style: {
-      width: 500,
-      height: 500,
-    },
+    type: 'reference',
+    position: { x: 50, y: 130 },
+    data: undefined
   },
   {
     id: '4',
     type: 'operator',
     position: { x: 0, y: 130 },
     data: {
-      name: 'SampleNode2',
+      name: 'SampleNode221asd',
       namespace: 'SampleNS',
-      breif: 'Sample Desc.',
+      brief: 'Sample Desc.',
       inputs: [
         { name: "int", typeId: "int" },
         { name: "str", typeId: "str" },
@@ -88,8 +57,6 @@ const initialNodes: Node<OpNodeProps | IONodeProps>[] = [
         { name: "exception", typeId: "exception" }
       ]
     },
-    parentId: '5',
-    extent: 'parent',
   },
 
 ];

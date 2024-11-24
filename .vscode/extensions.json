@@ -1,5 +1,7 @@
 {
     "recommendations": [
-        "nefrob.vscode-just-syntax"
+        "nefrob.vscode-just-syntax",
+        "oven.bun-vscode",
+        "styled-components.vscode-styled-components"
     ]
 }
