@@ -8,7 +8,9 @@ import {
   Node,
   Edge,
   Connection,
-  useOnSelectionChange
+  useOnSelectionChange,
+  Background,
+  BackgroundVariant
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
 
@@ -24,12 +26,6 @@ const edgeTypes = {
 }
 
 const initialNodes: Node<OpNodeProps>[] = [
-  {
-    id: '2',
-    type: 'reference',
-    position: { x: 50, y: 130 },
-    data: undefined
-  },
   {
     id: '4',
     type: 'operator',
@@ -103,7 +99,11 @@ export default function Graph() {
 
   useOnSelectionChange({
     onChange: (args) => {
-      console.log(`Selected ${args.nodes}`)
+      if (args.nodes.length){
+        console.log(`Selected ${args.nodes}`)
+      }else{
+        console.log(`Unselected`)
+      }
     }
   });
 
@@ -120,7 +120,7 @@ export default function Graph() {
       selectionOnDrag
       minZoom={Constants.GraphMinZoom}
       maxZoom={Constants.GraphMaxZoom}
-      translateExtent={Constants.GraphBoundary}
+      // translateExtent={Constants.GraphBoundary}
       nodeExtent={Constants.GraphBoundary}
       panOnDrag={[1, 2]}
       selectionMode={SelectionMode.Partial}
@@ -137,13 +137,6 @@ export default function Graph() {
       onEdgeMouseLeave={onMouseLeaveEdge}
       onConnect={onConnect}
     >
-      <GraphBackground />
+      <Background color='#c7c7c7' variant={BackgroundVariant.Dots} size={5} gap={Constants.DotsGap} />
     </ReactFlow>)
-}
-
-import { Background, BackgroundVariant, useStore } from "@xyflow/react";
-
-function GraphBackground() {
-    const zoom = useStore((s) => s.transform[2])
-    return <Background color='#c7c7c7' variant={BackgroundVariant.Dots} size={2} gap={50} />;
 }

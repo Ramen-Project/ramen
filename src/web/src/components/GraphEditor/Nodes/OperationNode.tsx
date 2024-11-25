@@ -1,11 +1,11 @@
 import { NodeProps } from "@xyflow/react";
 import { SiPython } from 'react-icons/si'
-import styled from "styled-components";
-import { CSSProperties } from "react";
 import { IconType } from "react-icons/lib";
 
 import * as Constants from "../../../constants";
 import { NodeBody } from ".";
+import { InputPlaceholder, OutputPlaceholder } from "../PlaceHolder";
+import { Box, Flex, Heading, Text } from "@radix-ui/themes";
 
 export type OpNodeProps = {
     name: string,
@@ -15,52 +15,20 @@ export type OpNodeProps = {
     outputs: Array<NodeIOProps>
 }
 
-const Namespace = styled.div`
-    position: fixed;
-    top: -1.2em;
-    left: .5em;
-    font-size: .4em;
-    color: #5e99f7;
-`;
-
 function NodeHeader({ nodeName, nodeBrief, badge }: { nodeName: string, nodeBrief: string, badge?: IconType }) {
-    const headerStyle: CSSProperties = {
-        borderRadius: "5px 5px 0px 0px",
-        display: "flex",
-        flex: "row",
-        justifyContent: "space-between",
-        padding: "4px 5px 4px 5px",
-    };
-    const infoStyle: CSSProperties = {
-        color: "#3f3f3f",
-    }
-    const nameStyle: CSSProperties = {
-        textOverflow: "ellipsis",
-        overflow: "hidden",
-        fontSize: ".6em",
-        lineHeight: "110%",
-        fontWeight: "bold",
-    };
-    const briefStyle: CSSProperties = {
-        paddingLeft: "1px",
-        fontSize: ".15em",
-        fontWeight: "light",
-        lineHeight: "110%",
-        color: "#c3c3c3",
-        overflow: "clip",
-        textOverflow: "ellipsis",
-    };
 
     const Badge = badge ? badge : SiPython;
 
     return (
-        <div style={headerStyle}>
-            <div style={infoStyle}>
-                <div style={nameStyle}>{nodeName}</div>
-                <div style={briefStyle}>{nodeBrief}</div>
-            </div>
-            <Badge color="#bcbcbc40" size={Constants.DotsGap * 0.35} />
-        </div>
+        <Flex direction="row" justify="between" px="3" pb="3">
+            <Flex direction="column" py="0">
+                <Heading style={{color: "#5d5c5c"}} size="5" trim="both" truncate mb="2">{nodeName}</Heading>
+                <Text style={{color: "#c3c3c3"}} trim="both" wrap="pretty" weight="regular">{nodeBrief}</Text>
+            </Flex>
+            <Box pt={"2"}>
+                <Badge color="#bcbcbc40" size={Constants.DotsGap * 0.5} />
+            </Box>
+        </Flex>
     );
 }
 
@@ -70,10 +38,20 @@ export default function OperatorNode({ data, id, selected }: NodeProps<OpNodePro
     }
 
     return <>
-        <Namespace hidden={!selected}>{data.namespace}</Namespace>
+        <Text hidden={!selected}
+            weight={"medium"}
+            style={{
+                position: "absolute",
+                top: "-1.5rem",
+                left: ".5em",
+                color: "#5e99f7",
+            }}>{data.namespace}</Text>
         <NodeBody $selected={selected} $width={3}>
             <NodeHeader nodeName={data.name} nodeBrief={data.brief} />
-
+            <Flex direction="column" justify="between">
+                <InputPlaceholder />
+                <OutputPlaceholder />
+            </Flex>
         </NodeBody>
     </>
 }
