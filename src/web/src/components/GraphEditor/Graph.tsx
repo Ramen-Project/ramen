@@ -145,5 +145,5 @@ import { Background, BackgroundVariant, useStore } from "@xyflow/react";
 
 function GraphBackground() {
     const zoom = useStore((s) => s.transform[2])
-    return <Background color='#c7c7c7' variant={BackgroundVariant.Dots} size={2} gap={30} />;
+    return <Background color='#c7c7c7' variant={BackgroundVariant.Dots} size={2} gap={50} />;
 }

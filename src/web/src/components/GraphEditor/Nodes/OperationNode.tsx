@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { CSSProperties } from "react";
 import { IconType } from "react-icons/lib";
 
+import * as Constants from "../../../constants";
 import { NodeBody } from ".";
 
 export type OpNodeProps = {
@@ -16,10 +17,10 @@ export type OpNodeProps = {
 
 const Namespace = styled.div`
     position: fixed;
-    top: -8px;
-    left: 5px;
-    font-size:.4rem;
-    color: #afafaf;
+    top: -1.2em;
+    left: .5em;
+    font-size: .4em;
+    color: #5e99f7;
 `;
 
 function NodeHeader({ nodeName, nodeBrief, badge }: { nodeName: string, nodeBrief: string, badge?: IconType }) {
@@ -34,23 +35,20 @@ function NodeHeader({ nodeName, nodeBrief, badge }: { nodeName: string, nodeBrie
         color: "#3f3f3f",
     }
     const nameStyle: CSSProperties = {
-        minWidth: "4.5rem",
-        maxWidth: "4.5rem",
         textOverflow: "ellipsis",
         overflow: "hidden",
-        fontSize: "1rem",
+        fontSize: ".6em",
         lineHeight: "110%",
         fontWeight: "bold",
     };
     const briefStyle: CSSProperties = {
         paddingLeft: "1px",
-        fontSize: ".5rem",
+        fontSize: ".15em",
         fontWeight: "light",
         lineHeight: "110%",
         color: "#c3c3c3",
         overflow: "clip",
         textOverflow: "ellipsis",
-        maxWidth: "4.5rem",
     };
 
     const Badge = badge ? badge : SiPython;
@@ -61,7 +59,7 @@ function NodeHeader({ nodeName, nodeBrief, badge }: { nodeName: string, nodeBrie
                 <div style={nameStyle}>{nodeName}</div>
                 <div style={briefStyle}>{nodeBrief}</div>
             </div>
-            <Badge color="#bcbcbc40" size="15" />
+            <Badge color="#bcbcbc40" size={Constants.DotsGap * 0.35} />
         </div>
     );
 }
@@ -73,7 +71,7 @@ export default function OperatorNode({ data, id, selected }: NodeProps<OpNodePro
 
     return <>
         <Namespace hidden={!selected}>{data.namespace}</Namespace>
-        <NodeBody style={{maxWidth: 120, maxHeight: 120}} $selected={selected}>
+        <NodeBody $selected={selected} $width={3}>
             <NodeHeader nodeName={data.name} nodeBrief={data.brief} />
 
         </NodeBody>

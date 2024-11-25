@@ -3,3 +3,6 @@ export const GraphBoundary: [[number, number], [number, number]] = [[-2000, -200
 
 export const GraphMinZoom: number = 1;
 export const GraphMaxZoom: number = 3;
+
+// This define the unit size for all graph components
+export const DotsGap: number = 50; // px
