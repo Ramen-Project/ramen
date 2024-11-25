@@ -1,35 +1,24 @@
-import { Flex, Select, Text } from "@radix-ui/themes";
+import { Box, Flex, Grid, Select, Text } from "@radix-ui/themes";
 import { InputPort, OutputPort } from "./NodeIO";
 import styled from "styled-components";
+import { ReactElement } from "react";
 
-const PlaceholerBase = styled.div`
-    position: relative;
-`;
-
-export function InputPlaceholder({}: {}) {
+export function InputPlaceholder({name, children}: {name: string, children: ReactElement[]}) {
     
-    return <PlaceholerBase style={{
-        left: "-.1rem",
-    }}>
-        <InputPort />
-        <Flex gap="2">
-            <Text>Hi</Text>
-            <Select.Root defaultValue="A">
-                <Select.Trigger/>
-                <Select.Content>
-                    <Select.Item value="A">A</Select.Item>
-                </Select.Content>
-            </Select.Root>
+    return <Flex position="relative" px="2">
+        <Flex position="absolute" left="-.8rem" top="4">
+            <InputPort typeId="int"/>
         </Flex>
-    </PlaceholerBase>
+        <Grid columns="1" rows="1" px="0" py="1">
+            <Text size="3" weight="medium">{name ? name : "Unnamed"}</Text>
+            {children}
+        </Grid>
+    </Flex>
 }
 
 export function OutputPlaceholder({}: {}) {
     
-    return <PlaceholerBase style={{
-        justifyContent: "right",
-        right: "-.1rem",
-    }}>
+    return <Flex>
         <OutputPort />
-    </PlaceholerBase>
+    </Flex>
 }

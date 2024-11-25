@@ -6,13 +6,13 @@ import { useTypeStore } from "../../stores";
 
 const StyledHandle = styled(Handle) <{ $isInput?: boolean, $color: string }>`
     background: ${props => props.$isInput ? chroma(props.$color).alpha(0.4).hex() : props.$color};
-    border: 1px solid ${props => props.$color};
+    border: 3px solid ${props => props.$color};
     ${props => props.$isInput ? "left: -0.3rem;" : "right: -0.3rem;"}
     width: .6rem;
-    height: .8rem;
-    min-width: .25rem;
-    min-height: .25rem;
-    border-radius: 1px;
+    height: .6rem;
+    min-width: .6rem;
+    min-height: .6rem;
+    border-radius: .2rem;
 `;
 
 export function InputPort({ typeId }: { typeId: string }) {

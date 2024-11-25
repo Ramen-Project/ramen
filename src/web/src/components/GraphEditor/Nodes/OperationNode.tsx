@@ -20,7 +20,7 @@ function NodeHeader({ nodeName, nodeBrief, badge }: { nodeName: string, nodeBrie
     const Badge = badge ? badge : SiPython;
 
     return (
-        <Flex direction="row" justify="between" px="3" pb="3">
+        <Flex direction="row" justify="between" px="3">
             <Flex direction="column" py="0">
                 <Heading style={{color: "#5d5c5c"}} size="5" trim="both" truncate mb="2">{nodeName}</Heading>
                 <Text style={{color: "#c3c3c3"}} trim="both" wrap="pretty" weight="regular">{nodeBrief}</Text>
@@ -48,9 +48,10 @@ export default function OperatorNode({ data, id, selected }: NodeProps<OpNodePro
             }}>{data.namespace}</Text>
         <NodeBody $selected={selected} $width={3}>
             <NodeHeader nodeName={data.name} nodeBrief={data.brief} />
-            <Flex direction="column" justify="between">
+            <Flex direction="column" justify="between" pb="2">
                 <InputPlaceholder />
-                <OutputPlaceholder />
+                <InputPlaceholder />
+                {/* <OutputPlaceholder /> */}
             </Flex>
         </NodeBody>
     </>
