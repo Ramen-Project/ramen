@@ -25,6 +25,7 @@ pip install ramen[all]
 **Requirements**
 * [Bun](https://bun.sh/) - Best NPM
 * [uv](https://docs.astral.sh/uv/) - Python package manager
+* [justfile](https://github.com/casey/just) - Justfile
 
 ```sh
 $ git clone https://github.com/Pr0gCat/Ramen.git

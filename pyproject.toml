@@ -33,14 +33,6 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.build.targets.wheel]
-artifacts = [
-    "artifacts/**/*"
-]
-
-[tool.hatch.build.force-include]
-"./artifacts" = "artifacts"
-
 [tool.hatch.build.targets.sdist]
 exclude = ["node_modules", "dist"]
 

@@ -4,6 +4,9 @@ requires-python = ">=3.12"
 [manifest]
 members = [
     "ramen",
+    "ramen-topping-numpy",
+    "ramen-topping-pandas",
+    "ramen-topping-plots",
     "ramen-topping-torch",
 ]
 
@@ -25,6 +28,21 @@ requires-dist = [{ name = "uv", specifier = ">=0.5.4" }]
 
 [package.metadata.requires-dev]
 dev = [{ name = "rust-just", specifier = ">=1.36.0" }]
+
+[[package]]
+name = "ramen-topping-numpy"
+version = "0.1.0"
+source = { editable = "toppings/ramen-topping-numpy" }
+
+[[package]]
+name = "ramen-topping-pandas"
+version = "0.1.0"
+source = { editable = "toppings/ramen-topping-pandas" }
+
+[[package]]
+name = "ramen-topping-plots"
+version = "0.1.0"
+source = { editable = "toppings/ramen-topping-plots" }
 
 [[package]]
 name = "ramen-topping-torch"

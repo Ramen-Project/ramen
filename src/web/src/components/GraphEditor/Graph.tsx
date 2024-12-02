@@ -54,7 +54,34 @@ const initialNodes: Node<OpNodeProps>[] = [
       ]
     },
   },
-
+  {
+    id: '5',
+    type: 'operator',
+    position: { x: 0, y: 130 },
+    data: {
+      name: 'SampleNode221asd',
+      namespace: 'SampleNS',
+      brief: 'Sample Desc.',
+      inputs: [
+        { name: "int", typeId: "int" },
+        { name: "str", typeId: "str" },
+        { name: "bool", typeId: "bool" },
+        { name: "float", typeId: "float" },
+        { name: "double", typeId: "double" },
+        { name: "tuple", typeId: "tuple" },
+        { name: "list", typeId: "list" }
+      ],
+      outputs: [
+        { name: "unknown", typeId: "unknown" },
+        { name: "int", typeId: "int" },
+        { name: "str", typeId: "str" },
+        { name: "bool", typeId: "bool" },
+        { name: "float", typeId: "float" },
+        { name: "double", typeId: "double" },
+        { name: "exception", typeId: "exception" }
+      ]
+    },
+  },
 ];
 
 const initialEdges: Edge[] = [];
@@ -62,7 +89,8 @@ const initialEdges: Edge[] = [];
 function connectionCheck(connection: Connection): boolean {
   // TODO: Prevent any variables getter and setter connect directly
   // TODO: Return if there's a caster, after that onConnectEnd should insert the caster in between
-  return connection.sourceHandle === connection.targetHandle && connection.source != connection.target;
+  return true;
+  // return connection.sourceHandle === connection.targetHandle && connection.source != connection.target;
 }
 
 export default function Graph() {

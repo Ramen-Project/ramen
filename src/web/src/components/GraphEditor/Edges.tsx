@@ -16,7 +16,7 @@ import chroma from 'chroma-js';
 
 const EdgeLabel = styled.div<{$posX: number, $posY: number, $color: string, $isSource?: boolean}>`
   transform: translate(-50%, -100%) translate(${props => props.$posX}px,${props => props.$posY}px);
-  font-size: .5rem;
+  font-size: .8rem;
   color: white;
   background-color: ${props => props.$color};
   position: absolute;
@@ -53,7 +53,7 @@ export function DefaultEdge({
         <BaseEdge
           id={id}
           path={d} 
-          style={{ stroke: edge?.selected ? chroma(type.color).brighten(.3).hex() : type.color, strokeWidth: 1.5 }}
+          style={{ stroke: edge?.selected ? chroma(type.color).brighten(.3).hex() : type.color, strokeWidth: 5 }}
         />
         <EdgeLabelRenderer>
           {/* TODO: Make label always shown on viewport */}
@@ -80,7 +80,7 @@ export function ConnectionLine({ fromX, fromY, toX, toY, fromPosition, toPositio
     return (
         <BaseEdge 
           path={d} 
-          style={{ stroke: type.color, strokeWidth: 1.5 }}
+          style={{ stroke: type.color, strokeWidth: 5 }}
         />
     );
 };
