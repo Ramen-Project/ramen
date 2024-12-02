@@ -14,10 +14,10 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
 
-import { ConnectionLine, DefaultEdge } from './Edges';
+import { ConnectionLine, DefaultEdge } from '../Edges';
 
-import { nodeTypes } from './Nodes';
-import { OpNodeProps } from './Nodes/OperationNode';
+import { nodeTypes } from '../Nodes';
+import { OpNodeProps } from '../Nodes/OperationNode';
 
 import * as Constants from '../../constants';
 

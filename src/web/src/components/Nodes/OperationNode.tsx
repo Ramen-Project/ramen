@@ -2,10 +2,9 @@ import { NodeProps } from "@xyflow/react";
 import { SiPython } from 'react-icons/si'
 import { IconType } from "react-icons/lib";
 
-import * as Constants from "../../../constants";
-import { NodeBody } from ".";
-import { InputPlaceholder, OutputPlaceholder } from "../PlaceHolder";
-import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import * as Constants from "../../constants";
+import { NodeBody } from "../Node";
+import { Box, Card, Flex, Heading, Text } from "@radix-ui/themes";
 
 export type OpNodeProps = {
     name: string,
@@ -48,10 +47,8 @@ export default function OperatorNode({ data, id, selected }: NodeProps<OpNodePro
             }}>{data.namespace}</Text>
         <NodeBody $selected={selected} $width={3}>
             <NodeHeader nodeName={data.name} nodeBrief={data.brief} />
-            <Flex direction="column" justify="between" mb="2">
-                <InputPlaceholder />
-                <InputPlaceholder />
-                <OutputPlaceholder />
+            <Flex direction="column" mb="2">
+                
             </Flex>
         </NodeBody>
     </>

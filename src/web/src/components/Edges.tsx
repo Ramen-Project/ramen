@@ -9,7 +9,7 @@ import {
 } from '@xyflow/react';
 import styled from 'styled-components';
 
-import { useTypeStore } from '../../stores';
+import { useTypeStore } from '../stores';
 import chroma from 'chroma-js';
 
 //TODO: get color with sourceHandleId from typeStore
