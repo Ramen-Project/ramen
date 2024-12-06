@@ -8,7 +8,8 @@
 * Headless graph execution
 * You can write your own library
 
-## Quickstart
+## Installation
+### Quickstart
 
 ```sh
 # For basic packages
@@ -20,7 +21,7 @@ pip install ramen
 pip install ramen[all]
 ```
 
-## Build it yourself
+### Build it yourself
 
 **Requirements**
 * [Bun](https://bun.sh/) - Best NPM
@@ -32,6 +33,10 @@ $ git clone https://github.com/Pr0gCat/Ramen.git
 $ cd Ramen
 $ uv run just build
 ```
+
+## Gloassary
+
+* **Toppings** - Extensions of Ramen
 
 ## Development
 
