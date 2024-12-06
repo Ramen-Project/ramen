@@ -1,4 +1,3 @@
-set windows-shell := 
 
 default:
     @echo "just build - Build the whole application"
