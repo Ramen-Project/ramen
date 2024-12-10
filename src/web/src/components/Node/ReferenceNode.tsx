@@ -1,5 +1,5 @@
 import { NodeProps } from '@xyflow/react'
-import { NodeBody } from '../Node'
+import { NodeBody } from './Bases'
 import { CSSProperties } from 'react';
 
 export default function ReferenceNode({ data, id, selected }: NodeProps){

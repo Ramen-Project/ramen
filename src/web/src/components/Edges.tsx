@@ -38,11 +38,11 @@ export function DefaultEdge({
     const typeReg = useTypeStore()
     const type = typeReg.typesRegistries[sourceHandleId || 'unknown'];
     const [d, labelX, labelY] = getBezierPath({
-      sourceX: sourceX+1,
-      sourceY: sourceY,
+      sourceX: sourceX+4,
+      sourceY: sourceY+3,
       sourcePosition,
-      targetX: targetX-1,
-      targetY: targetY,
+      targetX: targetX+4,
+      targetY: targetY+3,
       targetPosition,
     });
     const {getEdge} = useReactFlow()
@@ -59,7 +59,7 @@ export function DefaultEdge({
           {/* TODO: Make label always shown on viewport */}
           {/* TODO: Only show when hover */}
           {/* TODO: Take start and end point for calculate rotate angle */}
-          {edge?.selected || hovering ? <EdgeLabel className='nodrag nopan' $isSource $posX={labelX} $posY={labelY+7} $color={type.color} >{type.name}</EdgeLabel> : null}
+          {edge?.selected || hovering ? <EdgeLabel className='nodrag nopan' $isSource $posX={labelX} $posY={labelY+10} $color={type.color} >{type.name}</EdgeLabel> : null}
         </EdgeLabelRenderer>
       </>
     )
@@ -71,10 +71,10 @@ export function ConnectionLine({ fromX, fromY, toX, toY, fromPosition, toPositio
     const dragFromInput = fromHandle?.position == Position.Left
     const [d] = getBezierPath({
       // align connection line to edge
-      sourceX: dragFromInput ? fromX-4 : fromX+4, 
-      sourceY: fromY,
-      targetX: dragFromInput ? toX+4 : toX-4, 
-      targetY: toY,
+      sourceX: dragFromInput ? fromX-4 : fromX+12, 
+      sourceY: fromY+3,
+      targetX: dragFromInput ? toX+12 : toX-4, 
+      targetY: toY+3,
       sourcePosition: fromPosition, targetPosition: toPosition
     });
     return (

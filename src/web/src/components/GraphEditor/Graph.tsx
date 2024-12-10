@@ -16,8 +16,8 @@ import '@xyflow/react/dist/base.css';
 
 import { ConnectionLine, DefaultEdge } from '../Edges';
 
-import { nodeTypes } from '../Nodes';
-import { OpNodeProps } from '../Nodes/OperationNode';
+import { nodeTypes } from '../Node';
+import { OpNodeProps } from '../Node/OperationNode';
 
 import * as Constants from '../../constants';
 

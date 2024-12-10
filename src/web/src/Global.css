@@ -6,8 +6,3 @@
     font-weight: normal;
     font-style: normal;
 }
-
-.react-flow__pane.selection {
-    /* Change editor cursor to crosshair */
-    cursor: default;
-}
