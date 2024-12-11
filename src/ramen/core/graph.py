@@ -1,3 +1,5 @@
 
 class Graph:
-    pass
+    nodes: dict[str, Node]
+    edges: dict[str, tuple[str, str]]
+    

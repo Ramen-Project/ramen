@@ -9,12 +9,28 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "click>=8.1.7",
+    "pydantic>=2.10.3",
     "rich>=13.9.4",
     "uv>=0.5.4",
 ]
 
+[dependency-groups]
+ml = [
+    "ramen-topping-torch",
+    "ramen-topping-numpy",
+    "ramen-topping-pandas",
+    "ramen-topping-plots"
+]
+
+[tool.uv]
+default-groups = ["ml"]
+
 [project.scripts]
-ramen = "ramen.app:entrypoint"
+ramen = "ramen.entrypoint:main"
+
+[project.entry-points.'ramen.toppings']
+torch = "ramen_topping_torch"
 
 [tool.uv.sources]
 ramen-topping-torch = { workspace = true }
@@ -24,9 +40,6 @@ ramen-topping-plots = { workspace = true }
 
 [tool.uv.workspace]
 members = ["toppings/*"]
-
-[dependency-groups]
-dev = []
 
 [build-system]
 requires = ["hatchling"]

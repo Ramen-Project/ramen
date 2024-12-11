@@ -1,0 +1,1 @@
+from ramen.commons.singleton import Singleton
