@@ -1,4 +1,4 @@
-import { useCallback, useState, MouseEvent } from 'react';
+import { useCallback, MouseEvent } from 'react';
 import {
   ReactFlow,
   addEdge,
@@ -27,58 +27,73 @@ const edgeTypes = {
 
 const initialNodes: Node<OpNodeProps>[] = [
   {
-    id: '4',
+    id: '1',
     type: 'operator',
     position: { x: 0, y: 130 },
     data: {
-      name: 'SampleNode221asd',
-      namespace: 'SampleNS',
-      brief: 'Sample Desc.',
+      name: 'Read Excel',
+      namespace: 'FileIO',
+      brief: 'Reads data from an Excel file and outputs sheets as tables.',
       inputs: [
-        { name: "int", typeId: "int" },
-        { name: "str", typeId: "str" },
-        { name: "bool", typeId: "bool" },
-        { name: "float", typeId: "float" },
-        { name: "double", typeId: "double" },
-        { name: "tuple", typeId: "tuple" },
-        { name: "list", typeId: "list" }
+        { name: 'filePath', typeId: 'str' }
       ],
       outputs: [
-        { name: "unknown", typeId: "unknown" },
-        { name: "int", typeId: "int" },
-        { name: "str", typeId: "str" },
-        { name: "bool", typeId: "bool" },
-        { name: "float", typeId: "float" },
-        { name: "double", typeId: "double" },
-        { name: "exception", typeId: "exception" }
+        { name: 'tables', typeId: 'list' },
+        { name: 'error', typeId: 'exception' }
       ]
     },
   },
   {
-    id: '5',
+    id: '2',
     type: 'operator',
-    position: { x: 0, y: 130 },
+    position: { x: 350, y: 130 },
     data: {
-      name: 'SampleNode221asd',
-      namespace: 'SampleNS',
-      brief: 'Sample Desc.',
+      name: 'Join Tables',
+      namespace: 'DataOps',
+      brief: 'Joins two tables on a specified key.',
       inputs: [
-        { name: "int", typeId: "int" },
-        { name: "str", typeId: "str" },
-        { name: "bool", typeId: "bool" },
-        { name: "float", typeId: "float" },
-        { name: "double", typeId: "double" },
-        { name: "tuple", typeId: "tuple" },
-        { name: "list", typeId: "list" }
+        { name: 'leftTable', typeId: 'list' },
+        { name: 'rightTable', typeId: 'list' },
+        { name: 'key', typeId: 'str' }
       ],
       outputs: [
-        { name: "unknown", typeId: "unknown" },
-        { name: "int", typeId: "int" },
-        { name: "str", typeId: "str" },
-        { name: "bool", typeId: "bool" },
-        { name: "float", typeId: "float" },
-        { name: "double", typeId: "double" },
-        { name: "exception", typeId: "exception" }
+        { name: 'joinedTable', typeId: 'list' }
+      ]
+    },
+  },
+  {
+    id: '3',
+    type: 'operator',
+    position: { x: 700, y: 130 },
+    data: {
+      name: 'Group By',
+      namespace: 'DataOps',
+      brief: 'Groups rows by a specified column and applies aggregation.',
+      inputs: [
+        { name: 'table', typeId: 'list' },
+        { name: 'groupBy', typeId: 'str' },
+        { name: 'aggFunc', typeId: 'str' }
+      ],
+      outputs: [
+        { name: 'groupedTable', typeId: 'list' }
+      ]
+    },
+  },
+  {
+    id: '4',
+    type: 'operator',
+    position: { x: 1050, y: 130 },
+    data: {
+      name: 'Write JSON',
+      namespace: 'FileIO',
+      brief: 'Writes a table to a JSON file.',
+      inputs: [
+        { name: 'table', typeId: 'list' },
+        { name: 'filePath', typeId: 'str' }
+      ],
+      outputs: [
+        { name: 'success', typeId: 'bool' },
+        { name: 'error', typeId: 'exception' }
       ]
     },
   },
@@ -86,7 +101,7 @@ const initialNodes: Node<OpNodeProps>[] = [
 
 const initialEdges: Edge[] = [];
 
-function connectionCheck(connection: Connection): boolean {
+function connectionCheck(_connection: Connection | Edge): boolean {
   // TODO: Prevent any variables getter and setter connect directly
   // TODO: Return if there's a caster, after that onConnectEnd should insert the caster in between
   return true;
@@ -106,8 +121,7 @@ export default function Graph() {
     (_: MouseEvent, edge: Edge) => {
       setEdges((eds) => eds.map((value) => {
         if (value.id !== edge.id) return value;
-        edge.data = true;
-        return edge;
+        return { ...edge, data: { ...edge.data, highlighted: true } };
       }));
     }, [setEdges]
   );
@@ -116,14 +130,10 @@ export default function Graph() {
     (_: MouseEvent, edge: Edge) => {
       setEdges((eds) => eds.map((value) => {
         if (value.id !== edge.id) return value;
-        edge.data = false;
-        return edge;
+        return { ...edge, data: { ...edge.data, highlighted: false } };
       }))
     }, [setEdges]
   );
-
-  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
-  const [selectedEdges, setSelectedEdges] = useState<string[]>([]);
 
   useOnSelectionChange({
     onChange: (args) => {

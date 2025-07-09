@@ -10,5 +10,5 @@ export const useGraphStore = create<GraphState>()((set) => ({
         '1': {name: 'SampleVar1', typeId: 'bool'}
     },
     addVar: (varId: string, name: string, typeId: string) => 
-        set((state) => ({varRegistries: {varId: {name: name, typeId: typeId}, ...state.varRegistries}})),
+        set((state) => ({varRegistries: {[varId]: {name: name, typeId: typeId}, ...state.varRegistries}})),
 }));

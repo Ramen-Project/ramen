@@ -33,7 +33,7 @@ def build_web():
         CMD("bun install --cwd src/web")
     with yaspin(text='Building frontend page'):
         CMD("bun run --cwd src/web build")
-    shutil.copy('src/web/dist', 'src/ramen/statics')
+    shutil.copytree('src/web/dist', 'src/ramen/statics', dirs_exist_ok=True)
 
 @cli.command()
 def web_dev():

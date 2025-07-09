@@ -1,43 +1,73 @@
 # Ramen
 
+Ramen is a next-generation visual programming environment for Python. It enables users to design, compile, and execute computational graphs using an intuitive node-based interface. Ramen graphs are compiled/JIT-compiled into Python bytecode and executed in isolated, reproducible Python environments managed by `uv`.
+
 ## Features
 
-* Graphical programming
-    * support generics
-* Virtual environment for each workspace/project
-* Headless graph execution
-* You can write your own library
+- Visual, node-based graph editor (web UI)
+- Graphs are compiled/JIT to Python bytecode for efficient execution
+- Each project runs in its own isolated uv-managed environment
+- Supports both local and remote (server) deployment
+- Extensible via "toppings" (plugins) for numpy, pandas, torch, plots, and more
+- Python API for programmatic graph execution (with `ramen` or minimal `ramenrt`)
+- Project management and dependency isolation via `uv`
+- Real-time logs, error reporting, and result streaming
+- Single session per graph: prevents conflicting edits
 
 ## Installation
-### Quickstart
 
+### Full Installation (authoring + runtime)
 ```sh
-# For basic packages
 pip install ramen
 ```
 
-**Install all supported plugins**
+### Minimal/Runtime Installation (for embedding/CI/CD)
 ```sh
-pip install ramen[all]
+pip install ramenrt
 ```
 
-### Build it yourself
-
-**Requirements**
-* [Bun](https://bun.sh/) - Best NPM
-* [uv](https://docs.astral.sh/uv/) - Python package manager
-* [justfile](https://github.com/casey/just) - Justfile
-
+### Topping Installation
 ```sh
-$ git clone https://github.com/Pr0gCat/Ramen.git
-$ cd Ramen
-$ uv run just build
+pip install ramen-topping-numpy
+pip install ramen-topping-pandas
+# ...and more
 ```
 
-## Gloassary
+## Quickstart
 
-* **Toppings** - Extensions of Ramen
+1. **Create a new project**
+    ```sh
+    uv venv my-ramen-project
+    cd my-ramen-project
+    uv pip install ramen
+    ```
+2. **Install toppings as needed**
+    ```sh
+    uv pip install ramen-topping-numpy
+    ```
+3. **Launch the Ramen editor**
+    ```sh
+    ramen-cli
+    # or for remote/server: ramen-cli server
+    ```
+4. **Open the web UI** (usually at http://localhost:xxxx)
+5. **Create and edit graphs visually**
+6. **Execute graphs** (compiled/JIT in isolated environment)
 
-## Development
+## Python API Example
 
-> Bruh: you must have `artifacts` folder in order to do `uv sync`.
+```python
+import ramen
+
+graph = ramen.load_graph("my_graph.ramen")
+result = ramen.execute_graph(graph, inputs={"x": 42})
+print(result)
+```
+
+## Documentation
+
+- See `docs/technical-design/` for detailed technical specs, architecture, and extensibility.
+
+## License
+
+MIT License
