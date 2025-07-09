@@ -39,6 +39,8 @@ const initialNodes: Node<OpNodeProps>[] = [
       ],
       outputs: [
         { name: 'tables', typeId: 'list' },
+        { name: 'sheetNames', typeId: 'list' },
+        { name: 'rowCount', typeId: 'int' },
         { name: 'error', typeId: 'exception' }
       ]
     },
@@ -57,7 +59,10 @@ const initialNodes: Node<OpNodeProps>[] = [
         { name: 'key', typeId: 'str' }
       ],
       outputs: [
-        { name: 'joinedTable', typeId: 'list' }
+        { name: 'joinedTable', typeId: 'list' },
+        { name: 'matchCount', typeId: 'int' },
+        { name: 'unmatchedLeft', typeId: 'int' },
+        { name: 'unmatchedRight', typeId: 'int' }
       ]
     },
   },
@@ -75,7 +80,10 @@ const initialNodes: Node<OpNodeProps>[] = [
         { name: 'aggFunc', typeId: 'str' }
       ],
       outputs: [
-        { name: 'groupedTable', typeId: 'list' }
+        { name: 'groupedTable', typeId: 'list' },
+        { name: 'groupCount', typeId: 'int' },
+        { name: 'summary', typeId: 'dict' },
+        { name: 'stats', typeId: 'dict' }
       ]
     },
   },
@@ -93,6 +101,8 @@ const initialNodes: Node<OpNodeProps>[] = [
       ],
       outputs: [
         { name: 'success', typeId: 'bool' },
+        { name: 'bytesWritten', typeId: 'int' },
+        { name: 'fileSize', typeId: 'int' },
         { name: 'error', typeId: 'exception' }
       ]
     },
@@ -101,11 +111,16 @@ const initialNodes: Node<OpNodeProps>[] = [
 
 const initialEdges: Edge[] = [];
 
-function connectionCheck(_connection: Connection | Edge): boolean {
+function connectionCheck(connection: Connection | Edge): boolean {
+  // Prevent self-connections (node connecting to itself)
+  if (connection.source === connection.target) {
+    return false;
+  }
+  
   // TODO: Prevent any variables getter and setter connect directly
   // TODO: Return if there's a caster, after that onConnectEnd should insert the caster in between
+  
   return true;
-  // return connection.sourceHandle === connection.targetHandle && connection.source != connection.target;
 }
 
 export default function Graph() {

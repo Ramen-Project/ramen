@@ -11,6 +11,7 @@ import styled from 'styled-components';
 
 import { useTypeStore } from '../stores';
 import chroma from 'chroma-js';
+import { OpNodeProps } from './Node/OperationNode';
 
 //TODO: get color with sourceHandleId from typeStore
 
@@ -36,7 +37,34 @@ export function DefaultEdge({
     sourceHandleId,
   }: EdgeProps) {
     const typeReg = useTypeStore()
-    const type = typeReg.typesRegistries[sourceHandleId || 'unknown'];
+    const { getEdge, getNode } = useReactFlow()
+    
+    // Get the typeId from the source node data based on the sourceHandleId
+    let typeId = 'unknown'
+    const edge = getEdge(id);
+    if (edge?.source && sourceHandleId) {
+        const sourceNode = getNode(edge.source)
+        if (sourceNode?.data) {
+            const nodeData = sourceNode.data as OpNodeProps
+            
+            // Check if it's an input port
+            if (sourceHandleId.startsWith('input')) {
+                const inputIndex = parseInt(sourceHandleId.replace('input', ''))
+                if (nodeData.inputs[inputIndex]) {
+                    typeId = nodeData.inputs[inputIndex].typeId
+                }
+            }
+            // Check if it's an output port
+            else if (sourceHandleId.startsWith('output')) {
+                const outputIndex = parseInt(sourceHandleId.replace('output', ''))
+                if (nodeData.outputs[outputIndex]) {
+                    typeId = nodeData.outputs[outputIndex].typeId
+                }
+            }
+        }
+    }
+    
+    const type = typeReg.typesRegistries[typeId]
     const [d, labelX, labelY] = getBezierPath({
       sourceX: sourceX+4,
       sourceY: sourceY+3,
@@ -45,8 +73,6 @@ export function DefaultEdge({
       targetY: targetY+3,
       targetPosition,
     });
-    const {getEdge} = useReactFlow()
-    const edge = getEdge(id);
     const hovering = edge?.data
     return (
       <>
@@ -67,7 +93,34 @@ export function DefaultEdge({
 
 export function ConnectionLine({ fromX, fromY, toX, toY, fromPosition, toPosition, fromHandle }: ConnectionLineComponentProps) {
     const typeReg = useTypeStore()
-    const type = typeReg.typesRegistries[fromHandle?.id || 'unknown'];
+    const { getNode } = useReactFlow()
+    
+    // Get the typeId from the node data based on the portId
+    let typeId = 'unknown'
+    if (fromHandle?.id) {
+        const node = getNode(fromHandle.nodeId)
+        if (node?.data) {
+            const nodeData = node.data as OpNodeProps
+            const portId = fromHandle.id
+            
+            // Check if it's an input port
+            if (portId.startsWith('input')) {
+                const inputIndex = parseInt(portId.replace('input', ''))
+                if (nodeData.inputs[inputIndex]) {
+                    typeId = nodeData.inputs[inputIndex].typeId
+                }
+            }
+            // Check if it's an output port
+            else if (portId.startsWith('output')) {
+                const outputIndex = parseInt(portId.replace('output', ''))
+                if (nodeData.outputs[outputIndex]) {
+                    typeId = nodeData.outputs[outputIndex].typeId
+                }
+            }
+        }
+    }
+    
+    const type = typeReg.typesRegistries[typeId]
     const dragFromInput = fromHandle?.position == Position.Left
     const [d] = getBezierPath({
       // align connection line to edge

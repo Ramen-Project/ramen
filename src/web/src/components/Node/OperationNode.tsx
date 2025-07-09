@@ -1,4 +1,4 @@
-import { NodeProps } from "@xyflow/react";
+import { NodeProps, useReactFlow } from "@xyflow/react";
 import { GrStatusUnknown } from "react-icons/gr";
 import { IconType } from "react-icons/lib";
 import { FiFileText, FiFilter, FiHash } from "react-icons/fi";
@@ -93,9 +93,11 @@ function NodeHeader({ nodeName, namespace }: { nodeName: string, namespace: stri
 export default function OperatorNode({ data, id, selected }: NodeProps) {
     const nodeData = data as OpNodeProps;
     const typeReg = useTypeStore();
+    const { getEdges } = useReactFlow();
     if (nodeData.inputs.length == 0 && nodeData.outputs.length == 0) {
         throw new Error(`No inputs or outputs on this node: ${id}`);
     }
+    const edges = getEdges();
     return <>
         {/* Namespace popup above node when selected */}
         {selected && (
@@ -138,8 +140,10 @@ export default function OperatorNode({ data, id, selected }: NodeProps) {
                     <Flex direction="column" align="end" style={{gap: '0.5em'}}>
                         {nodeData.outputs.map((output, idx) => {
                             const IOType = typeReg.typesRegistries[output.typeId] || typeReg.typesRegistries['unknown'];
+                            const portId = `output${idx}`;
+                            const connected = edges.some(e => e.source === id && e.sourceHandle === portId);
                             return (
-                                <Port key={output.name + idx} portId={`output${idx}`} typeId={output.typeId}>
+                                <Port key={output.name + idx} portId={portId} typeId={output.typeId} connected={connected}>
                                     <Text size="2" style={{color: IOType.color, fontWeight: 500}}>{output.name}</Text>
                                 </Port>
                             );

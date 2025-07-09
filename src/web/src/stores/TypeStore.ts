@@ -14,6 +14,8 @@ export const useTypeStore = create<TypeState>()(() => ({
         'double': {name: 'Double', color: '#AF47D2'},
         'tuple': {name: 'Tuple', color: '#ff0073'},
         'list': {name: 'List', color: 'rgb(255, 128, 192)'},
-
+        'exception': {name: 'Exception', color: '#ff4444'},
+        'dict': {name: 'Dictionary', color: '#00cc88'},
+        'count': {name: 'Count', color: '#ffaa00'},
     }
 }));

@@ -20,27 +20,45 @@ const StyledHandle = styled(Handle) <{ $isInput?: boolean, $color: string }>`
     transform: rotate(45deg);
 `;
 
-export function Port({portId, typeId, isInput, children}: {portId: string, typeId: string, isInput?: boolean, children: ReactNode}) {
+export function Port({portId, typeId, isInput, connected, children}: {portId: string, typeId: string, isInput?: boolean, connected?: boolean, children: ReactNode}) {
     const typeReg = useTypeStore();
     const IOType = typeReg.typesRegistries[typeId] || typeReg.typesRegistries['unknown'];
-    // TODO: get type, name with portId
-    return <Flex position="relative" left={isInput ? "-10px" : "10px"}>
-        <Tooltip content="Int">
-            <StyledHandle
-                $isInput={isInput}
-                $color={IOType.color}
-                id={portId}
-                position={isInput ? Position.Left : Position.Right}
-                type={isInput ? "source" : "target"}
-            />
-        </Tooltip>
-        {isInput ? 
-            <Flex direction="column">
-                <Text weight="bold" size="5" >AC</Text>
-                {children}
+    // For output: [name] [port] [type] (type only if not connected)
+    if (isInput) {
+        return (
+            <Flex position="relative" left="-10px" align="center">
+                <Tooltip content={IOType.name}>
+                    <StyledHandle
+                        $isInput={true}
+                        $color={IOType.color}
+                        id={portId}
+                        position={Position.Left}
+                        type="source"
+                    />
+                </Tooltip>
+                <Flex direction="column" align="start">
+                    <Text weight="bold" size="5">{portId}</Text>
+                    {children}
+                </Flex>
             </Flex>
-            :
-            <></>
-        }
-    </Flex>
+        );
+    } else {
+        return (
+            <Flex position="relative" left="10px" align="center">
+                <Tooltip content={IOType.name}>
+                    <StyledHandle
+                        $isInput={false}
+                        $color={IOType.color}
+                        id={portId}
+                        position={Position.Right}
+                        type="target"
+                    />
+                </Tooltip>
+                <Flex direction="column" align="end" style={{marginRight: 4}}>
+                    <Text weight="bold" size="5">{portId}</Text>
+                    {children}
+                </Flex>
+            </Flex>
+        );
+    }
 }
