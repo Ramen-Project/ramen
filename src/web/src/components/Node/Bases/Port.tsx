@@ -33,7 +33,7 @@ export function Port({portId, typeId, isInput, children}: {portId: string, typeI
                         $color={IOType.color}
                         id={portId}
                         position={Position.Left}
-                        type="source"
+                        type="target"
                     />
                 </Tooltip>
                 <Flex direction="column" align="start">
@@ -51,7 +51,7 @@ export function Port({portId, typeId, isInput, children}: {portId: string, typeI
                         $color={IOType.color}
                         id={portId}
                         position={Position.Right}
-                        type="target"
+                        type="source"
                     />
                 </Tooltip>
                 <Flex direction="column" align="end" style={{marginRight: 4}}>
