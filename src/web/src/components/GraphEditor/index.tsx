@@ -1,6 +1,7 @@
 import { CSSProperties } from "react"
 import { Panel, ReactFlowProvider, useStore, useViewport } from '@xyflow/react';
 import Workspace from "./Graph";
+import EditorMenubar from "./Menubar";
 import styled from "styled-components";
 
 export default function GraphEditor() {
@@ -9,16 +10,21 @@ export default function GraphEditor() {
         width: '100%',
         height: '100%',
         bottom: 0,
-        backgroundColor: 'var(--gray-4)'
+        backgroundColor: 'var(--gray-4)',
+        display: 'flex',
+        flexDirection: 'column'
     }
 
     return (
         <div style={style}>
-            <ReactFlowProvider>
-                <EditorStatus />
-                <EditorCoordinate />
-                <Workspace />
-            </ReactFlowProvider>
+            <EditorMenubar />
+            <div style={{ flex: 1, position: 'relative' }}>
+                <ReactFlowProvider>
+                    <EditorStatus />
+                    <EditorCoordinate />
+                    <Workspace />
+                </ReactFlowProvider>
+            </div>
         </div>
     )
 }
@@ -32,20 +38,25 @@ function EditorCoordinate() {
     };
     
     const { x, y, zoom } = useViewport();
+    const selectedNodes = useStore((state) => state.nodes.filter(node => node.selected));
     const coordinate = useStore(() => `X ${x.toFixed(0)}  Y ${y.toFixed(0)}  ${zoom.toFixed(1)}x`);
-    return <Panel style={style} position="bottom-center">{coordinate}</Panel>;
+    const selectedCount = selectedNodes.length;
+    
+    const displayText = `${coordinate}  |  ${selectedCount} selected`;
+    
+    return <Panel style={style} position="bottom-center">{displayText}</Panel>;
 }
 
 
 
 const StatusElement = styled(Panel)`
     margin: 0;
-    margin-right: 7px;
+    margin-left: 7px;
     font-size: small;
     color: #aaaa;
     user-select: none;
 `;
 
 function EditorStatus() {
-    return (<StatusElement position='bottom-right'>Connected</StatusElement>);
+    return (<StatusElement position='bottom-left'>Connected</StatusElement>);
 }

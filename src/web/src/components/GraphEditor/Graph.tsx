@@ -1,4 +1,4 @@
-import { useCallback, MouseEvent, useState } from 'react';
+import { useCallback, MouseEvent, useState, useEffect } from 'react';
 import {
   ReactFlow,
   addEdge,
@@ -11,13 +11,18 @@ import {
   useOnSelectionChange,
   Background,
   BackgroundVariant,
-  NodeChange
+  NodeChange,
+  useReactFlow
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
 
 import { ConnectionLine, DefaultEdge } from '../Edges';
-
 import { nodeTypes } from '../Node';
+import { 
+  ungroupSubflow, 
+  autoResizeSubflow, 
+  createSubflow
+} from './subflowUtils';
 
 import * as Constants from '../../constants';
 
@@ -26,23 +31,22 @@ const edgeTypes = {
 }
 
 const initialNodes: Node<any>[] = [
-  // 示例組節點
+  // 示例子流程節點
   {
-    id: 'group-1',
-    type: 'group',
+    id: 'subflow-1',
+    type: 'subflow',
     position: { x: 50, y: 50 },
-    draggable: false,
+    draggable: true,
     selectable: true,
     data: {
-      label: '數據處理組',
+      label: '數據處理子流程',
       width: 400,
       height: 250,
-      backgroundColor: 'rgba(0, 150, 255, 0.1)',
+      backgroundColor: 'rgba(255, 193, 7, 0.1)',
       childCount: 2,
-      onUngroup: () => console.log('Ungroup group-1'),
-      onRename: (newLabel: string) => console.log('Rename to:', newLabel),
-      onResize: (width: number, height: number) => console.log('Resize to:', width, height),
-      onAutoResize: () => console.log('Auto resize group-1')
+      isExpanded: true,
+      onUngroup: () => console.log('Ungroup subflow-1'),
+      onAutoResize: () => console.log('Auto resize subflow-1')
     },
     style: { width: 400, height: 250 }
   },
@@ -50,7 +54,7 @@ const initialNodes: Node<any>[] = [
     id: '1',
     type: 'operator',
     position: { x: 100, y: 100 },
-    parentId: 'group-1',
+    parentId: 'subflow-1',
     data: {
       name: 'Read Excel',
       namespace: 'FileIO',
@@ -70,7 +74,7 @@ const initialNodes: Node<any>[] = [
     id: '2',
     type: 'operator',
     position: { x: 350, y: 100 },
-    parentId: 'group-1',
+    parentId: 'subflow-1',
     data: {
       name: 'Join Tables',
       namespace: 'DataOps',
@@ -152,6 +156,8 @@ function connectionCheck(connection: Connection | Edge): boolean {
 export default function Graph() {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const { getNodes, getEdges } = useReactFlow();
 
   const onConnect = useCallback(
     (connection: any) => setEdges((eds) => addEdge(connection, eds)),
@@ -178,54 +184,198 @@ export default function Graph() {
 
   useOnSelectionChange({
     onChange: (args) => {
-      if (args.nodes.length){
-        console.log(`Selected ${args.nodes}`)
+      const selectedIds = args.nodes.map(node => node.id);
+      setSelectedNodeIds(selectedIds);
+      if (selectedIds.length){
+        console.log(`Selected ${selectedIds}`)
       }else{
         console.log(`Unselected`)
       }
     }
   });
 
-  // 簡化的 onNodesChange
+  // Enhanced onNodesChange to resize subflow when nodes are dragged
   const onNodesChange = useCallback((changes: NodeChange[]) => {
-    onNodesChangeBase(changes);
-  }, [onNodesChangeBase]);
+    // Step 1: Map current parentIds and positions
+    const prevNodes = getNodes();
+    const prevParentMap: Record<string, string | undefined> = {};
+    const prevPositionMap: Record<string, { x: number; y: number }> = {};
+    prevNodes.forEach(node => {
+      prevParentMap[node.id] = node.parentId;
+      prevPositionMap[node.id] = node.position;
+    });
 
-  // 移除會造成無限循環的 useEffect
-  // useEffect(() => {
-  //   setNodes(currentNodes => autoResizeAllGroups(currentNodes));
-  // }, [nodes, setNodes]);
+    // Step 2: Apply changes
+    onNodesChangeBase(changes);
+
+    // Step 3: After a tick (to ensure state is updated), check for changes
+    setTimeout(() => {
+      const updatedNodes = getNodes();
+      const affectedSubflowIds = new Set<string>();
+      
+      updatedNodes.forEach(node => {
+        const prevParent = prevParentMap[node.id];
+        const currParent = node.parentId;
+        const prevPos = prevPositionMap[node.id];
+        
+        // Check if node left a subflow
+        if (
+          prevParent &&
+          prevParent.startsWith('subflow-') &&
+          prevParent !== currParent
+        ) {
+          affectedSubflowIds.add(prevParent);
+        }
+        
+        // Check if node is being dragged within a subflow
+        if (
+          currParent &&
+          currParent.startsWith('subflow-') &&
+          prevPos &&
+          (node.position.x !== prevPos.x || node.position.y !== prevPos.y)
+        ) {
+          affectedSubflowIds.add(currParent);
+        }
+      });
+      
+      // Step 4: Resize all affected subflows
+      if (affectedSubflowIds.size > 0) {
+        const nodesNow = getNodes();
+        affectedSubflowIds.forEach(subflowId => {
+          autoResizeSubflow(nodesNow, subflowId, setNodes);
+        });
+      }
+    }, 0);
+  }, [onNodesChangeBase, getNodes, setNodes]);
+
+  // 工具欄回調函數
+  const handleCreateSubflow = useCallback(() => {
+    if (selectedNodeIds.length > 1) {
+      const currentNodes = getNodes();
+      const currentEdges = getEdges();
+      createSubflow(currentNodes, currentEdges, selectedNodeIds, setNodes, setEdges);
+    }
+  }, [selectedNodeIds, getNodes, getEdges, setNodes, setEdges]);
+
+  const handleUngroupSubflow = useCallback(() => {
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    selectedNodeIds.forEach(nodeId => {
+      const node = currentNodes.find(n => n.id === nodeId);
+      if (node?.type === 'subflow') {
+        ungroupSubflow(currentNodes, currentEdges, nodeId, setNodes, setEdges);
+      }
+    });
+  }, [selectedNodeIds, getNodes, getEdges, setNodes, setEdges]);
+
+  const handleAutoResizeSubflow = useCallback(() => {
+    const currentNodes = getNodes();
+    selectedNodeIds.forEach(nodeId => {
+      const node = currentNodes.find(n => n.id === nodeId);
+      if (node?.type === 'subflow') {
+        autoResizeSubflow(currentNodes, nodeId, setNodes);
+      }
+    });
+  }, [selectedNodeIds, getNodes, setNodes]);
+
+  // 鍵盤快捷鍵處理
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+G: 創建子流程
+      if (event.ctrlKey && event.key === 'g') {
+        event.preventDefault();
+        handleCreateSubflow();
+      }
+      
+      // Ctrl+U: 解散選中的子流程
+      if (event.ctrlKey && event.key === 'u') {
+        event.preventDefault();
+        handleUngroupSubflow();
+      }
+      
+      // Ctrl+R: 自動調整選中子流程大小
+      if (event.ctrlKey && event.key === 'r') {
+        event.preventDefault();
+        handleAutoResizeSubflow();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleCreateSubflow, handleUngroupSubflow, handleAutoResizeSubflow]);
+
+  // 更新子流程節點的回調函數
+  const updateSubflowCallbacks = useCallback(() => {
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    
+    const updatedNodes = currentNodes.map(node => {
+      if (node.type === 'subflow') {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            onUngroup: () => ungroupSubflow(currentNodes, currentEdges, node.id, setNodes, setEdges),
+            onAutoResize: () => autoResizeSubflow(currentNodes, node.id, setNodes)
+          }
+        };
+      }
+      return node;
+    });
+    
+    setNodes(updatedNodes);
+  }, [getNodes, getEdges, setNodes, setEdges]);
+
+  // 當節點或邊變化時更新回調函數
+  useEffect(() => {
+    updateSubflowCallbacks();
+  }, [nodes.length, edges.length, updateSubflowCallbacks]);
+
+  // Initial resize of all subflows when component mounts
+  useEffect(() => {
+    const currentNodes = getNodes();
+    const subflowNodes = currentNodes.filter(node => node.type === 'subflow');
+    
+    if (subflowNodes.length > 0) {
+      subflowNodes.forEach(subflowNode => {
+        autoResizeSubflow(currentNodes, subflowNode.id, setNodes);
+      });
+    }
+  }, []); // Empty dependency array means this runs only once on mount
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
 
-      // Behavior settings
-      fitView
-      zoomOnDoubleClick={false}
-      selectionOnDrag
-      minZoom={Constants.GraphMinZoom}
-      maxZoom={Constants.GraphMaxZoom}
-      // translateExtent={Constants.GraphBoundary}
-      nodeExtent={Constants.GraphBoundary}
-      panOnDrag={[1, 2]}
-      selectionMode={SelectionMode.Partial}
-      proOptions={{ hideAttribution: true }}
-      connectionLineComponent={ConnectionLine}
-      onlyRenderVisibleElements={true}
-      deleteKeyCode={'Delete'}
+        // Behavior settings
+        fitView
+        zoomOnDoubleClick={false}
+        selectionOnDrag
+        minZoom={Constants.GraphMinZoom}
+        maxZoom={Constants.GraphMaxZoom}
+        // translateExtent={Constants.GraphBoundary}
+        nodeExtent={Constants.GraphBoundary}
+        panOnDrag={[1, 2]}
+        selectionMode={SelectionMode.Partial}
+        proOptions={{ hideAttribution: true }}
+        connectionLineComponent={ConnectionLine}
+        onlyRenderVisibleElements={true}
+        deleteKeyCode={'Delete'}
 
-      // Callbacks
-      isValidConnection={connectionCheck}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onEdgeMouseEnter={onMouseEnterEdge}
-      onEdgeMouseLeave={onMouseLeaveEdge}
-      onConnect={onConnect}
-    >
-      <Background color='#c7c7c7' variant={BackgroundVariant.Dots} size={5} gap={Constants.DotsGap} />
-    </ReactFlow>)
+        // Callbacks
+        isValidConnection={connectionCheck}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onEdgeMouseEnter={onMouseEnterEdge}
+        onEdgeMouseLeave={onMouseLeaveEdge}
+        onConnect={onConnect}
+      >
+        <Background color='#c7c7c7' variant={BackgroundVariant.Dots} size={5} gap={Constants.DotsGap} />
+      </ReactFlow>
+    </div>
+  );
 }

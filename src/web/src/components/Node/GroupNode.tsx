@@ -18,7 +18,6 @@ const GroupNode: React.FC<NodeProps> = ({ data, selected }) => {
         flexDirection: 'column',
         padding: '8px',
         boxShadow: selected ? '0 0 10px rgba(255, 107, 107, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
-        pointerEvents: 'none', // 讓 group node 不攔截滑鼠事件
       }}
     >
       {/* Group Title */}
@@ -51,73 +50,12 @@ const GroupNode: React.FC<NodeProps> = ({ data, selected }) => {
           color: '#666',
           fontSize: '14px',
           fontStyle: 'italic',
-          pointerEvents: 'none', // 內容不攔截
         }}
       >
         {groupData.childCount ? `${groupData.childCount} nodes` : 'Empty group'}
       </div>
 
-      {/* Group Controls */}
-      {selected && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '8px',
-            right: '8px',
-            display: 'flex',
-            gap: '4px',
-            pointerEvents: 'auto', // 控制按鈕可點擊
-            zIndex: 20,
-          }}
-        >
-          <button
-            className="group-control-btn"
-            title="Auto Resize"
-            onClick={(e) => {
-              e.stopPropagation();
-              groupData.onAutoResize?.();
-            }}
-            style={{
-              width: '20px',
-              height: '20px',
-              border: 'none',
-              borderRadius: '3px',
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            ⚡
-          </button>
-          <button
-            className="group-control-btn"
-            title="Ungroup"
-            onClick={(e) => {
-              e.stopPropagation();
-              groupData.onUngroup?.();
-            }}
-            style={{
-              width: '20px',
-              height: '20px',
-              border: 'none',
-              borderRadius: '3px',
-              backgroundColor: '#ff6b6b',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            ×
-          </button>
-        </div>
-      )}
+
     </div>
   );
 };
