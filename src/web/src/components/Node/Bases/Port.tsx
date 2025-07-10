@@ -20,7 +20,7 @@ const StyledHandle = styled(Handle) <{ $isInput?: boolean, $color: string }>`
     transform: rotate(45deg);
 `;
 
-export function Port({portId, typeId, isInput, connected, children}: {portId: string, typeId: string, isInput?: boolean, connected?: boolean, children: ReactNode}) {
+export function Port({portId, typeId, isInput, children}: {portId: string, typeId: string, isInput?: boolean, connected?: boolean, children: ReactNode}) {
     const typeReg = useTypeStore();
     const IOType = typeReg.typesRegistries[typeId] || typeReg.typesRegistries['unknown'];
     // For output: [name] [port] [type] (type only if not connected)

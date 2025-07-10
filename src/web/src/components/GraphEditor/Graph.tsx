@@ -1,4 +1,4 @@
-import { useCallback, MouseEvent } from 'react';
+import { useCallback, MouseEvent, useState } from 'react';
 import {
   ReactFlow,
   addEdge,
@@ -10,14 +10,14 @@ import {
   Connection,
   useOnSelectionChange,
   Background,
-  BackgroundVariant
+  BackgroundVariant,
+  NodeChange
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
 
 import { ConnectionLine, DefaultEdge } from '../Edges';
 
 import { nodeTypes } from '../Node';
-import { OpNodeProps } from '../Node/OperationNode';
 
 import * as Constants from '../../constants';
 
@@ -25,11 +25,32 @@ const edgeTypes = {
   default: DefaultEdge
 }
 
-const initialNodes: Node<OpNodeProps>[] = [
+const initialNodes: Node<any>[] = [
+  // 示例組節點
+  {
+    id: 'group-1',
+    type: 'group',
+    position: { x: 50, y: 50 },
+    draggable: false,
+    selectable: true,
+    data: {
+      label: '數據處理組',
+      width: 400,
+      height: 250,
+      backgroundColor: 'rgba(0, 150, 255, 0.1)',
+      childCount: 2,
+      onUngroup: () => console.log('Ungroup group-1'),
+      onRename: (newLabel: string) => console.log('Rename to:', newLabel),
+      onResize: (width: number, height: number) => console.log('Resize to:', width, height),
+      onAutoResize: () => console.log('Auto resize group-1')
+    },
+    style: { width: 400, height: 250 }
+  },
   {
     id: '1',
     type: 'operator',
-    position: { x: 0, y: 130 },
+    position: { x: 100, y: 100 },
+    parentId: 'group-1',
     data: {
       name: 'Read Excel',
       namespace: 'FileIO',
@@ -48,7 +69,8 @@ const initialNodes: Node<OpNodeProps>[] = [
   {
     id: '2',
     type: 'operator',
-    position: { x: 350, y: 130 },
+    position: { x: 350, y: 100 },
+    parentId: 'group-1',
     data: {
       name: 'Join Tables',
       namespace: 'DataOps',
@@ -109,7 +131,11 @@ const initialNodes: Node<OpNodeProps>[] = [
   },
 ];
 
-const initialEdges: Edge[] = [];
+const initialEdges: Edge[] = [
+  { id: 'e1-2', source: '1', target: '2', sourceHandle: 'tables', targetHandle: 'leftTable' },
+  { id: 'e2-3', source: '2', target: '3', sourceHandle: 'joinedTable', targetHandle: 'table' },
+  { id: 'e3-4', source: '3', target: '4', sourceHandle: 'groupedTable', targetHandle: 'table' },
+];
 
 function connectionCheck(connection: Connection | Edge): boolean {
   // Prevent self-connections (node connecting to itself)
@@ -124,7 +150,7 @@ function connectionCheck(connection: Connection | Edge): boolean {
 }
 
 export default function Graph() {
-  const [nodes, _, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onConnect = useCallback(
@@ -160,6 +186,16 @@ export default function Graph() {
     }
   });
 
+  // 簡化的 onNodesChange
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    onNodesChangeBase(changes);
+  }, [onNodesChangeBase]);
+
+  // 移除會造成無限循環的 useEffect
+  // useEffect(() => {
+  //   setNodes(currentNodes => autoResizeAllGroups(currentNodes));
+  // }, [nodes, setNodes]);
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -184,7 +220,7 @@ export default function Graph() {
 
       // Callbacks
       isValidConnection={connectionCheck}
-      onNodesChange={(value) => onNodesChange(value)}
+      onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onEdgeMouseEnter={onMouseEnterEdge}
       onEdgeMouseLeave={onMouseLeaveEdge}

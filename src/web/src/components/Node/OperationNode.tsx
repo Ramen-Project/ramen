@@ -1,9 +1,5 @@
 import { NodeProps, useReactFlow } from "@xyflow/react";
-import { GrStatusUnknown } from "react-icons/gr";
-import { IconType } from "react-icons/lib";
 import { FiFileText, FiFilter, FiHash } from "react-icons/fi";
-
-import * as Constants from "../../constants";
 import { NodeBody, Port } from "./Bases";
 import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import { useTypeStore } from "../../stores";
@@ -21,12 +17,7 @@ export type OpNodeProps = {
     outputs: Array<NodeIOProps>
 }
 
-const NAMESPACE_GRADIENTS: Record<string, string> = {
-    FileIO: 'linear-gradient(90deg, rgba(59,130,246,0.32) 0%, rgba(59,130,246,0.10) 100%)',
-    DataOps: 'linear-gradient(90deg, rgba(245,158,66,0.32) 0%, rgba(245,158,66,0.10) 100%)',
-    Math: 'linear-gradient(90deg, rgba(162,89,230,0.32) 0%, rgba(162,89,230,0.10) 100%)',
-    default: 'linear-gradient(90deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%)'
-};
+
 
 const NAMESPACE_ICONS: Record<string, any> = {
     FileIO: FiFileText,
