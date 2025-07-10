@@ -15,6 +15,7 @@ import {
   ResetIcon
 } from '@radix-ui/react-icons';
 import styled from 'styled-components';
+import { useHistoryStore } from '../../stores/HistoryStore';
 
 const MenubarRoot = styled(Menubar.Root)`
   display: flex;
@@ -94,37 +95,30 @@ const MenubarLabel = styled(Menubar.Label)`
   letter-spacing: 0.5px;
 `;
 
-const MenubarSubTrigger = styled(Menubar.SubTrigger)`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-size: 13px;
-  color: var(--gray-11);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  
-  &:hover {
-    background-color: var(--gray-4);
-  }
-`;
-
-const MenubarSubContent = styled(Menubar.SubContent)`
-  min-width: 180px;
-  background-color: var(--gray-2);
-  border: 1px solid var(--gray-6);
-  border-radius: 6px;
-  padding: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-`;
 
 
 
-const EditorMenubar: React.FC = () => {
+
+interface EditorMenubarProps {
+  onToggleSidebar?: () => void;
+  sidebarVisible?: boolean;
+}
+
+const EditorMenubar: React.FC<EditorMenubarProps> = ({ onToggleSidebar, sidebarVisible = true }) => {
+  const { undo, redo, canUndo, canRedo } = useHistoryStore();
+
+  const handleUndo = () => {
+    if (canUndo()) {
+      undo();
+    }
+  };
+
+  const handleRedo = () => {
+    if (canRedo()) {
+      redo();
+    }
+  };
+
   return (
     <MenubarRoot>
       <Menubar.Menu>
@@ -168,11 +162,11 @@ const EditorMenubar: React.FC = () => {
           Edit
         </MenubarTrigger>
         <MenubarContent>
-          <MenubarItem>
+          <MenubarItem onClick={handleUndo} disabled={!canUndo()}>
             <ArrowLeftIcon />
             Undo
           </MenubarItem>
-          <MenubarItem>
+          <MenubarItem onClick={handleRedo} disabled={!canRedo()}>
             <ArrowRightIcon />
             Redo
           </MenubarItem>
@@ -193,11 +187,11 @@ const EditorMenubar: React.FC = () => {
           <MenubarSeparator />
           <MenubarItem>
             <PlusIcon />
-            Create Subflow
+            Create Group
           </MenubarItem>
           <MenubarItem>
             <TrashIcon />
-            Ungroup Subflow
+            Ungroup Group
           </MenubarItem>
         </MenubarContent>
       </Menubar.Menu>
@@ -228,6 +222,11 @@ const EditorMenubar: React.FC = () => {
           <MenubarItem>
             <EyeOpenIcon />
             Show Mini Map
+          </MenubarItem>
+          <MenubarSeparator />
+          <MenubarItem onClick={onToggleSidebar}>
+            <EyeOpenIcon />
+            {sidebarVisible ? 'Hide Sidebar' : 'Show Sidebar'}
           </MenubarItem>
           <MenubarSeparator />
           <MenubarLabel>Theme</MenubarLabel>

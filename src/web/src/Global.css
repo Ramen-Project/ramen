@@ -6,3 +6,9 @@
     font-weight: normal;
     font-style: normal;
 }
+
+/* --- React Flow connection z-index fix --- */
+.react-flow__edges > svg {
+  z-index: 999 !important;
+  position: relative;
+}

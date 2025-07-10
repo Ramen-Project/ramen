@@ -1,62 +1,161 @@
 import React from 'react';
 import { NodeProps } from '@xyflow/react';
 import { GroupNodeData } from './types';
+import styled from 'styled-components';
+import './GroupNode.css';
+import chroma from 'chroma-js';
 
-const GroupNode: React.FC<NodeProps> = ({ data, selected }) => {
+interface GroupNodeProps extends NodeProps {
+  dragOverGroupId?: string | null;
+}
+
+// Styled components with attrs for dynamic styles
+const GroupNodeContainer = styled.div.attrs<{
+  $width?: number;
+  $height?: number;
+  $backgroundColor: string;
+  $borderColor: string;
+  $isDragOver: boolean;
+  $selected: boolean;
+}>(({ $width, $height, $backgroundColor, $borderColor, $isDragOver, $selected }) => ({
+  style: {
+    width: $width || 300,
+    height: $height || 200,
+    backgroundColor: $backgroundColor,
+    border: `2px solid ${$borderColor}`,
+    boxShadow: $isDragOver ? `0 0 20px ${chroma($borderColor).alpha(0.6).hex()}` : 'none',
+    transform: $isDragOver ? 'scale(1.02)' : 'scale(1)',
+    cursor: 'pointer',
+  }
+}))`
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  pointer-events: none;
+  z-index: 1;
+  
+  /* Ensure the container can receive clicks */
+  user-select: none;
+  
+  /* Make sure the border is visible when selected */
+  &:hover {
+    border-color: ${props => chroma(props.$borderColor).brighten(0.3).hex()};
+  }
+`;
+
+const ClickableBorder = styled.div.attrs<{ $selected: boolean }>(({ $selected }) => ({
+  style: {
+    zIndex: $selected ? 10 : 1
+  }
+}))`
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 12px;
+  pointer-events: auto;
+  cursor: pointer;
+  
+  /* Invisible but clickable area */
+  background: transparent;
+  
+  /* Optional: add a subtle visual indicator when hovering */
+  &:hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    pointer-events: none;
+  }
+`;
+
+const WatermarkTitle = styled.div.attrs<{ $color: string }>(({ $color }) => ({
+  style: { color: $color }
+}))`
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  font-size: 2.5rem;
+  font-weight: bold;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  z-index: 1;
+`;
+
+const GroupContent = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 14px;
+  font-style: italic;
+  margin-top: 8px;
+  z-index: 2;
+  pointer-events: none;
+`;
+
+const DragOverIndicator = styled.div.attrs<{ $color: string }>(({ $color }) => ({
+  style: { 
+    background: chroma($color).alpha(0.2).hex(),
+    color: chroma($color).luminance() > 0.5 ? '#000' : '#fff'
+  }
+}))`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 10;
+  pointer-events: none;
+`;
+
+const GroupNode: React.FC<GroupNodeProps> = ({ data, selected, id, dragOverGroupId }) => {
   const groupData = data as GroupNodeData;
+  const nodeColor = chroma(groupData.backgroundColor || 'rgb(0, 0, 0)');
+  const unfocusedColor = nodeColor.brighten(0.9);
+  const isDragOver = dragOverGroupId === id;
+  
+  const currentColor = selected ? nodeColor : unfocusedColor;
+  const backgroundColor = currentColor.alpha(0.1).hex();
+  const borderColor = currentColor.hex();
+  const watermarkColor = nodeColor.alpha(0.15).css();
+
   return (
-    <div
-      className={`group-node ${selected ? 'selected' : ''}`}
-      style={{
-        width: groupData.width || 300,
-        height: groupData.height || 200,
-        backgroundColor: groupData.backgroundColor || 'rgba(0, 150, 255, 0.1)',
-        border: `2px solid ${selected ? '#ff6b6b' : '#0096ff'}`,
-        borderRadius: '8px',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '8px',
-        boxShadow: selected ? '0 0 10px rgba(255, 107, 107, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
-      }}
+    <GroupNodeContainer
+      className={`group-node ${selected ? 'selected' : ''} ${isDragOver ? 'drag-over' : ''}`}
+      $width={groupData.width}
+      $height={groupData.height}
+      $backgroundColor={backgroundColor}
+      $borderColor={borderColor}
+      $isDragOver={isDragOver}
+      $selected={!!selected}
     >
-      {/* Group Title */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '-12px',
-          left: '12px',
-          backgroundColor: '#fff',
-          padding: '2px 8px',
-          borderRadius: '4px',
-          fontSize: '12px',
-          fontWeight: 'bold',
-          color: '#0096ff',
-          border: `1px solid ${selected ? '#ff6b6b' : '#0096ff'}`,
-          zIndex: 10,
-          pointerEvents: 'auto', // 標題可選中
-        }}
-      >
+      <ClickableBorder $selected={!!selected} />
+      <WatermarkTitle $color={watermarkColor}>
         {groupData.label || 'Group'}
-      </div>
+      </WatermarkTitle>
 
-      {/* Group Content Area */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#666',
-          fontSize: '14px',
-          fontStyle: 'italic',
-        }}
-      >
-        {groupData.childCount ? `${groupData.childCount} nodes` : 'Empty group'}
-      </div>
-
-
-    </div>
+      <GroupContent className="group-content-area group-content" />
+      
+      {isDragOver && (
+        <DragOverIndicator $color={borderColor}>
+          Drop to join group
+        </DragOverIndicator>
+      )}
+    </GroupNodeContainer>
   );
 };
 

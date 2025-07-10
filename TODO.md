@@ -1,142 +1,64 @@
 # TODO
 
-## 當前任務
+## Current Task
+- [x] Implement drag-to-join functionality: drag nodes into groups to join them
+- [x] Implement G key shortcut for group/ungroup operations
+- [x] Support nested groups (groups within groups)
+- [x] Handle all combinations of selected items with intuitive behavior
+- [x] Optimize styled-components to prevent excessive class generation
+- [x] Fix styled-components transient props warnings
+- [x] Fix group selection issue by making GroupNodeContainer interactive
+- [x] Simplify GroupNode structure to ensure proper ReactFlow selection
+- [x] Allow clicks to pass through group background to connections while keeping group selectable
+- [x] Fix connection label visibility to only show when hovered or selected
 
-### 2024-12-19 - 實現 React Flow 子流程功能 ✅
-- [x] 閱讀並理解 React Flow 子流程文檔 (https://reactflow.dev/learn/layouting/sub-flows)
-- [x] 實現完整的子流程功能，包括：
-  - [x] 子流程節點類型 (`SubflowNode`)
-  - [x] 子流程的展開/收合功能 (`toggleSubflow`)
-  - [x] 子流程內節點的拖拽和連接
-  - [x] 子流程的邊界檢測和自動調整 (`autoResizeSubflow`)
-  - [x] 子流程的視覺樣式和交互
-  - [x] 子流程內節點拖拽時自動調整大小
-- [x] 整合現有的群組節點功能
-- [x] 添加工具欄和鍵盤快捷鍵支持
-- [x] 創建完整的文檔和使用說明
-- [ ] 添加子流程的持久化儲存
-- [ ] 測試子流程的所有功能
+### Implementation Details:
+- **G Key Behavior**: Toggle group/ungroup - if any groups are selected, ungroup them first, then group remaining regular nodes if 2+ remain
+- **Drag-to-Join**: Visual feedback with green highlight and "Drop to join group" message when dragging nodes over groups
+- **Nested Groups**: Support for groups within groups with proper positioning and hierarchy
+- **Visual Feedback**: Groups highlight with green glow and scale effect when nodes are dragged over them
+- **Auto-resize**: Groups automatically resize when nodes join or leave
+- **Flexible Group Resizing**: Nodes can be dragged outside group boundaries to resize groups dynamically
+- **Edge Selection**: Connections inside groups can be selected by setting group z-index to -1 to render behind other elements
+- **Styled-components Optimization**: Used attrs method to prevent excessive class generation for dynamic styles
+- **Transient Props**: Used $ prefix for styled-components props to prevent DOM warnings
+- **Group Selection Fix**: Changed GroupNodeContainer to use pointer-events: auto and z-index: 1 to make groups properly selectable
+- **Simplified Structure**: Removed nested GroupBorder component and made root container directly interactive with cursor pointer and hover effects
+- **Transparent Background**: Made group background transparent to pointer events while adding clickable border area for selection
+- **Connection Label Visibility**: Fixed edge label display to only show when edge is hovered or selected by properly checking highlighted state
 
-### 待處理的功能增強
-- [ ] 子流程的嵌套支持（子流程內包含子流程）
-- [ ] 子流程的複製和貼上功能
-- [ ] 子流程的匯入/匯出功能
-- [ ] 子流程的版本控制
-- [ ] 子流程的執行狀態顯示
+## Completed
+- [x] Modified minimap to render nodes in grey color by default
+- [x] Minimap nodes only show colors when selected
+- [x] Updated both nodeColor and nodeStrokeColor functions for consistency
+- [x] Nodes inside group nodes now render with dark inverted colors (#333333) when unselected
+- [x] Selected nodes inside groups show their namespace colors
+- [x] Fixed group selection by making GroupNodeContainer interactive with proper pointer events and z-index
+- [x] Simplified GroupNode structure by removing nested interactive elements that interfered with ReactFlow selection
+- [x] Made group background transparent to pointer events to allow connection selection while keeping group selectable via border area
+- [x] Fixed connection label visibility to only show when edge is hovered or selected
 
-## 已修復的問題
+## Potential Improvements
+- [ ] Consider making the grey color configurable via constants
+- [ ] Add visual feedback for hover state in minimap
+- [ ] Consider adding different stroke colors for different node types when selected
+- [ ] Optimize minimap performance for large graphs
+- [ ] Add minimap zoom controls or settings
+- [ ] Consider using true color inversion instead of fixed dark color
+- [ ] Add keyboard shortcuts help/tooltip
+- [ ] Improve drag-to-join precision (currently uses node center point)
+- [ ] Add undo/redo for drag-to-join operations
 
-### 2024-07-10 - 群組節點位置移動問題
-- **問題**: 群組節點的左上角位置在拖動子節點時會不斷移動
-- **原因**: `autoResizeGroupDuringDrag` 函數在調整群組大小時錯誤地移動了群組的位置
-- **解決方案**: 
-  - 保持群組的原始位置不變 (`position: groupNode.position`)
-  - 只調整群組的大小 (`width` 和 `height`)
-  - 移除子節點位置的調整邏輯
-  - 簡化條件判斷，只在群組需要擴展時才更新
-  - **改進**: 群組節點只會擴展，不會縮小 (`Math.max(newWidth, currentWidth)`)
-
-### 2024-07-10 - 群組節點縮小問題
-- **問題**: 群組節點在子節點移動時會縮小，造成視覺上的不穩定
-- **解決方案**: 
-  - 使用 `Math.max()` 確保群組尺寸不會小於當前尺寸
-  - 群組節點只會擴展，不會縮小
-  - 提供更穩定的視覺體驗
-
-### 2024-07-10 - 群組節點錨點改進
-- **問題**: 群組節點擴展時以左上角為錨點，造成視覺上的跳動
-- **解決方案**: 
-  - 將群組節點的錨點改為中心點
-  - 計算當前群組中心點，以中心點為基準計算新的位置
-  - 群組擴展時會以中心點為基準向四周擴展
-  - 提供更平滑和直觀的視覺體驗
-
-### 2024-07-10 - 群組節點多方向擴展問題
-- **問題**: 群組節點只能向右擴展，不能向左、向上或向下擴展
-- **原因**: 中心點錨點邏輯不適合動態調整，當子節點移動到群組邊界外時無法正確計算位置
-- **解決方案**: 
-  - 改回基於子節點位置的動態調整邏輯
-  - 使用 `minX - padding - margin` 和 `minY - padding - margin` 計算群組位置
-  - 確保群組能夠向所有方向擴展以包含移動的子節點
-  - 保持群組與子節點之間的適當邊距
-
-### 2024-07-10 - 群組節點位置穩定性改進
-- **問題**: 群組節點位置基於第一個節點，導致群組位置不穩定和視覺跳動
-- **原因**: 直接使用 `minX` 和 `minY` 計算群組位置，群組會「追隨」移動的節點
-- **解決方案**: 
-  - 實現智能位置調整邏輯
-  - 保持群組的原始位置，只在必要時才調整
-  - 只在子節點移動到群組左側或上方時才移動群組
-  - 提供更穩定和直觀的視覺體驗
-
-### 2024-07-10 - 群組節點自動縮小功能
-- **問題**: 群組節點只會擴展不會縮小，當節點移動到更小區域時群組不會自動縮小
-- **原因**: 使用 `Math.max()` 確保群組尺寸不會小於當前尺寸
-- **解決方案**: 
-  - 移除 `Math.max()` 限制，允許群組縮小
-  - 直接使用計算出的新尺寸 `newWidth` 和 `newHeight`
-  - 當尺寸有變化時就更新群組（`finalWidth !== currentWidth || finalHeight !== currentHeight`）
-  - 提供更靈活和響應式的群組調整功能
-
-### 2024-07-10 - 群組節點相對位置更新
-- **問題**: 群組節點的相對位置沒有正確更新，導致群組與節點的位置關係不準確
-- **原因**: 只在群組需要向左或向上擴展時才調整位置，沒有考慮縮小時的位置調整
-- **解決方案**: 
-  - 改為動態調整群組位置以適應節點分佈
-  - 直接使用 `neededLeft` 和 `neededTop` 作為群組的新位置
-  - 確保群組位置始終與節點分佈保持正確的相對關係
-  - 提供更準確和響應式的群組位置調整
-
-### 2024-07-10 - 群組邊界 padding 優化
-- **問題**: 群組邊界與節點之間需要始終保持適當的 padding
-- **原因**: 當群組縮小時，節點可能會太靠近邊界，影響視覺效果
-- **解決方案**: 
-  - 簡化 padding 計算邏輯，使用 `totalPadding = padding + margin`
-  - 確保群組邊界與節點之間始終保持 `totalPadding` 的距離
-  - 拖動時使用更大的 padding（40+40=80px），放開時使用較小 padding（40+20=60px）
-  - 提供更一致和美觀的視覺效果
-
-### 2024-07-10 - 節點拖動限制修復
-- **問題**: 拖動節點到群組左上角時，節點會觸碰邊界，阻止群組繼續擴展
-- **原因**: `extent: 'parent'` 設定限制了節點不能移動到群組邊界外
-- **解決方案**: 
-  - 移除群組內節點的 `extent: 'parent'` 設定
-  - 允許節點自由移動到群組邊界外，觸發群組自動擴展
-  - 保持 `parentId` 設定以維持節點與群組的關係
-  - 提供更靈活的群組擴展功能
-
-### 2024-07-10 - 模組匯入錯誤
-- **問題**: `autoResizeGroupDuringDrag` 函數無法從 `autoResizeUtil.ts` 匯入
-- **原因**: 可能是模組快取問題或檔案編碼問題
-- **解決方案**: 重新建立 `autoResizeUtil.ts` 檔案，清除 Vite 快取
-
-### 2024-12-19 - 子流程內節點拖拽自動調整大小 ✅
-- **功能**: 當子流程內的節點被拖拽時，子流程會自動調整大小以包含所有子節點
-- **實現**: 
-  - 修改 `onNodesChange` 函數以檢測節點位置變化
-  - 追蹤節點的前後位置和父級關係
-  - 當檢測到子流程內節點位置變化時，自動調用 `autoResizeSubflow`
-  - 修復 TypeScript 類型錯誤 (`extent: 'parent' as const`)
-- **效果**: 提供更流暢和直觀的子流程使用體驗
-
-## 待處理的問題
-
-### 前端開發
-- [ ] 檢查群組節點的自動調整大小功能是否正常工作
-- [ ] 優化拖動性能，避免過於頻繁的重新計算
-- [ ] 添加群組節點的視覺反饋，顯示調整過程
-
-### 後端開發
-- [ ] 實現群組節點的持久化儲存
-- [ ] 添加群組節點的 API 端點
-
-## 技術債務
-
-### 程式碼優化
-- [ ] 重構 `autoResizeUtil.ts`，減少重複程式碼
-- [ ] 添加單元測試覆蓋群組調整功能
-- [ ] 優化 TypeScript 類型定義
-
-### 效能優化
-- [ ] 使用防抖（debounce）來優化拖動時的重新計算
-- [ ] 考慮使用 Web Workers 來處理複雜的計算 
+## Notes
+- Current grey color: #999999
+- Selected nodes maintain their namespace/type colors
+- Group nodes use their backgroundColor property when selected
+- Unselected nodes are consistently grey regardless of type
+- Nodes inside groups use dark color (#333333) for visual contrast
+- G key: Toggle group/ungroup functionality
+- Ctrl+G: Create group (existing behavior)
+- Ctrl+U: Ungroup selected groups
+- Ctrl+R: Auto-resize selected groups
+- Group selection: Groups are now properly selectable with simplified structure and direct interaction
+- Connection selection: Clicks pass through group background to allow selecting connections while groups remain selectable via border area
+- Connection labels: Only visible when edge is hovered or selected for cleaner UI 

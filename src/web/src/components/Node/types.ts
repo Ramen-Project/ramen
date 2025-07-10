@@ -21,16 +21,4 @@ export type GroupNodeData = {
     onRename?: (newLabel: string) => void;
     onResize?: (width: number, height: number) => void;
     onAutoResize?: () => void;
-}
-
-export type SubflowNodeData = {
-    label: string;
-    width?: number;
-    height?: number;
-    backgroundColor?: string;
-    childCount?: number;
-    onUngroup?: () => void;
-    onRename?: (newLabel: string) => void;
-    onResize?: (width: number, height: number) => void;
-    onAutoResize?: () => void;
 } 

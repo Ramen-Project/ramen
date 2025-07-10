@@ -1,10 +1,23 @@
-import { CSSProperties } from "react"
+import { CSSProperties, useState } from "react"
 import { Panel, ReactFlowProvider, useStore, useViewport } from '@xyflow/react';
 import Workspace from "./Graph";
 import EditorMenubar from "./Menubar";
+import Sidebar from "../Sidebar";
+import { NodeLibrary, Properties, History } from "../Sidebar/Panels";
 import styled from "styled-components";
+import { useHistoryStore } from "../../stores/HistoryStore";
 
-export default function GraphEditor() {
+interface GraphEditorProps {
+  // Removed onOpenThemePanel prop
+}
+
+export default function GraphEditor({}: GraphEditorProps) {
+    const [selectedNode, setSelectedNode] = useState<any>(null);
+    const [sidebarVisible, setSidebarVisible] = useState(true);
+    
+    // History store
+    const { undo, redo, canUndo, canRedo, goToHistory, clearHistory } = useHistoryStore();
+
     const style: CSSProperties = {
         position: 'absolute',
         width: '100%',
@@ -15,18 +28,48 @@ export default function GraphEditor() {
         flexDirection: 'column'
     }
 
+    const handleNodeUpdate = (nodeId: string, data: any) => {
+        // This would be implemented to actually update the node in the graph
+        console.log('Update node:', nodeId, data);
+        if (selectedNode && selectedNode.id === nodeId) {
+            setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, ...data } });
+        }
+    };
+
     return (
         <div style={style}>
-            <EditorMenubar />
-            <div style={{ flex: 1, position: 'relative' }}>
-                <ReactFlowProvider>
-                    <EditorStatus />
-                    <EditorCoordinate />
-                    <Workspace />
-                </ReactFlowProvider>
+            <EditorMenubar 
+                sidebarVisible={sidebarVisible}
+                onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
+            />
+            <div style={{ flex: 1, position: 'relative', display: 'flex' }}>
+                {sidebarVisible && (
+                    <Sidebar width={320}>
+                        <NodeLibrary />
+                        <Properties 
+                            selectedNode={selectedNode}
+                            onUpdateNode={handleNodeUpdate}
+                        />
+                        <History 
+                            onUndo={undo}
+                            onRedo={redo}
+                            canUndo={canUndo()}
+                            canRedo={canRedo()}
+                            onGoToHistory={goToHistory}
+                            onClearHistory={clearHistory}
+                        />
+                    </Sidebar>
+                )}
+                <div style={{ flex: 1, position: 'relative' }}>
+                    <ReactFlowProvider>
+                        <EditorStatus />
+                        <EditorCoordinate />
+                        <Workspace onNodeSelect={setSelectedNode} />
+                    </ReactFlowProvider>
+                </div>
             </div>
         </div>
-    )
+    );
 }
 
 function EditorCoordinate() {

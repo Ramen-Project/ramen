@@ -68,9 +68,9 @@ function NodeHeader({ nodeName, namespace }: { nodeName: string, namespace: stri
                 <Icon size={28} color="#fff" />
             </Box>
             <Heading size="5" trim="both" style={{
-                fontWeight: 900,
+                fontWeight: 700,
+                fontFamily: 'Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif',
                 color: '#fff',
-                textShadow: '0 2px 8px rgba(0,0,0,0.18), 0 1px 0 #fff',
                 letterSpacing: '0.01em',
                 margin: 0,
                 flex: 1,

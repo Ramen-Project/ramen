@@ -15,15 +15,18 @@ import { OpNodeProps } from './Node/OperationNode';
 
 //TODO: get color with sourceHandleId from typeStore
 
-const EdgeLabel = styled.div<{$posX: number, $posY: number, $color: string, $isSource?: boolean}>`
-  transform: translate(-50%, -100%) translate(${props => props.$posX}px,${props => props.$posY}px);
+const EdgeLabel = styled.div.attrs<{$posX: number, $posY: number, $color: string, $isSource?: boolean}>(({ $posX, $posY, $color }) => ({
+  style: {
+    transform: `translate(-50%, -100%) translate(${$posX}px,${$posY}px)`,
+    backgroundColor: $color,
+    borderColor: $color,
+  }
+}))`
   font-size: .8rem;
   color: white;
-  background-color: ${props => props.$color};
   position: absolute;
   border: solid 1px;
   border-radius: 3px;
-  border-color: ${props => props.$color};
 `;
 
 export function DefaultEdge({
@@ -73,7 +76,7 @@ export function DefaultEdge({
       targetY: targetY+3,
       targetPosition,
     });
-    const hovering = edge?.data
+    const hovering = edge?.data?.highlighted
     return (
       <>
         <BaseEdge
@@ -136,4 +139,4 @@ export function ConnectionLine({ fromX, fromY, toX, toY, fromPosition, toPositio
           style={{ stroke: type.color, strokeWidth: 5 }}
         />
     );
-};
+}
