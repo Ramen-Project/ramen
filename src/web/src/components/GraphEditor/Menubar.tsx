@@ -21,7 +21,8 @@ const MenubarRoot = styled(Menubar.Root)`
   display: flex;
   background-color: var(--gray-2);
   border-bottom: 1px solid var(--gray-6);
-  padding: 4px 8px;
+  height: 100%;
+  padding: 0 8px;
   gap: 4px;
   user-select: none;
 `;

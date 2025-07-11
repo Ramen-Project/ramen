@@ -7,6 +7,7 @@ export interface GroupNode extends Node {
     height?: number;
     backgroundColor?: string;
     childCount?: number;
+    hasBeenResized?: boolean;
     onUngroup?: () => void;
     onRename?: (newLabel: string) => void;
     onResize?: (width: number, height: number) => void;
@@ -116,7 +117,8 @@ export const autoResizeGroup = (
         data: {
           ...node.data,
           width: newWidth,
-          height: newHeight
+          height: newHeight,
+          hasBeenResized: true
         },
         position: newGroupPos
       };
@@ -197,7 +199,7 @@ export const createGroup = (
 
   const groupId = `group-${Date.now()}`;
 
-  // Create group node
+  // Create group node without initial dimensions - will be set after first resize
   const groupNode: GroupNode = {
     id: groupId,
     type: 'group',
@@ -206,14 +208,15 @@ export const createGroup = (
     selectable: true,
     data: {
       label: `Group ${selectedNodes.length}`,
-      width: groupWidth,
-      height: groupHeight,
+      width: undefined,
+      height: undefined,
       backgroundColor: 'rgba(0, 150, 255, 0.1)',
       childCount: selectedNodes.length,
+      hasBeenResized: false,
       onUngroup: () => ungroupGroup(nodes, edges, groupId, setNodes, setEdges),
       onAutoResize: () => autoResizeGroup(nodes, groupId, setNodes)
     },
-    style: { width: groupWidth, height: groupHeight }
+    style: { width: 0, height: 0 }
   };
 
   // Update nodes to join the new group

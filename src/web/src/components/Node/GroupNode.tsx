@@ -17,7 +17,8 @@ const GroupNodeContainer = styled.div.attrs<{
   $borderColor: string;
   $isDragOver: boolean;
   $selected: boolean;
-}>(({ $width, $height, $backgroundColor, $borderColor, $isDragOver, $selected }) => ({
+  $isVisible: boolean;
+}>(({ $width, $height, $backgroundColor, $borderColor, $isDragOver, $selected, $isVisible }) => ({
   style: {
     width: $width || 300,
     height: $height || 200,
@@ -26,6 +27,8 @@ const GroupNodeContainer = styled.div.attrs<{
     boxShadow: $isDragOver ? `0 0 20px ${chroma($borderColor).alpha(0.6).hex()}` : 'none',
     transform: $isDragOver ? 'scale(1.02)' : 'scale(1)',
     cursor: 'pointer',
+    opacity: $isVisible ? 1 : 0,
+    transition: 'none',
   }
 }))`
   border-radius: 8px;
@@ -33,7 +36,7 @@ const GroupNodeContainer = styled.div.attrs<{
   display: flex;
   flex-direction: column;
   padding: 8px;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  transition: none;
   pointer-events: none;
   z-index: 1;
   
@@ -131,7 +134,13 @@ const GroupNode: React.FC<GroupNodeProps> = ({ data, selected, id, dragOverGroup
   const currentColor = selected ? nodeColor : unfocusedColor;
   const backgroundColor = currentColor.alpha(0.1).hex();
   const borderColor = currentColor.hex();
-  const watermarkColor = nodeColor.alpha(0.15).css();
+  const watermarkColor = nodeColor.alpha(0.6).css();
+  
+  // Check if group is properly sized (has width and height) AND has been resized at least once
+  const isVisible = !!(groupData.width && groupData.height && groupData.hasBeenResized);
+  
+  // Show only after first resize
+  const shouldShow = isVisible;
 
   return (
     <GroupNodeContainer
@@ -142,6 +151,7 @@ const GroupNode: React.FC<GroupNodeProps> = ({ data, selected, id, dragOverGroup
       $borderColor={borderColor}
       $isDragOver={isDragOver}
       $selected={!!selected}
+      $isVisible={shouldShow}
     >
       <ClickableBorder $selected={!!selected} />
       <WatermarkTitle $color={watermarkColor}>

@@ -1,64 +1,70 @@
 # TODO
 
-## Current Task
-- [x] Implement drag-to-join functionality: drag nodes into groups to join them
-- [x] Implement G key shortcut for group/ungroup operations
-- [x] Support nested groups (groups within groups)
-- [x] Handle all combinations of selected items with intuitive behavior
-- [x] Optimize styled-components to prevent excessive class generation
-- [x] Fix styled-components transient props warnings
-- [x] Fix group selection issue by making GroupNodeContainer interactive
-- [x] Simplify GroupNode structure to ensure proper ReactFlow selection
-- [x] Allow clicks to pass through group background to connections while keeping group selectable
-- [x] Fix connection label visibility to only show when hovered or selected
+## Group Node Visibility Enhancement
 
-### Implementation Details:
-- **G Key Behavior**: Toggle group/ungroup - if any groups are selected, ungroup them first, then group remaining regular nodes if 2+ remain
-- **Drag-to-Join**: Visual feedback with green highlight and "Drop to join group" message when dragging nodes over groups
-- **Nested Groups**: Support for groups within groups with proper positioning and hierarchy
-- **Visual Feedback**: Groups highlight with green glow and scale effect when nodes are dragged over them
-- **Auto-resize**: Groups automatically resize when nodes join or leave
-- **Flexible Group Resizing**: Nodes can be dragged outside group boundaries to resize groups dynamically
-- **Edge Selection**: Connections inside groups can be selected by setting group z-index to -1 to render behind other elements
-- **Styled-components Optimization**: Used attrs method to prevent excessive class generation for dynamic styles
-- **Transient Props**: Used $ prefix for styled-components props to prevent DOM warnings
-- **Group Selection Fix**: Changed GroupNodeContainer to use pointer-events: auto and z-index: 1 to make groups properly selectable
-- **Simplified Structure**: Removed nested GroupBorder component and made root container directly interactive with cursor pointer and hover effects
-- **Transparent Background**: Made group background transparent to pointer events while adding clickable border area for selection
-- **Connection Label Visibility**: Fixed edge label display to only show when edge is hovered or selected by properly checking highlighted state
+### Completed ✅
+- [x] Modified GroupNode component to check for `hasBeenResized` flag before showing
+- [x] Added `hasBeenResized` flag to GroupNodeData type
+- [x] Updated GroupNode interface in groupUtils.ts to include hasBeenResized
+- [x] Modified createGroup function to create groups without initial dimensions
+- [x] Updated autoResizeGroup function to set hasBeenResized to true on first resize
+- [x] Updated initial group node in Graph.tsx to have hasBeenResized flag
+- [x] Updated useHistoryTracker to set hasBeenResized flag when processing groups
 
-## Completed
-- [x] Modified minimap to render nodes in grey color by default
-- [x] Minimap nodes only show colors when selected
-- [x] Updated both nodeColor and nodeStrokeColor functions for consistency
-- [x] Nodes inside group nodes now render with dark inverted colors (#333333) when unselected
-- [x] Selected nodes inside groups show their namespace colors
-- [x] Fixed group selection by making GroupNodeContainer interactive with proper pointer events and z-index
-- [x] Simplified GroupNode structure by removing nested interactive elements that interfered with ReactFlow selection
-- [x] Made group background transparent to pointer events to allow connection selection while keeping group selectable via border area
-- [x] Fixed connection label visibility to only show when edge is hovered or selected
+### Behavior Changes
+- Group nodes are now created without initial dimensions (width: undefined, height: undefined)
+- Group nodes only become visible after the first autoResizeGroup call
+- The `hasBeenResized` flag tracks whether a group has been resized at least once
+- Groups start with `hasBeenResized: false` and become `true` after first resize
 
-## Potential Improvements
-- [ ] Consider making the grey color configurable via constants
-- [ ] Add visual feedback for hover state in minimap
-- [ ] Consider adding different stroke colors for different node types when selected
-- [ ] Optimize minimap performance for large graphs
-- [ ] Add minimap zoom controls or settings
-- [ ] Consider using true color inversion instead of fixed dark color
-- [ ] Add keyboard shortcuts help/tooltip
-- [ ] Improve drag-to-join precision (currently uses node center point)
-- [ ] Add undo/redo for drag-to-join operations
+### Technical Details
+- Group visibility is controlled by: `isVisible = !!(groupData.width && groupData.height && groupData.hasBeenResized)`
+- New groups are created with minimal style dimensions (width: 0, height: 0) to prevent layout issues
+- The autoResizeGroup function now sets `hasBeenResized: true` when updating group dimensions
 
-## Notes
-- Current grey color: #999999
-- Selected nodes maintain their namespace/type colors
-- Group nodes use their backgroundColor property when selected
-- Unselected nodes are consistently grey regardless of type
-- Nodes inside groups use dark color (#333333) for visual contrast
-- G key: Toggle group/ungroup functionality
-- Ctrl+G: Create group (existing behavior)
-- Ctrl+U: Ungroup selected groups
-- Ctrl+R: Auto-resize selected groups
-- Group selection: Groups are now properly selectable with simplified structure and direct interaction
-- Connection selection: Clicks pass through group background to allow selecting connections while groups remain selectable via border area
-- Connection labels: Only visible when edge is hovered or selected for cleaner UI 
+## Node Library Enhancement
+
+### Completed ✅
+- [x] Expanded node library with comprehensive example nodes
+- [x] Added 8 new categories: Machine Learning, Data Visualization, Text Processing, Web & API, Image Processing, Time Series, Database, Automation, Data Quality
+- [x] Enhanced existing categories with more nodes
+- [x] Added appropriate icons for each category
+- [x] Organized nodes by functionality and use case
+
+### New Categories Added
+1. **Machine Learning** (16 nodes) - Train models, predictions, clustering, evaluation
+2. **Data Visualization** (15 nodes) - Various chart types and plotting utilities
+3. **Text Processing** (14 nodes) - NLP, text analysis, preprocessing
+4. **Web & API** (13 nodes) - HTTP requests, web scraping, API integration
+5. **Image Processing** (12 nodes) - Image manipulation, computer vision
+6. **Time Series** (11 nodes) - Time series analysis, forecasting
+7. **Database** (11 nodes) - SQL, NoSQL, database operations
+8. **Automation** (12 nodes) - Task scheduling, system automation
+9. **Data Quality** (12 nodes) - Data validation, profiling, quality checks
+
+### Enhanced Categories
+- **File I/O**: Added 10 new nodes (JSON, Parquet, Image, PDF, XML, YAML support)
+- **Data Operations**: Added 12 new nodes (pivot, merge, split, reshape, etc.)
+- **Math & Statistics**: Added 12 new nodes (median, std, tests, scaling, etc.)
+- **Utilities**: Added 10 new nodes (encryption, compression, generators, etc.)
+
+### Total Node Count
+- **Before**: 16 nodes across 4 categories
+- **After**: 200+ nodes across 12 categories
+
+## Architecture Refactoring
+
+### Completed ✅
+- [x] Moved EditorMenubar out of GraphEditor component
+- [x] EditorMenubar is now part of the App component layout
+- [x] GraphEditor now accepts sidebarVisible as a prop
+- [x] Updated component hierarchy for better separation of concerns
+
+### Architecture Changes
+- **Before**: EditorMenubar was part of GraphEditor component
+- **After**: EditorMenubar is at the App level, above GraphEditor
+- **Benefits**: 
+  - Better separation of concerns
+  - Menubar is application-level UI, not graph-specific
+  - GraphEditor focuses purely on graph editing functionality
+  - Cleaner component hierarchy 

@@ -22,7 +22,7 @@
 
 /* Group expand/collapse animation */
 .group-node .group-content {
-  transition: opacity 0.3s ease-in-out;
+  transition: none;
 }
 
 .group-node.collapsed .group-content {

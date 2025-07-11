@@ -1,72 +1,41 @@
 import { CSSProperties, useState } from "react"
 import { Panel, ReactFlowProvider, useStore, useViewport } from '@xyflow/react';
 import Workspace from "./Graph";
-import EditorMenubar from "./Menubar";
-import Sidebar from "../Sidebar";
-import { NodeLibrary, Properties, History } from "../Sidebar/Panels";
 import styled from "styled-components";
 import { useHistoryStore } from "../../stores/HistoryStore";
 
 interface GraphEditorProps {
-  // Removed onOpenThemePanel prop
+  sidebarVisible?: boolean;
 }
 
-export default function GraphEditor({}: GraphEditorProps) {
-    const [selectedNode, setSelectedNode] = useState<any>(null);
-    const [sidebarVisible, setSidebarVisible] = useState(true);
+export default function GraphEditor({ sidebarVisible = true }: GraphEditorProps) {
+    const [undoHandler, setUndoHandler] = useState<(() => void) | null>(null);
+    const [redoHandler, setRedoHandler] = useState<(() => void) | null>(null);
     
-    // History store
-    const { undo, redo, canUndo, canRedo, goToHistory, clearHistory } = useHistoryStore();
-
     const style: CSSProperties = {
-        position: 'absolute',
+        position: 'relative',
         width: '100%',
         height: '100%',
-        bottom: 0,
         backgroundColor: 'var(--gray-4)',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'row'
     }
-
-    const handleNodeUpdate = (nodeId: string, data: any) => {
-        // This would be implemented to actually update the node in the graph
-        console.log('Update node:', nodeId, data);
-        if (selectedNode && selectedNode.id === nodeId) {
-            setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, ...data } });
-        }
-    };
 
     return (
         <div style={style}>
-            <EditorMenubar 
-                sidebarVisible={sidebarVisible}
-                onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
-            />
-            <div style={{ flex: 1, position: 'relative', display: 'flex' }}>
-                {sidebarVisible && (
-                    <Sidebar width={320}>
-                        <NodeLibrary />
-                        <Properties 
-                            selectedNode={selectedNode}
-                            onUpdateNode={handleNodeUpdate}
-                        />
-                        <History 
-                            onUndo={undo}
-                            onRedo={redo}
-                            canUndo={canUndo()}
-                            canRedo={canRedo()}
-                            onGoToHistory={goToHistory}
-                            onClearHistory={clearHistory}
-                        />
-                    </Sidebar>
-                )}
-                <div style={{ flex: 1, position: 'relative' }}>
-                    <ReactFlowProvider>
-                        <EditorStatus />
-                        <EditorCoordinate />
-                        <Workspace onNodeSelect={setSelectedNode} />
-                    </ReactFlowProvider>
-                </div>
+            <div style={{ flex: 1, minHeight: 0, width: '100%', height: '100%', position: 'relative' }}>
+                <ReactFlowProvider>
+                    <EditorStatus />
+                    <EditorCoordinate />
+                    <Workspace 
+                        onNodeSelect={() => {}}
+                        onUndoRedoHandlers={(undo, redo) => {
+                            setUndoHandler(() => undo);
+                            setRedoHandler(() => redo);
+                        }}
+                        // TODO: Pass nodes/edges as props in the future
+                    />
+                </ReactFlowProvider>
             </div>
         </div>
     );

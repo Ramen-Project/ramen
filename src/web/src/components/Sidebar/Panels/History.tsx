@@ -133,6 +133,8 @@ export default function History({
   const handleUndo = () => {
     if (propOnUndo) {
       propOnUndo();
+    } else if ((window as any).graphUndo) {
+      (window as any).graphUndo();
     } else {
       storeUndo();
     }
@@ -141,6 +143,8 @@ export default function History({
   const handleRedo = () => {
     if (propOnRedo) {
       propOnRedo();
+    } else if ((window as any).graphRedo) {
+      (window as any).graphRedo();
     } else {
       storeRedo();
     }
@@ -149,6 +153,8 @@ export default function History({
   const handleGoToHistory = (index: number) => {
     if (propOnGoToHistory) {
       propOnGoToHistory(index);
+    } else if ((window as any).graphGoToHistory) {
+      (window as any).graphGoToHistory(index);
     } else {
       storeGoToHistory(index);
     }
@@ -190,9 +196,6 @@ export default function History({
 
   return (
     <PanelContainer>
-      <PanelHeader>
-        <Text size="4" weight="bold">History</Text>
-      </PanelHeader>
 
       <HistoryControls>
         <Button 

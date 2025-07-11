@@ -17,6 +17,7 @@ import {
   Node as FlowNode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
+import './Graph.css';
 import chroma from 'chroma-js';
 
 import { ConnectionLine, DefaultEdge } from '../Edges';
@@ -28,7 +29,7 @@ import {
   createGroup
 } from './groupUtils';
 import { useHistoryTracker } from '../../hooks/useHistoryTracker';
-import { useHistoryStore } from '../../stores/HistoryStore';
+import { useHistoryStore, NodeDelta, EdgeDelta } from '../../stores/HistoryStore';
 
 import * as Constants from '../../constants';
 
@@ -39,6 +40,13 @@ const NAMESPACE_COLORS: Record<string, string> = {
   Math: '#a259e6',
   default: '#bbb'
 };
+
+// Animation configuration
+const ANIMATION_CONFIG = {
+  duration: 400, // milliseconds - longer animation
+  easing: 'ease-in-out'
+};
+
 
 
 
@@ -102,6 +110,7 @@ const initialNodes: Node<any>[] = [
       backgroundColor: 'rgb(0, 145, 255)',
       childCount: 2,
       isExpanded: true,
+      hasBeenResized: true,
       onUngroup: () => console.log('Ungroup group-1'),
       onAutoResize: () => console.log('Auto resize group-1')
     },
@@ -212,9 +221,10 @@ function connectionCheck(connection: Connection | Edge): boolean {
 
 interface GraphProps {
   onNodeSelect?: (node: any) => void;
+  onUndoRedoHandlers?: (undo: () => void, redo: () => void) => void;
 }
 
-export default function Graph({ onNodeSelect }: GraphProps) {
+export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
@@ -223,7 +233,104 @@ export default function Graph({ onNodeSelect }: GraphProps) {
   const { getNodes, getEdges } = useReactFlow();
   
   // History management
-  const { undo, redo, canUndo, canRedo, addEntry } = useHistoryStore();
+  const { undo, redo, canUndo, canRedo, addEntry, goToHistory } = useHistoryStore();
+  
+  // Helper function to convert current state to deltas for manual history entries
+  const createStateDeltas = (nodes: Node[], edges: Edge[]) => {
+    const nodeDeltas: NodeDelta[] = nodes.map(node => ({
+      type: 'add',
+      nodeId: node.id,
+      node: node
+    }));
+    
+    const edgeDeltas: EdgeDelta[] = edges.map(edge => ({
+      type: 'add',
+      edgeId: edge.id,
+      edge: edge
+    }));
+    
+    return { nodeDeltas, edgeDeltas };
+  };
+
+  // Helper function to animate node positions
+  const animateNodePositions = useCallback((
+    currentNodes: Node[],
+    targetNodes: Node[],
+    setNodes: (nodes: Node[]) => void,
+    onComplete?: () => void
+  ) => {
+    const startTime = Date.now();
+    const nodeMap = new Map(currentNodes.map(node => [node.id, node]));
+    const targetMap = new Map(targetNodes.map(node => [node.id, node]));
+    
+    // Find nodes that need animation (position changes)
+    const nodesToAnimate = currentNodes.filter(node => {
+      const targetNode = targetMap.get(node.id);
+      return targetNode && (
+        node.position.x !== targetNode.position.x ||
+        node.position.y !== targetNode.position.y
+      );
+    });
+
+    if (nodesToAnimate.length === 0) {
+      // No animation needed, just update immediately
+      setNodes(targetNodes);
+      onComplete?.();
+      return;
+    }
+
+    // Set animation flag to prevent history tracking during animation
+    // isAnimatingRef.current = true; // REMOVED
+
+    // Create animation frame function
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / ANIMATION_CONFIG.duration, 1);
+      
+      // Easing function (ease-in-out)
+      const easedProgress = progress < 0.5 
+        ? 2 * progress * progress 
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+      // Update node positions
+      const animatedNodes = currentNodes.map(node => {
+        const targetNode = targetMap.get(node.id);
+        if (!targetNode) return node;
+
+        const startPos = node.position;
+        const endPos = targetNode.position;
+        
+        // Only animate if position changed
+        if (startPos.x === endPos.x && startPos.y === endPos.y) {
+          return targetNode; // Use target node directly for non-position changes
+        }
+
+        return {
+          ...targetNode,
+          position: {
+            x: startPos.x + (endPos.x - startPos.x) * easedProgress,
+            y: startPos.y + (endPos.y - startPos.y) * easedProgress
+          }
+        };
+      });
+
+      setNodes(animatedNodes);
+
+      // Continue animation or complete
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Ensure final positions are exact
+        setNodes(targetNodes);
+        // Clear animation flag
+        // isAnimatingRef.current = false; // REMOVED
+        onComplete?.();
+      }
+    };
+
+    // Start animation
+    requestAnimationFrame(animate);
+  }, []);
   
   // Track changes for history
   const { handleHistoryChange } = useHistoryTracker({
@@ -235,20 +342,36 @@ export default function Graph({ onNodeSelect }: GraphProps) {
     }
   });
 
-  // Handle undo/redo
+  // Handle undo/redo (no animation)
   const handleUndo = useCallback(() => {
     const result = undo();
     if (result) {
       handleHistoryChange(result.nodes, result.edges);
+      // Auto-resize groups after undo
+      setTimeout(() => {
+        const currentNodes = getNodes();
+        const groupNodes = currentNodes.filter(node => node.type === 'group');
+        groupNodes.forEach(groupNode => {
+          autoResizeGroup(currentNodes, groupNode.id, setNodes);
+        });
+      }, 0);
     }
-  }, [undo, handleHistoryChange]);
+  }, [undo, handleHistoryChange, getNodes, setNodes]);
 
   const handleRedo = useCallback(() => {
     const result = redo();
     if (result) {
       handleHistoryChange(result.nodes, result.edges);
+      // Auto-resize groups after redo
+      setTimeout(() => {
+        const currentNodes = getNodes();
+        const groupNodes = currentNodes.filter(node => node.type === 'group');
+        groupNodes.forEach(groupNode => {
+          autoResizeGroup(currentNodes, groupNode.id, setNodes);
+        });
+      }, 0);
     }
-  }, [redo, handleHistoryChange]);
+  }, [redo, handleHistoryChange, getNodes, setNodes]);
 
   // Expose undo/redo to parent component
   useEffect(() => {
@@ -260,7 +383,35 @@ export default function Graph({ onNodeSelect }: GraphProps) {
     window.canUndo = canUndo;
     // @ts-ignore
     window.canRedo = canRedo;
-  }, [handleUndo, handleRedo, canUndo, canRedo]);
+    
+    // Pass handlers to parent component
+    if (onUndoRedoHandlers) {
+      onUndoRedoHandlers(handleUndo, handleRedo);
+    }
+  }, [handleUndo, handleRedo, canUndo, canRedo, onUndoRedoHandlers]);
+
+  // Expose handlers globally for direct access
+  useEffect(() => {
+    // @ts-ignore
+    window.graphUndo = handleUndo;
+    // @ts-ignore
+    window.graphRedo = handleRedo;
+    // @ts-ignore
+    window.graphGoToHistory = (index: number) => {
+      const result = goToHistory(index);
+      if (result) {
+        handleHistoryChange(result.nodes, result.edges);
+        // Auto-resize groups after going to history
+        setTimeout(() => {
+          const currentNodes = getNodes();
+          const groupNodes = currentNodes.filter(node => node.type === 'group');
+          groupNodes.forEach(groupNode => {
+            autoResizeGroup(currentNodes, groupNode.id, setNodes);
+          });
+        }, 0);
+      }
+    };
+  }, [handleUndo, handleRedo, goToHistory, handleHistoryChange]);
 
   const onConnect = useCallback(
     (connection: any) => setEdges((eds) => addEdge(connection, eds)),
@@ -515,12 +666,13 @@ export default function Graph({ onNodeSelect }: GraphProps) {
         }, 0);
         
         // Add history entry for join
+        const { nodeDeltas, edgeDeltas } = createStateDeltas(currentNodes, edges);
         addEntry({
           type: 'group',
           title: `Joined node '${node.data?.name || node.id}' to group`,
           description: `Node joined '${groupUnderNode.data?.label || groupUnderNode.id}' group`,
-          nodes: [...currentNodes],
-          edges: [...edges]
+          nodeDeltas,
+          edgeDeltas
         });
         
         return; // Skip the normal drag history entry
@@ -531,12 +683,13 @@ export default function Graph({ onNodeSelect }: GraphProps) {
     if (node.type === 'group') {
       // Get all child nodes of this group
       const childNodes = nodes.filter(n => n.parentId === node.id);
+      const { nodeDeltas, edgeDeltas } = createStateDeltas(nodes, edges);
       addEntry({
         type: 'move',
         title: `Moved group '${node.data?.label || node.id}'`,
         description: `Group moved with ${childNodes.length} child node${childNodes.length !== 1 ? 's' : ''}`,
-        nodes: [...nodes],
-        edges: [...edges]
+        nodeDeltas,
+        edgeDeltas
       });
     } else {
       // Check if this node is part of a multi-selection move
@@ -552,12 +705,13 @@ export default function Graph({ onNodeSelect }: GraphProps) {
             !n.parentId // Don't include nodes inside groups
           );
           if (movedNodes.length > 1) {
+            const { nodeDeltas, edgeDeltas } = createStateDeltas(nodes, edges);
             addEntry({
               type: 'move',
               title: `Moved ${movedNodes.length} nodes`,
               description: `Moved: ${movedNodes.map(n => n.data?.name || n.id).join(', ')}`,
-              nodes: [...nodes],
-              edges: [...edges]
+              nodeDeltas,
+              edgeDeltas
             });
           }
           multiMoveTimeoutRef.current = null;
@@ -566,20 +720,22 @@ export default function Graph({ onNodeSelect }: GraphProps) {
         // Single node move
         if (node.parentId) {
           const parentGroup = nodes.find(n => n.id === node.parentId);
+          const { nodeDeltas, edgeDeltas } = createStateDeltas(nodes, edges);
           addEntry({
             type: 'move',
             title: `Moved node '${node.data?.name || node.id}' within group`,
             description: `Node moved within '${parentGroup?.data?.label || parentGroup?.id}' group`,
-            nodes: [...nodes],
-            edges: [...edges]
+            nodeDeltas,
+            edgeDeltas
           });
         } else {
+          const { nodeDeltas, edgeDeltas } = createStateDeltas(nodes, edges);
           addEntry({
             type: 'move',
             title: `Moved node '${node.data?.name || node.id}'`,
             description: `Node moved to (${node.position.x}, ${node.position.y})`,
-            nodes: [...nodes],
-            edges: [...edges]
+            nodeDeltas,
+            edgeDeltas
           });
         }
       }
@@ -596,12 +752,13 @@ export default function Graph({ onNodeSelect }: GraphProps) {
       createGroup(currentNodes, currentEdges, selectedNodeIds, setNodes, setEdges);
       
       // Add history entry for group creation
+      const { nodeDeltas, edgeDeltas } = createStateDeltas(currentNodes, currentEdges);
       addEntry({
         type: 'group',
         title: `Created group with ${selectedNodes.length} nodes`,
         description: `Grouped: ${selectedNodes.map(n => n.data?.name || n.id).join(', ')}`,
-        nodes: [...currentNodes],
-        edges: [...currentEdges]
+        nodeDeltas,
+        edgeDeltas
       });
     }
   }, [selectedNodeIds, getNodes, getEdges, setNodes, setEdges, addEntry]);
@@ -619,12 +776,13 @@ export default function Graph({ onNodeSelect }: GraphProps) {
       ungroupGroup(currentNodes, currentEdges, groupNode.id, setNodes, setEdges);
       
       // Add history entry for group ungrouping
+      const { nodeDeltas, edgeDeltas } = createStateDeltas(currentNodes, currentEdges);
       addEntry({
         type: 'ungroup',
         title: `Ungrouped '${groupNode.data?.label || groupNode.id}'`,
         description: `Released ${childNodes.length} node${childNodes.length !== 1 ? 's' : ''} from group`,
-        nodes: [...currentNodes],
-        edges: [...currentEdges]
+        nodeDeltas,
+        edgeDeltas
       });
     });
   }, [selectedNodeIds, getNodes, getEdges, setNodes, setEdges, addEntry]);
@@ -702,12 +860,13 @@ export default function Graph({ onNodeSelect }: GraphProps) {
         ungroupGroup(currentNodes, currentEdges, groupNode.id, setNodes, setEdges);
         
         // Add history entry for group ungrouping
+        const { nodeDeltas, edgeDeltas } = createStateDeltas(currentNodes, currentEdges);
         addEntry({
           type: 'ungroup',
           title: `Ungrouped '${groupNode.data?.label || groupNode.id}'`,
           description: `Released ${childNodes.length} node${childNodes.length !== 1 ? 's' : ''} from group`,
-          nodes: [...currentNodes],
-          edges: [...currentEdges]
+          nodeDeltas,
+          edgeDeltas
         });
       });
       
@@ -725,12 +884,13 @@ export default function Graph({ onNodeSelect }: GraphProps) {
           createGroup(updatedNodes, getEdges(), remainingIds, setNodes, setEdges);
           
           // Add history entry for new group creation
+          const { nodeDeltas, edgeDeltas } = createStateDeltas(updatedNodes, getEdges());
           addEntry({
             type: 'group',
             title: `Created group with ${remainingRegularNodes.length} nodes`,
             description: `Grouped: ${remainingRegularNodes.map(n => n.data?.name || n.id).join(', ')}`,
-            nodes: [...updatedNodes],
-            edges: [...getEdges()]
+            nodeDeltas,
+            edgeDeltas
           });
         }
       }, 0);
@@ -739,12 +899,13 @@ export default function Graph({ onNodeSelect }: GraphProps) {
       createGroup(currentNodes, currentEdges, selectedNodeIds, setNodes, setEdges);
       
       // Add history entry for group creation
+      const { nodeDeltas, edgeDeltas } = createStateDeltas(currentNodes, currentEdges);
       addEntry({
         type: 'group',
         title: `Created group with ${selectedRegularNodes.length} nodes`,
         description: `Grouped: ${selectedRegularNodes.map(n => n.data?.name || n.id).join(', ')}`,
-        nodes: [...currentNodes],
-        edges: [...currentEdges]
+        nodeDeltas,
+        edgeDeltas
       });
     }
     // If only 1 regular node selected, do nothing
@@ -766,24 +927,26 @@ export default function Graph({ onNodeSelect }: GraphProps) {
               ungroupGroup(currentNodes, currentEdges, node.id, setNodes, setEdges);
               
               // Add history entry for group ungrouping
+              const { nodeDeltas, edgeDeltas } = createStateDeltas(currentNodes, currentEdges);
               addEntry({
                 type: 'ungroup',
                 title: `Ungrouped '${node.data?.label || node.id}'`,
                 description: `Released ${childNodes.length} node${childNodes.length !== 1 ? 's' : ''} from group`,
-                nodes: [...currentNodes],
-                edges: [...currentEdges]
+                nodeDeltas,
+                edgeDeltas
               });
             },
             onAutoResize: () => {
               autoResizeGroup(currentNodes, node.id, setNodes);
               
               // Add history entry for group resize
+              const { nodeDeltas, edgeDeltas } = createStateDeltas(currentNodes, currentEdges);
               addEntry({
                 type: 'edit',
                 title: `Resized group '${node.data?.label || node.id}'`,
                 description: 'Group automatically resized to fit content',
-                nodes: [...currentNodes],
-                edges: [...currentEdges]
+                nodeDeltas,
+                edgeDeltas
               });
             }
           }
@@ -800,7 +963,7 @@ export default function Graph({ onNodeSelect }: GraphProps) {
     updateGroupCallbacks();
   }, [nodes.length, edges.length, updateGroupCallbacks]);
 
-  // Initial resize of all groups when component mounts
+  // Auto-resize all groups whenever nodes change
   useEffect(() => {
     const currentNodes = getNodes();
     const groupNodes = currentNodes.filter(node => node.type === 'group');
@@ -810,7 +973,7 @@ export default function Graph({ onNodeSelect }: GraphProps) {
         autoResizeGroup(currentNodes, groupNode.id, setNodes);
       });
     }
-  }, []);
+  }, [nodes, getNodes, setNodes]);
 
   const dynamicBoundary = useMemo(() => calculateGraphBoundary(nodes), [nodes]);
 

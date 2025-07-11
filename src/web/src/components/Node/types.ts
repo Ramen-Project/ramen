@@ -17,6 +17,7 @@ export type GroupNodeData = {
     height?: number;
     backgroundColor?: string;
     childCount?: number;
+    hasBeenResized?: boolean;
     onUngroup?: () => void;
     onRename?: (newLabel: string) => void;
     onResize?: (width: number, height: number) => void;
