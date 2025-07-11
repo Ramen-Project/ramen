@@ -16,9 +16,8 @@ const GroupNodeContainer = styled.div.attrs<{
   $backgroundColor: string;
   $borderColor: string;
   $isDragOver: boolean;
-  $selected: boolean;
   $isVisible: boolean;
-}>(({ $width, $height, $backgroundColor, $borderColor, $isDragOver, $selected, $isVisible }) => ({
+}>(({ $width, $height, $backgroundColor, $borderColor, $isDragOver, $isVisible }) => ({
   style: {
     width: $width || 300,
     height: $height || 200,
@@ -150,7 +149,6 @@ const GroupNode: React.FC<GroupNodeProps> = ({ data, selected, id, dragOverGroup
       $backgroundColor={backgroundColor}
       $borderColor={borderColor}
       $isDragOver={isDragOver}
-      $selected={!!selected}
       $isVisible={shouldShow}
     >
       <ClickableBorder $selected={!!selected} />

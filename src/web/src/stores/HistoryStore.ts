@@ -109,7 +109,7 @@ const computeStateAt = (
     return { nodes: [], edges: [] };
   }
 
-  let currentState = { nodes: [], edges: [] };
+  let currentState: { nodes: Node[]; edges: Edge[] } = { nodes: [], edges: [] };
   
   // Apply all deltas up to and including the target index
   for (let i = 0; i <= targetIndex; i++) {

@@ -1,16 +1,16 @@
-import { CSSProperties, useState } from "react"
+import { CSSProperties } from "react"
 import { Panel, ReactFlowProvider, useStore, useViewport } from '@xyflow/react';
 import Workspace from "./Graph";
 import styled from "styled-components";
-import { useHistoryStore } from "../../stores/HistoryStore";
+// import { useHistoryStore } from "../../stores/HistoryStore";
 
 interface GraphEditorProps {
   sidebarVisible?: boolean;
 }
 
-export default function GraphEditor({ sidebarVisible = true }: GraphEditorProps) {
-    const [undoHandler, setUndoHandler] = useState<(() => void) | null>(null);
-    const [redoHandler, setRedoHandler] = useState<(() => void) | null>(null);
+export default function GraphEditor({ sidebarVisible: _sidebarVisible = true }: GraphEditorProps) {
+    // const [undoHandler, setUndoHandler] = useState<(() => void) | null>(null);
+    // const [redoHandler, setRedoHandler] = useState<(() => void) | null>(null);
     
     const style: CSSProperties = {
         position: 'relative',
@@ -29,9 +29,9 @@ export default function GraphEditor({ sidebarVisible = true }: GraphEditorProps)
                     <EditorCoordinate />
                     <Workspace 
                         onNodeSelect={() => {}}
-                        onUndoRedoHandlers={(undo, redo) => {
-                            setUndoHandler(() => undo);
-                            setRedoHandler(() => redo);
+                        onUndoRedoHandlers={(_undo, _redo) => {
+                            // setUndoHandler(() => undo);
+                            // setRedoHandler(() => redo);
                         }}
                         // TODO: Pass nodes/edges as props in the future
                     />

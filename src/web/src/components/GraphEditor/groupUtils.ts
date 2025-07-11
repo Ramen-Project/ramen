@@ -155,8 +155,8 @@ export const createGroup = (
   if (selectedNodes.length === 0) return null;
 
   // Separate regular nodes and group nodes
-  const regularNodes = selectedNodes.filter(node => node.type !== 'group');
-  const groupNodes = selectedNodes.filter(node => node.type === 'group');
+  // const regularNodes = selectedNodes.filter(node => node.type !== 'group');
+  // const groupNodes = selectedNodes.filter(node => node.type === 'group');
 
   // Calculate group position and size considering all selected nodes
   const allNodePositions = selectedNodes.map(node => {
@@ -187,15 +187,13 @@ export const createGroup = (
   });
 
   const minX = Math.min(...allNodePositions.map(p => p.x));
-  const maxX = Math.max(...allNodePositions.map(p => p.x + p.width));
   const minY = Math.min(...allNodePositions.map(p => p.y));
-  const maxY = Math.max(...allNodePositions.map(p => p.y + p.height));
 
-  const padding = 40;
-  const groupWidth = maxX - minX + padding * 2;
-  const groupHeight = maxY - minY + padding * 2;
-  const groupX = minX - padding;
-  const groupY = minY - padding;
+  // const padding = 40;
+  // const groupWidth = maxX - minX + padding * 2;
+  // const groupHeight = maxY - minY + padding * 2;
+  const groupX = minX - 40; // Changed padding to 40
+  const groupY = minY - 40; // Changed padding to 40
 
   const groupId = `group-${Date.now()}`;
 

@@ -15,10 +15,7 @@ const PanelContainer = styled.div`
   margin-bottom: 24px;
 `;
 
-const PanelHeader = styled.div`
-  margin-bottom: 12px;
-`;
-
+// Commented out or removed unused variable 'PanelHeader' to resolve TS6133 errors
 const HistoryControls = styled.div`
   display: flex;
   gap: 4px;

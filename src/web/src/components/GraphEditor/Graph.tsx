@@ -18,7 +18,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
 import './Graph.css';
-import chroma from 'chroma-js';
+// import chroma from 'chroma-js'; // Removed as per edit hint
 
 import { ConnectionLine, DefaultEdge } from '../Edges';
 import { nodeTypes } from '../Node';
@@ -41,12 +41,6 @@ const NAMESPACE_COLORS: Record<string, string> = {
   default: '#bbb'
 };
 
-// Animation configuration
-const ANIMATION_CONFIG = {
-  duration: 400, // milliseconds - longer animation
-  easing: 'ease-in-out'
-};
-
 
 
 
@@ -55,45 +49,45 @@ const edgeTypes = {
 }
 
 // Function to calculate dynamic graph boundary based on node positions
-const calculateGraphBoundary = (nodes: Node[]): [[number, number], [number, number]] => {
-  if (nodes.length === 0) {
-    // Default boundary if no nodes exist
-    return [[-2000, -2000], [2000, 2000]];
-  }
+// const calculateGraphBoundary = (nodes: Node[]): [[number, number], [number, number]] => {
+//   if (nodes.length === 0) {
+//     // Default boundary if no nodes exist
+//     return [[-2000, -2000], [2000, 2000]];
+//   }
 
-  // Calculate bounds of all nodes
-  const positions = nodes.map(node => {
-    let width = 150;
-    let height = 100;
+//   // Calculate bounds of all nodes
+//   const positions = nodes.map(node => {
+//     let width = 150;
+//     let height = 100;
     
-    // Get node dimensions
-    if (node.style && typeof node.style.width === 'number') width = node.style.width;
-    else if (node.data && typeof node.data.width === 'number') width = node.data.width;
-    if (node.style && typeof node.style.height === 'number') height = node.style.height;
-    else if (node.data && typeof node.data.height === 'number') height = node.data.height;
+//     // Get node dimensions
+//     if (node.style && typeof node.style.width === 'number') width = node.style.width;
+//     else if (node.data && typeof node.data.width === 'number') width = node.data.width;
+//     if (node.style && typeof node.style.height === 'number') height = node.style.height;
+//     else if (node.data && typeof node.data.height === 'number') height = node.data.height;
     
-    return {
-      x: node.position.x,
-      y: node.position.y,
-      width,
-      height
-    };
-  });
+//     return {
+//       x: node.position.x,
+//       y: node.position.y,
+//       width,
+//       height
+//     };
+//   });
 
-  const minX = Math.min(...positions.map(p => p.x));
-  const maxX = Math.max(...positions.map(p => p.x + p.width));
-  const minY = Math.min(...positions.map(p => p.y));
-  const maxY = Math.max(...positions.map(p => p.y + p.height));
+//   const minX = Math.min(...positions.map(p => p.x));
+//   const maxX = Math.max(...positions.map(p => p.x + p.width));
+//   const minY = Math.min(...positions.map(p => p.y));
+//   const maxY = Math.max(...positions.map(p => p.y + p.height));
 
-  // Add buffer zone from constants
-  const bufferX = Constants.GraphBoundaryBufferX;
-  const bufferY = Constants.GraphBoundaryBufferY;
+//   // Add buffer zone from constants
+//   const bufferX = Constants.GraphBoundaryBufferX;
+//   const bufferY = Constants.GraphBoundaryBufferY;
 
-  return [
-    [minX - bufferX, minY - bufferY],
-    [maxX + bufferX, maxY + bufferY]
-  ];
-};
+//   return [
+//     [minX - bufferX, minY - bufferY],
+//     [maxX + bufferX, maxY + bufferY]
+//   ];
+// };
 
 const initialNodes: Node<any>[] = [
   // Example group node
@@ -253,84 +247,74 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
   };
 
   // Helper function to animate node positions
-  const animateNodePositions = useCallback((
-    currentNodes: Node[],
-    targetNodes: Node[],
-    setNodes: (nodes: Node[]) => void,
-    onComplete?: () => void
-  ) => {
-    const startTime = Date.now();
-    const nodeMap = new Map(currentNodes.map(node => [node.id, node]));
-    const targetMap = new Map(targetNodes.map(node => [node.id, node]));
+  // const animateNodePositions = useCallback((
+  //   currentNodes: Node[],
+  //   targetNodes: Node[],
+  //   setNodes: (nodes: Node[]) => void,
+  //   onComplete?: () => void
+  // ) => {
+  //   const startTime = Date.now();
+  //   // const nodeMap = new Map(currentNodes.map(node => [node.id, node])); // REMOVED
+  //   // const targetMap = new Map(targetNodes.map(node => [node.id, node])); // REMOVED
     
-    // Find nodes that need animation (position changes)
-    const nodesToAnimate = currentNodes.filter(node => {
-      const targetNode = targetMap.get(node.id);
-      return targetNode && (
-        node.position.x !== targetNode.position.x ||
-        node.position.y !== targetNode.position.y
-      );
-    });
+  //   // Find nodes that need animation (position changes)
+  //   const nodesToAnimate = currentNodes.filter(() => {
+  //     return false; // Simplified to avoid unused parameter
+  //   });
 
-    if (nodesToAnimate.length === 0) {
-      // No animation needed, just update immediately
-      setNodes(targetNodes);
-      onComplete?.();
-      return;
-    }
+  //   if (nodesToAnimate.length === 0) {
+  //     // No animation needed, just update immediately
+  //     setNodes(targetNodes);
+  //     onComplete?.();
+  //     return;
+  //   }
 
-    // Set animation flag to prevent history tracking during animation
-    // isAnimatingRef.current = true; // REMOVED
+  //   // Set animation flag to prevent history tracking during animation
+  //   // isAnimatingRef.current = true; // REMOVED
 
-    // Create animation frame function
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / ANIMATION_CONFIG.duration, 1);
+  //   // Create animation frame function
+  //   const animate = () => {
+  //     const elapsed = Date.now() - startTime;
+  //     const progress = Math.min(elapsed / ANIMATION_CONFIG.duration, 1);
       
-      // Easing function (ease-in-out)
-      const easedProgress = progress < 0.5 
-        ? 2 * progress * progress 
-        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+  //     // Easing function (ease-in-out)
+  //     const easedProgress = progress < 0.5 
+  //       ? 2 * progress * progress 
+  //       : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
-      // Update node positions
-      const animatedNodes = currentNodes.map(node => {
-        const targetNode = targetMap.get(node.id);
-        if (!targetNode) return node;
+  //     // Update node positions
+  //     const animatedNodes = currentNodes.map(node => {
+  //       // const targetNode = targetMap.get(node.id); // REMOVED
+  //       if (false) { // REMOVED
+  //         return node; // REMOVED
+  //       }
 
-        const startPos = node.position;
-        const endPos = targetNode.position;
-        
-        // Only animate if position changed
-        if (startPos.x === endPos.x && startPos.y === endPos.y) {
-          return targetNode; // Use target node directly for non-position changes
-        }
+  //       return {
+  //         ...node,
+  //         position: {
+  //           x: node.position.x + (node.position.x - node.position.x) * easedProgress, // REMOVED
+  //           y: node.position.y + (node.position.y - node.position.y) * easedProgress // REMOVED
+  //         }
+  //       };
+  //     });
 
-        return {
-          ...targetNode,
-          position: {
-            x: startPos.x + (endPos.x - startPos.x) * easedProgress,
-            y: startPos.y + (endPos.y - startPos.y) * easedProgress
-          }
-        };
-      });
+  //     setNodes(animatedNodes);
 
-      setNodes(animatedNodes);
+  //     // Continue animation or complete
+  //     if (progress < 1) {
+  //       requestAnimationFrame(animate);
+  //     } else {
+  //       // Ensure final positions are exact
+  //       setNodes(targetNodes);
+  //       // Clear animation flag
+  //       // isAnimatingRef.current = false; // REMOVED
+  //       onComplete?.();
+  //     }
+  //   };
 
-      // Continue animation or complete
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        // Ensure final positions are exact
-        setNodes(targetNodes);
-        // Clear animation flag
-        // isAnimatingRef.current = false; // REMOVED
-        onComplete?.();
-      }
-    };
-
-    // Start animation
-    requestAnimationFrame(animate);
-  }, []);
+  //   // Start animation
+  //   requestAnimationFrame(animate);
+  // }, []);
   
   // Track changes for history
   const { handleHistoryChange } = useHistoryTracker({
@@ -462,7 +446,7 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
   }, []);
 
   // Track when nodes are being dragged over groups
-  const onNodeDragStart = useCallback((_event: React.MouseEvent, node: FlowNode) => {
+  const onNodeDragStart = useCallback((_event: React.MouseEvent, _node: FlowNode) => {
     // Clear any previous drag-over state
     setDragOverGroupId(null);
   }, []);
@@ -581,13 +565,6 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
       }
     }, 0);
   }, [onNodesChangeBase, getNodes, setNodes]);
-
-  // Helper to calculate Euclidean distance
-  function getDistance(a: { x: number; y: number }, b: { x: number; y: number }) {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
 
   // Helper to check if a point is inside a group
   function isPointInGroup(point: { x: number; y: number }, groupNode: Node): boolean {
@@ -975,7 +952,8 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
     }
   }, [nodes, getNodes, setNodes]);
 
-  const dynamicBoundary = useMemo(() => calculateGraphBoundary(nodes), [nodes]);
+  // Commented out or removed unused variables and imports to resolve TS6133 errors
+  // const dynamicBoundary = useMemo(() => calculateGraphBoundary(nodes), [nodes]); // REMOVED
 
   // Create nodeTypes with drag-over state for groups
   const nodeTypesWithDragOver = useMemo(() => ({

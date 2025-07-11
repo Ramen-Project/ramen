@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Text, Box, ScrollArea, Badge } from '@radix-ui/themes';
 import { 
@@ -13,18 +13,20 @@ import {
   LayersIcon,
   LightningBoltIcon,
   MagnifyingGlassIcon,
-  PlayIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  // PlayIcon,
   TimerIcon,
-  UpdateIcon
+  // UpdateIcon
 } from '@radix-ui/react-icons';
 
 const PanelContainer = styled.div`
   margin-bottom: 24px;
 `;
 
-const PanelHeader = styled.div`
-  margin-bottom: 12px;
-`;
+// const PanelHeader = styled.div`
+//   margin-bottom: 12px;
+// `;
 
 const NodeCategory = styled.div`
   margin-bottom: 16px;
@@ -35,7 +37,28 @@ const CategoryHeader = styled.div`
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  padding: 4px 0;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+`;
+
+// Add styled component for category name with hover brightness
+const CategoryName = styled(Text)`
+  transition: color 0.2s ease;
+
+  ${CategoryHeader}:hover & {
+    color: var(--gray-12);
+  }
+`;
+
+const CollapseIcon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--gray-10);
+  transition: transform 0.2s ease;
 `;
 
 const NodeItem = styled.div`
@@ -364,6 +387,8 @@ const nodeCategories = [
 ];
 
 export default function NodeLibrary() {
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
   const handleDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', JSON.stringify({
       type: 'operator',
@@ -373,41 +398,50 @@ export default function NodeLibrary() {
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  const toggleCategory = (categoryName: string) => {
+    setActiveCategory(prev => prev === categoryName ? null : categoryName);
+  };
+
   return (
     <PanelContainer>
       
       <ScrollArea style={{ height: 'calc(100vh - 120px)' }}>
-        {nodeCategories.map((category) => (
-          <NodeCategory key={category.name}>
-            <CategoryHeader>
-              <Box style={{ color: category.color }}>
-                {category.icon}
-              </Box>
-              <Text size="2" weight="medium" color="gray">
-                {category.name}
-              </Text>
-              <Badge variant="soft" size="1">
-                {category.nodes.length}
-              </Badge>
-            </CategoryHeader>
-            
-            {category.nodes.map((node) => (
-              <NodeItem
-                key={node.name}
-                draggable
-                onDragStart={(e) => handleDragStart(e, node.name)}
-              >
-                <NodeIcon $color={category.color}>
-                  <PlusIcon />
-                </NodeIcon>
-                <NodeInfo>
-                  <NodeName>{node.name}</NodeName>
-                  <NodeDescription>{node.description}</NodeDescription>
-                </NodeInfo>
-              </NodeItem>
-            ))}
-          </NodeCategory>
-        ))}
+        {nodeCategories.map((category) => {
+          const isExpanded = activeCategory === category.name;
+          return (
+            <NodeCategory key={category.name}>
+              <CategoryHeader onClick={() => toggleCategory(category.name)}>
+                <CollapseIcon>
+                  {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                </CollapseIcon>
+                <Box style={{ color: category.color }}>
+                  {category.icon}
+                </Box>
+                <CategoryName size="2" weight="medium" color="gray">
+                  {category.name}
+                </CategoryName>
+                <Badge color="gray" variant="soft">
+                  {category.nodes.length}
+                </Badge>
+              </CategoryHeader>
+              {isExpanded && category.nodes.map((node) => (
+                <NodeItem
+                  key={node.name}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, node.name)}
+                >
+                  <NodeIcon $color={category.color}>
+                    <PlusIcon />
+                  </NodeIcon>
+                  <NodeInfo>
+                    <NodeName>{node.name}</NodeName>
+                    <NodeDescription>{node.description}</NodeDescription>
+                  </NodeInfo>
+                </NodeItem>
+              ))}
+            </NodeCategory>
+          );
+        })}
       </ScrollArea>
     </PanelContainer>
   );
