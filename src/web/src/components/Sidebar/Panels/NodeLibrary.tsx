@@ -390,12 +390,11 @@ export default function NodeLibrary() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const handleDragStart = (event: React.DragEvent, nodeType: string) => {
-    event.dataTransfer.setData('application/reactflow', JSON.stringify({
-      type: 'operator',
-      name: nodeType,
-      position: { x: 0, y: 0 }
-    }));
-    event.dataTransfer.effectAllowed = 'move';
+    console.log('Drag started for:', nodeType);
+    // Use the global drag start handler from Graph component
+    if ((window as any).graphOnDragStart) {
+      (window as any).graphOnDragStart(event, nodeType);
+    }
   };
 
   const toggleCategory = (categoryName: string) => {
@@ -427,7 +426,7 @@ export default function NodeLibrary() {
               {isExpanded && category.nodes.map((node) => (
                 <NodeItem
                   key={node.name}
-                  draggable
+                  draggable={true}
                   onDragStart={(e) => handleDragStart(e, node.name)}
                 >
                   <NodeIcon $color={category.color}>

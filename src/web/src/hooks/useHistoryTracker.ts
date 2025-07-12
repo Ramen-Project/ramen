@@ -166,6 +166,7 @@ export const useHistoryTracker = ({ nodes, edges, onStateChange }: UseHistoryTra
   const prevEdgesRef = useRef<Edge[]>([]);
   const isInitializedRef = useRef(false);
   const isNavigatingRef = useRef(false);
+  const skipNextChangeRef = useRef(false);
 
   // Initialize history with current state
   useEffect(() => {
@@ -242,6 +243,14 @@ export const useHistoryTracker = ({ nodes, edges, onStateChange }: UseHistoryTra
   // Track changes
   useEffect(() => {
     if (isNavigatingRef.current) return;
+    
+    // Skip this change if requested
+    if (skipNextChangeRef.current) {
+      skipNextChangeRef.current = false;
+      prevNodesRef.current = [...nodes];
+      prevEdgesRef.current = [...edges];
+      return;
+    }
 
     const prevNodes = prevNodesRef.current;
     const prevEdges = prevEdgesRef.current;
@@ -335,7 +344,13 @@ export const useHistoryTracker = ({ nodes, edges, onStateChange }: UseHistoryTra
     }, 100);
   };
 
+  // Function to skip the next change detection
+  const skipNextChange = () => {
+    skipNextChangeRef.current = true;
+  };
+
   return {
-    handleHistoryChange
+    handleHistoryChange,
+    skipNextChange
   };
 }; 
