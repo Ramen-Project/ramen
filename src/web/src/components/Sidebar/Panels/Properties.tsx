@@ -4,8 +4,11 @@ import { Text, TextField, TextArea, Button, Badge } from '@radix-ui/themes';
 import { 
   GearIcon, 
   InputIcon, 
-  Cross2Icon
+  Cross2Icon,
+  ArrowRightIcon
 } from '@radix-ui/react-icons';
+import { Node, Edge } from '@xyflow/react';
+import { useSelectionStore } from '../../../stores/SelectionStore';
 
 const PanelContainer = styled.div`
   margin-bottom: 24px;
@@ -85,23 +88,103 @@ interface NodeData {
 }
 
 interface PropertiesProps {
-  selectedNode?: {
-    id: string;
-    type: string;
-    data: NodeData;
-  } | null;
+  selectedNode?: Node | null;
+  selectedEdge?: Edge | null;
   onUpdateNode?: (nodeId: string, data: Partial<NodeData>) => void;
 }
 
-export default function Properties({ selectedNode, onUpdateNode }: PropertiesProps) {
+export default function Properties({ onUpdateNode }: Omit<PropertiesProps, 'selectedNode' | 'selectedEdge'>) {
+  // Get selection from store instead of props
+  const { selectedNode, selectedEdge } = useSelectionStore();
+  
+  // If an edge is selected, show edge properties
+  if (selectedEdge) {
+    return (
+      <PanelContainer>
+
+        <PropertyGroup>
+          <GroupHeader>
+            <ArrowRightIcon />
+            <Text size="2" weight="medium" color="gray">Connection</Text>
+          </GroupHeader>
+          
+          <PropertyItem>
+            <PropertyLabel>Source</PropertyLabel>
+            <Text size="2" style={{ 
+              padding: '8px 12px', 
+              background: 'var(--gray-3)', 
+              borderRadius: '6px',
+              display: 'block'
+            }}>
+              {selectedEdge.source}
+              {selectedEdge.sourceHandle && (
+                <Badge variant="soft" size="1" style={{ marginLeft: '8px' }}>
+                  {selectedEdge.sourceHandle}
+                </Badge>
+              )}
+            </Text>
+          </PropertyItem>
+
+          <PropertyItem>
+            <PropertyLabel>Target</PropertyLabel>
+            <Text size="2" style={{ 
+              padding: '8px 12px', 
+              background: 'var(--gray-3)', 
+              borderRadius: '6px',
+              display: 'block'
+            }}>
+              {selectedEdge.target}
+              {selectedEdge.targetHandle && (
+                <Badge variant="soft" size="1" style={{ marginLeft: '8px' }}>
+                  {selectedEdge.targetHandle}
+                </Badge>
+              )}
+            </Text>
+          </PropertyItem>
+
+          <PropertyItem>
+            <PropertyLabel>Type</PropertyLabel>
+            <Text size="2" style={{ 
+              padding: '8px 12px', 
+              background: 'var(--gray-3)', 
+              borderRadius: '6px',
+              display: 'block'
+            }}>
+              {selectedEdge.type || 'default'}
+            </Text>
+          </PropertyItem>
+
+          {selectedEdge.animated && (
+            <PropertyItem>
+              <PropertyLabel>Animated</PropertyLabel>
+              <Badge variant="soft" color="green">Yes</Badge>
+            </PropertyItem>
+          )}
+
+          {selectedEdge.label && (
+            <PropertyItem>
+              <PropertyLabel>Label</PropertyLabel>
+              <Text size="2" style={{ 
+                padding: '8px 12px', 
+                background: 'var(--gray-3)', 
+                borderRadius: '6px',
+                display: 'block'
+              }}>
+                {selectedEdge.label}
+              </Text>
+            </PropertyItem>
+          )}
+        </PropertyGroup>
+      </PanelContainer>
+    );
+  }
+
+  // If no node is selected, show default message
   if (!selectedNode) {
     return (
       <PanelContainer>
-        <PanelHeader>
-          <Text size="4" weight="bold">Properties</Text>
-        </PanelHeader>
         <Text size="2" color="gray">
-          Select a node to edit its properties
+          Select a node or edge to view its properties
         </Text>
       </PanelContainer>
     );
@@ -120,44 +203,40 @@ export default function Properties({ selectedNode, onUpdateNode }: PropertiesPro
   };
 
   const addInput = () => {
-    const newInputs = [...(selectedNode.data.inputs || []), { name: 'new_input', typeId: 'str' }];
+    const newInputs = [...(selectedNode.data?.inputs || []), { name: 'new_input', typeId: 'str' }];
     onUpdateNode?.(selectedNode.id, { inputs: newInputs });
   };
 
   const removeInput = (index: number) => {
-    const newInputs = selectedNode.data.inputs?.filter((_, i) => i !== index);
+    const newInputs = selectedNode.data?.inputs?.filter((_, i) => i !== index);
     onUpdateNode?.(selectedNode.id, { inputs: newInputs });
   };
 
   const addOutput = () => {
-    const newOutputs = [...(selectedNode.data.outputs || []), { name: 'new_output', typeId: 'str' }];
+    const newOutputs = [...(selectedNode.data?.outputs || []), { name: 'new_output', typeId: 'str' }];
     onUpdateNode?.(selectedNode.id, { outputs: newOutputs });
   };
 
   const removeOutput = (index: number) => {
-    const newOutputs = selectedNode.data.outputs?.filter((_, i) => i !== index);
+    const newOutputs = selectedNode.data?.outputs?.filter((_, i) => i !== index);
     onUpdateNode?.(selectedNode.id, { outputs: newOutputs });
   };
 
   return (
     <PanelContainer>
-      <PanelHeader>
-        <Text size="4" weight="bold">Properties</Text>
-        <Text size="2" color="gray" style={{ marginTop: 4 }}>
-          {selectedNode.type} • {selectedNode.id}
-        </Text>
-      </PanelHeader>
 
       <PropertyGroup>
         <GroupHeader>
           <GearIcon />
-          <Text size="2" weight="medium" color="gray">General</Text>
+          <Text size="2" weight="medium" color="gray">
+            {selectedNode.type === 'group' ? 'Group' : 'Node'} • {selectedNode.id}
+          </Text>
         </GroupHeader>
         
         <PropertyItem>
           <PropertyLabel>Name</PropertyLabel>
           <TextField.Root
-            value={selectedNode.data.name || ''}
+            value={selectedNode.data?.name || ''}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="Node name"
             size="2"
@@ -167,7 +246,7 @@ export default function Properties({ selectedNode, onUpdateNode }: PropertiesPro
         <PropertyItem>
           <PropertyLabel>Description</PropertyLabel>
           <TextArea
-            value={selectedNode.data.brief || ''}
+            value={selectedNode.data?.brief || ''}
             onChange={(e) => handleBriefChange(e.target.value)}
             placeholder="Brief description"
             size="2"
@@ -178,7 +257,7 @@ export default function Properties({ selectedNode, onUpdateNode }: PropertiesPro
         <PropertyItem>
           <PropertyLabel>Namespace</PropertyLabel>
           <TextField.Root
-            value={selectedNode.data.namespace || ''}
+            value={selectedNode.data?.namespace || ''}
             onChange={(e) => handleNamespaceChange(e.target.value)}
             placeholder="Namespace"
             size="2"
@@ -188,14 +267,68 @@ export default function Properties({ selectedNode, onUpdateNode }: PropertiesPro
 
       <PropertyGroup>
         <GroupHeader>
+          <GearIcon />
+          <Text size="2" weight="medium" color="gray">Layout</Text>
+        </GroupHeader>
+        
+        <PropertyItem>
+          <PropertyLabel>Position</PropertyLabel>
+          <Text size="2" style={{ 
+            padding: '8px 12px', 
+            background: 'var(--gray-3)', 
+            borderRadius: '6px',
+            display: 'block'
+          }}>
+            X: {Math.round(selectedNode.position.x)}, Y: {Math.round(selectedNode.position.y)}
+          </Text>
+        </PropertyItem>
+
+        {selectedNode.measured && (
+          <PropertyItem>
+            <PropertyLabel>Size</PropertyLabel>
+            <Text size="2" style={{ 
+              padding: '8px 12px', 
+              background: 'var(--gray-3)', 
+              borderRadius: '6px',
+              display: 'block'
+            }}>
+              {Math.round(selectedNode.measured.width)} × {Math.round(selectedNode.measured.height)}
+            </Text>
+          </PropertyItem>
+        )}
+
+        {selectedNode.parentId && (
+          <PropertyItem>
+            <PropertyLabel>Parent Group</PropertyLabel>
+            <Text size="2" style={{ 
+              padding: '8px 12px', 
+              background: 'var(--gray-3)', 
+              borderRadius: '6px',
+              display: 'block'
+            }}>
+              {selectedNode.parentId}
+            </Text>
+          </PropertyItem>
+        )}
+
+        <PropertyItem>
+          <PropertyLabel>Selection State</PropertyLabel>
+          <Badge variant="soft" color={selectedNode.selected ? "green" : "gray"}>
+            {selectedNode.selected ? "Selected" : "Not Selected"}
+          </Badge>
+        </PropertyItem>
+      </PropertyGroup>
+
+      <PropertyGroup>
+        <GroupHeader>
           <InputIcon />
           <Text size="2" weight="medium" color="gray">Inputs</Text>
           <Badge variant="soft" size="1">
-            {selectedNode.data.inputs?.length || 0}
+            {selectedNode.data?.inputs?.length || 0}
           </Badge>
         </GroupHeader>
         
-        {selectedNode.data.inputs?.map((input, index) => (
+        {selectedNode.data?.inputs?.map((input, index) => (
           <InputOutputItem key={index}>
             <InputOutputInfo>
               <InputOutputName>{input.name}</InputOutputName>
@@ -223,11 +356,11 @@ export default function Properties({ selectedNode, onUpdateNode }: PropertiesPro
           <InputIcon />
           <Text size="2" weight="medium" color="gray">Outputs</Text>
           <Badge variant="soft" size="1">
-            {selectedNode.data.outputs?.length || 0}
+            {selectedNode.data?.outputs?.length || 0}
           </Badge>
         </GroupHeader>
         
-        {selectedNode.data.outputs?.map((output, index) => (
+        {selectedNode.data?.outputs?.map((output, index) => (
           <InputOutputItem key={index}>
             <InputOutputInfo>
               <InputOutputName>{output.name}</InputOutputName>

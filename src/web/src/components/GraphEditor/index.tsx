@@ -1,14 +1,16 @@
 import { CSSProperties } from "react"
-import { Panel, ReactFlowProvider, useStore, useViewport } from '@xyflow/react';
+import { Panel, ReactFlowProvider, useStore, useViewport, Node, Edge } from '@xyflow/react';
 import Workspace from "./Graph";
 import styled from "styled-components";
 // import { useHistoryStore } from "../../stores/HistoryStore";
 
 interface GraphEditorProps {
   sidebarVisible?: boolean;
+  onGraphDataChange?: (nodes: Node[], edges: Edge[]) => void;
+  onSelectionChange?: (selection: { node?: Node; edge?: Edge } | null) => void;
 }
 
-export default function GraphEditor({ sidebarVisible: _sidebarVisible = true }: GraphEditorProps) {
+export default function GraphEditor({ sidebarVisible: _sidebarVisible = true, onGraphDataChange, onSelectionChange }: GraphEditorProps) {
     // const [undoHandler, setUndoHandler] = useState<(() => void) | null>(null);
     // const [redoHandler, setRedoHandler] = useState<(() => void) | null>(null);
     
@@ -33,7 +35,8 @@ export default function GraphEditor({ sidebarVisible: _sidebarVisible = true }: 
                             // setUndoHandler(() => undo);
                             // setRedoHandler(() => redo);
                         }}
-                        // TODO: Pass nodes/edges as props in the future
+                        onGraphDataChange={onGraphDataChange}
+                        onSelectionChange={onSelectionChange}
                     />
                 </ReactFlowProvider>
             </div>

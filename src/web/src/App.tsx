@@ -1,5 +1,6 @@
 
 import { useState, useRef } from 'react';
+import { Node, Edge } from '@xyflow/react';
 import GraphEditor from './components/GraphEditor';
 import EditorMenubar from './components/GraphEditor/Menubar';
 import './Global.css'
@@ -13,14 +14,33 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
+import AboutModal from './components/AboutModal';
 
 export default function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  // Graph data state
+  const [graphNodes, setGraphNodes] = useState<Node[]>([]);
+  const [graphEdges, setGraphEdges] = useState<Edge[]>([]);
+  // Selection state
+  const [selectedItem, setSelectedItem] = useState<{ node?: Node; edge?: Edge } | null>(null);
   // Tabs state for graphs
   const [graphs, setGraphs] = useState([
     { id: 'graph-1', name: 'Graph 1', nodes: undefined, edges: undefined },
   ]);
   const [activeGraphId, setActiveGraphId] = useState('graph-1');
+  
+  // Handle graph data changes from GraphEditor
+  const handleGraphDataChange = (nodes: Node[], edges: Edge[]) => {
+    setGraphNodes(nodes);
+    setGraphEdges(edges);
+  };
+
+  // Handle selection changes from GraphEditor (kept for backward compatibility)
+  const handleSelectionChange = (selection: { node?: Node; edge?: Edge } | null) => {
+    // Selection is now handled by SelectionStore, but keeping this for compatibility
+    setSelectedItem(selection);
+  };
 
   // Add new graph tab
   const handleAddGraph = () => {
@@ -95,9 +115,9 @@ export default function App() {
         }}
       >
         {graph.name}
-        <button onClick={e => { e.stopPropagation(); handleCloseGraph(graph.id); }} style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-10)', display: 'flex', alignItems: 'center', padding: 0 }} title="Close tab">
+        <span onClick={e => { e.stopPropagation(); handleCloseGraph(graph.id); }} style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-10)', display: 'flex', alignItems: 'center', padding: 0 }} title="Close tab">
           <Cross2Icon />
-        </button>
+        </span>
       </Tabs.Trigger>
     );
   };
@@ -122,6 +142,7 @@ export default function App() {
                   <EditorMenubar 
                     sidebarVisible={sidebarVisible}
                     onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
+                    onOpenAbout={() => setAboutModalOpen(true)}
                   />
                 </div>
                 {/* Main area: sidebar (left) and main content (right) */}
@@ -130,10 +151,13 @@ export default function App() {
                   {sidebarVisible && (
                     <div style={{ width: 320, minWidth: 320, height: '100%', zIndex: 10 }}>
                       {/* Sidebar is visually separate, not covered by tabs */}
-                      <Sidebar width={320}>
+                      <Sidebar 
+                        width={320}
+                        nodes={graphNodes}
+                        edges={graphEdges}
+                      >
                         <NodeLibrary />
                         <Properties 
-                          selectedNode={null}
                           onUpdateNode={() => {}}
                         />
                         <History 
@@ -164,12 +188,20 @@ export default function App() {
                     </div>
                     {/* Graph editor below tabs bar */}
                     <div style={{ flex: 1, minHeight: 0 }}>
-                      <GraphEditor sidebarVisible={false} />
+                      <GraphEditor 
+                        sidebarVisible={false} 
+                        onGraphDataChange={handleGraphDataChange}
+                        onSelectionChange={handleSelectionChange}
+                      />
                     </div>
                   </div>
                 </div>
               </div>
             </Theme>
+            <AboutModal 
+              open={aboutModalOpen} 
+              onOpenChange={setAboutModalOpen}
+            />
           </DndProvider>
         } />
       </Routes>

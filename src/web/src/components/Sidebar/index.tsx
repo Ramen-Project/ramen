@@ -1,13 +1,19 @@
 import { useState } from 'react';
 import styled, { css } from 'styled-components';
 import { Text } from '@radix-ui/themes';
-import { FiBookOpen, FiSettings, FiClock } from 'react-icons/fi';
+import { FiBookOpen, FiSettings, FiClock, FiLayers } from 'react-icons/fi';
+import { Node, Edge } from '@xyflow/react';
 
 const panels = [
   {
     key: 'nodeLibrary',
     label: 'Node Library',
     icon: <FiBookOpen size={20} />,
+  },
+  {
+    key: 'graphStructure',
+    label: 'Graph Structure',
+    icon: <FiLayers size={20} />,
   },
   {
     key: 'properties',
@@ -96,15 +102,24 @@ const PanelHeader = styled.div`
 `;
 
 // Panel imports
-import { NodeLibrary, Properties, History } from './Panels';
+import { NodeLibrary, Properties, History, GraphStructure } from './Panels';
 
-export default function Sidebar({ width = 300, ...props }) {
+interface SidebarProps {
+  width?: number;
+  nodes?: Node[];
+  edges?: Edge[];
+  [key: string]: any;
+}
+
+export default function Sidebar({ width = 300, nodes = [], edges = [], ...props }: SidebarProps) {
   const [activePanel, setActivePanel] = useState('nodeLibrary');
 
   const renderPanel = () => {
     switch (activePanel) {
       case 'nodeLibrary':
         return <NodeLibrary />;
+      case 'graphStructure':
+        return <GraphStructure nodes={nodes} edges={edges} />;
       case 'properties':
         return <Properties {...props} />;
       case 'history':

@@ -103,9 +103,10 @@ const MenubarLabel = styled(Menubar.Label)`
 interface EditorMenubarProps {
   onToggleSidebar?: () => void;
   sidebarVisible?: boolean;
+  onOpenAbout?: () => void;
 }
 
-const EditorMenubar: React.FC<EditorMenubarProps> = ({ onToggleSidebar, sidebarVisible = true }) => {
+const EditorMenubar: React.FC<EditorMenubarProps> = ({ onToggleSidebar, sidebarVisible = true, onOpenAbout }) => {
   const { undo, redo, canUndo, canRedo } = useHistoryStore();
 
   const handleUndo = () => {
@@ -220,10 +221,6 @@ const EditorMenubar: React.FC<EditorMenubarProps> = ({ onToggleSidebar, sidebarV
             <EyeOpenIcon />
             Show Grid
           </MenubarItem>
-          <MenubarItem>
-            <EyeOpenIcon />
-            Show Mini Map
-          </MenubarItem>
           <MenubarSeparator />
           <MenubarItem onClick={onToggleSidebar}>
             <EyeOpenIcon />
@@ -251,7 +248,7 @@ const EditorMenubar: React.FC<EditorMenubarProps> = ({ onToggleSidebar, sidebarV
             <FileTextIcon />
             Documentation
           </MenubarItem>
-          <MenubarItem>
+          <MenubarItem onClick={onOpenAbout}>
             <FileTextIcon />
             About
           </MenubarItem>
