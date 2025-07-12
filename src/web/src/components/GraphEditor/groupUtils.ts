@@ -250,7 +250,8 @@ export const createGroup = (
   });
 
   // Add group node
-  const newNodes = [...updatedNodes, groupNode];
+  // Note: group node is added first to ensure it is on top of other nodes
+  const newNodes = [groupNode, ...updatedNodes];
   setNodes(newNodes);
 
   return groupId;

@@ -11,46 +11,8 @@ import Sidebar from './components/Sidebar';
 import { NodeLibrary, Properties, History } from './components/Sidebar/Panels';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-
-const TabItem = ({ graph, index, moveTab }) => {
-  const ref = useRef(null);
-  const [{ isDragging }, drag] = useDrag({
-    type: 'tab',
-    item: { index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const [, drop] = useDrop({
-    accept: 'tab',
-    hover: (item: { index: number }) => {
-      if (item.index !== index) {
-        moveTab(item.index, index);
-        item.index = index;
-      }
-    },
-  });
-
-  drag(drop(ref));
-
-  return (
-    <Tabs.Trigger
-      ref={ref}
-      key={graph.id}
-      value={graph.id}
-      style={{
-        opacity: isDragging ? 0.5 : 1,
-        display: 'flex', alignItems: 'center', padding: '0 16px', height: 36, border: 'none', background: 'none', cursor: 'pointer', position: 'relative', fontWeight: activeGraphId === graph.id ? 600 : 400, color: activeGraphId === graph.id ? 'var(--accent-11, #1570ef)' : 'var(--gray-11)', borderBottom: activeGraphId === graph.id ? '2px solid var(--accent-9, #2563eb)' : '2px solid transparent', outline: 'none',
-      }}
-    >
-      {graph.name}
-      <button onClick={e => { e.stopPropagation(); handleCloseGraph(graph.id); }} style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-10)', display: 'flex', alignItems: 'center', padding: 0 }} title="Close tab">
-        <Cross2Icon />
-      </button>
-    </Tabs.Trigger>
-  );
-};
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
 
 export default function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -85,7 +47,7 @@ export default function App() {
     });
   };
 
-  const moveTab = (fromIndex, toIndex) => {
+  const moveTab = (fromIndex: number, toIndex: number) => {
     setGraphs(prev => {
       const newGraphs = [...prev];
       const [movedTab] = newGraphs.splice(fromIndex, 1);
@@ -94,70 +56,123 @@ export default function App() {
     });
   };
 
+  type TabItemProps = {
+    graph: { id: string; name: string };
+    index: number;
+    moveTab: (fromIndex: number, toIndex: number) => void;
+  };
+
+  const TabItem = ({ graph, index, moveTab }: TabItemProps) => {
+    const ref = useRef<HTMLButtonElement | null>(null);
+    const [{ isDragging }, drag] = useDrag({
+      type: 'tab',
+      item: { index },
+      collect: (monitor) => ({
+        isDragging: monitor.isDragging(),
+      }),
+    });
+
+    const [, drop] = useDrop({
+      accept: 'tab',
+      hover: (item: { index: number }) => {
+        if (item.index !== index) {
+          moveTab(item.index, index);
+          item.index = index;
+        }
+      },
+    });
+
+    drag(drop(ref));
+
+    return (
+      <Tabs.Trigger
+        ref={ref}
+        key={graph.id}
+        value={graph.id}
+        style={{
+          opacity: isDragging ? 0.5 : 1,
+          display: 'flex', alignItems: 'center', padding: '0 16px', height: 36, border: 'none', background: 'none', cursor: 'pointer', position: 'relative', fontWeight: activeGraphId === graph.id ? 600 : 400, color: activeGraphId === graph.id ? 'var(--accent-11, #1570ef)' : 'var(--gray-11)', borderBottom: activeGraphId === graph.id ? '2px solid var(--accent-9, #2563eb)' : '2px solid transparent', outline: 'none',
+        }}
+      >
+        {graph.name}
+        <button onClick={e => { e.stopPropagation(); handleCloseGraph(graph.id); }} style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-10)', display: 'flex', alignItems: 'center', padding: 0 }} title="Close tab">
+          <Cross2Icon />
+        </button>
+      </Tabs.Trigger>
+    );
+  };
+
   return (
-    <DndProvider backend={HTML5Backend}>
-      <Theme accentColor='blue' appearance='dark' grayColor='mauve'>
-        <div style={{ 
-          position: 'relative',
-          width: '100vw',
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden'
-        }}>
-          {/* Menubar at the top */}
-          <div style={{ flex: '0 0 40px', minHeight: 40, maxHeight: 40 }}>
-            <EditorMenubar 
-              sidebarVisible={sidebarVisible}
-              onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
-            />
-          </div>
-          {/* Main area: sidebar (left) and main content (right) */}
-          <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'row' }}>
-            {/* Sidebar on the left */}
-            {sidebarVisible && (
-              <div style={{ width: 320, minWidth: 320, height: '100%', zIndex: 10 }}>
-                {/* Sidebar is visually separate, not covered by tabs */}
-                <Sidebar width={320}>
-                  <NodeLibrary />
-                  <Properties 
-                    selectedNode={null}
-                    onUpdateNode={() => {}}
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/editor" element={
+          <DndProvider backend={HTML5Backend}>
+            <Theme accentColor='blue' appearance='dark' grayColor='mauve'>
+              <div style={{ 
+                position: 'relative',
+                width: '100vw',
+                height: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}>
+                {/* Menubar at the top */}
+                <div style={{ flex: '0 0 40px', minHeight: 40, maxHeight: 40 }}>
+                  <EditorMenubar 
+                    sidebarVisible={sidebarVisible}
+                    onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
                   />
-                  <History 
-                    onUndo={() => {}}
-                    onRedo={() => {}}
-                    canUndo={false}
-                    canRedo={false}
-                    onGoToHistory={() => {}}
-                    onClearHistory={() => {}}
-                  />
-                </Sidebar>
+                </div>
+                {/* Main area: sidebar (left) and main content (right) */}
+                <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'row' }}>
+                  {/* Sidebar on the left */}
+                  {sidebarVisible && (
+                    <div style={{ width: 320, minWidth: 320, height: '100%', zIndex: 10 }}>
+                      {/* Sidebar is visually separate, not covered by tabs */}
+                      <Sidebar width={320}>
+                        <NodeLibrary />
+                        <Properties 
+                          selectedNode={null}
+                          onUpdateNode={() => {}}
+                        />
+                        <History 
+                          onUndo={() => {}}
+                          onRedo={() => {}}
+                          canUndo={false}
+                          canRedo={false}
+                          onGoToHistory={() => {}}
+                          onClearHistory={() => {}}
+                        />
+                      </Sidebar>
+                    </div>
+                  )}
+                  {/* Main content: tabs bar above graph editor */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
+                    {/* Tabs bar only above the graph editor */}
+                    <div style={{ height: 36, minHeight: 36, maxHeight: 36, zIndex: 20, background: 'var(--gray-3)', borderBottom: '1px solid var(--gray-6)' }}>
+                      <Tabs.Root value={activeGraphId} onValueChange={setActiveGraphId} style={{ display: 'flex', alignItems: 'center', height: 36 }}>
+                        <Tabs.List style={{ display: 'flex', alignItems: 'center', height: 36 }}>
+                          {graphs.map((graph, index) => (
+                            <TabItem key={graph.id} graph={graph} index={index} moveTab={moveTab} />
+                          ))}
+                          <button onClick={handleAddGraph} style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-10)', display: 'flex', alignItems: 'center', padding: 0, height: 36 }} title="New tab">
+                            <PlusIcon />
+                          </button>
+                        </Tabs.List>
+                      </Tabs.Root>
+                    </div>
+                    {/* Graph editor below tabs bar */}
+                    <div style={{ flex: 1, minHeight: 0 }}>
+                      <GraphEditor sidebarVisible={false} />
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-            {/* Main content: tabs bar above graph editor */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
-              {/* Tabs bar only above the graph editor */}
-              <div style={{ height: 36, minHeight: 36, maxHeight: 36, zIndex: 20, background: 'var(--gray-3)', borderBottom: '1px solid var(--gray-6)' }}>
-                <Tabs.Root value={activeGraphId} onValueChange={setActiveGraphId} style={{ display: 'flex', alignItems: 'center', height: 36 }}>
-                  <Tabs.List style={{ display: 'flex', alignItems: 'center', height: 36 }}>
-                    {graphs.map((graph, index) => (
-                      <TabItem key={graph.id} graph={graph} index={index} moveTab={moveTab} />
-                    ))}
-                    <button onClick={handleAddGraph} style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-10)', display: 'flex', alignItems: 'center', padding: 0, height: 36 }} title="New tab">
-                      <PlusIcon />
-                    </button>
-                  </Tabs.List>
-                </Tabs.Root>
-              </div>
-              {/* Graph editor below tabs bar */}
-              <div style={{ flex: 1, minHeight: 0 }}>
-                <GraphEditor sidebarVisible={false} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Theme>
-    </DndProvider>
-  )
+            </Theme>
+          </DndProvider>
+        } />
+      </Routes>
+    </Router>
+  );
 }

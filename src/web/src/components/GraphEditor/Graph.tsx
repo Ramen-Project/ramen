@@ -32,6 +32,7 @@ import { useHistoryTracker } from '../../hooks/useHistoryTracker';
 import { useHistoryStore, NodeDelta, EdgeDelta } from '../../stores/HistoryStore';
 
 import * as Constants from '../../constants';
+import { nanoid } from 'nanoid';
 
 // Namespace colors for operator nodes
 const NAMESPACE_COLORS: Record<string, string> = {
@@ -225,6 +226,7 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
   const multiMoveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { getNodes, getEdges } = useReactFlow();
+  const copyBuffer = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
   
   // History management
   const { undo, redo, canUndo, canRedo, addEntry, goToHistory } = useHistoryStore();
@@ -402,6 +404,15 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
     [setEdges]
   );
 
+  // Helper to generate a unique ID not in the provided set
+  function getUniqueId(existingIds: Set<string>): string {
+    let id = nanoid();
+    while (existingIds.has(id)) {
+      id = nanoid();
+    }
+    return id;
+  }
+
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
@@ -418,8 +429,10 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
         y: event.clientY - reactFlowBounds.top,
       };
 
+      // Use getUniqueId to avoid collision
+      const existingNodeIds = new Set(getNodes().map(n => n.id));
       const newNode = {
-        id: `${Date.now()}`,
+        id: getUniqueId(existingNodeIds),
         type: parsedData.type,
         position,
         data: {
@@ -437,7 +450,7 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [setNodes]
+    [setNodes, getNodes]
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -779,44 +792,142 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ctrl+Z: Undo
       if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
+        console.log('Ctrl+Z');
         event.preventDefault();
         handleUndo();
       }
       
-      // Ctrl+Y or Ctrl+Shift+Z: Redo
-      if (event.ctrlKey && (event.key === 'y' || (event.key === 'z' && event.shiftKey))) {
+      // Ctrl+Y: Redo
+      if (event.ctrlKey && (event.key === 'y')) {
+        console.log('Ctrl+Y');
         event.preventDefault();
         handleRedo();
       }
       
       // G key: Toggle group/ungroup
       if (event.key === 'g' && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+        console.log('G key');
         event.preventDefault();
         handleToggleGroup();
       }
       
-      // Ctrl+G: Create group (existing behavior)
-      if (event.ctrlKey && event.key === 'g') {
-        event.preventDefault();
-        handleCreateGroup();
-      }
-      
-      // Ctrl+U: Ungroup selected group
-      if (event.ctrlKey && event.key === 'u') {
-        event.preventDefault();
-        handleUngroupGroup();
-      }
-      
       // Ctrl+R: Auto resize selected group
       if (event.ctrlKey && event.key === 'r') {
+        console.log('Ctrl+R');
         event.preventDefault();
         handleAutoResizeGroup();
+      }
+      // Ctrl+C: Copy selected node(s)
+      if (event.ctrlKey && event.key === 'c') {
+        console.log('Ctrl+C');
+        event.preventDefault();
+        if (selectedNodeIds.length === 0) return;
+        const currentNodes = getNodes();
+        const currentEdges = getEdges();
+        // Only copy operator/reference nodes (not groups)
+        const nodesToCopy = currentNodes.filter(n => selectedNodeIds.includes(n.id) && n.type !== 'group');
+        if (nodesToCopy.length === 0) return;
+        // Copy edges between selected nodes
+        const nodeIds = new Set(nodesToCopy.map(n => n.id));
+        const edgesToCopy = currentEdges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+        // Deep copy nodes/edges (remove parentId, callbacks, etc.)
+        const nodesCopy = nodesToCopy.map(n => ({
+          ...JSON.parse(JSON.stringify(n)),
+          parentId: undefined,
+          selected: false,
+        }));
+        const edgesCopy = edgesToCopy.map(e => ({ ...JSON.parse(JSON.stringify(e)) }));
+        copyBuffer.current = { nodes: nodesCopy, edges: edgesCopy };
+      }
+      // Ctrl+V: Paste node(s)
+      if (event.ctrlKey && event.key === 'v') {
+        console.log('Ctrl+V');
+        event.preventDefault();
+        if (!copyBuffer.current) return;
+        const { nodes: nodesToPaste, edges: edgesToPaste } = copyBuffer.current;
+        if (!nodesToPaste || nodesToPaste.length === 0) return;
+        // Map old IDs to new unique IDs
+        const existingNodeIds = new Set(getNodes().map(n => n.id));
+        const existingEdgeIds = new Set(getEdges().map(e => e.id));
+        const idMap: Record<string, string> = {};
+        nodesToPaste.forEach(n => { idMap[n.id] = getUniqueId(existingNodeIds); existingNodeIds.add(idMap[n.id]); });
+        // Offset for paste (e.g., 40px right and down)
+        const OFFSET = 40;
+        // Paste nodes with new IDs and offset positions
+        const pastedNodes = nodesToPaste.map(n => ({
+          ...n,
+          id: idMap[n.id],
+          position: { x: n.position.x + OFFSET, y: n.position.y + OFFSET },
+          selected: true,
+        }));
+        // Paste edges with new source/target IDs and unique edge IDs
+        const pastedEdges = edgesToPaste.map(e => {
+          const newId = getUniqueId(existingEdgeIds);
+          existingEdgeIds.add(newId);
+          return {
+            ...e,
+            id: newId,
+            source: idMap[e.source],
+            target: idMap[e.target],
+          };
+        });
+        // Deselect all, then select new nodes
+        setNodes(nds => nds.map(n => ({ ...n, selected: false })).concat(pastedNodes));
+        setEdges(eds => eds.concat(pastedEdges));
+        setSelectedNodeIds(pastedNodes.map(n => n.id));
+        // Add history entry
+        const { nodeDeltas, edgeDeltas } = createStateDeltas(getNodes().concat(pastedNodes), getEdges().concat(pastedEdges));
+        addEntry({
+          type: 'paste',
+          title: `Pasted ${pastedNodes.length} node${pastedNodes.length > 1 ? 's' : ''}`,
+          description: `Pasted node(s) at offset`,
+          nodeDeltas,
+          edgeDeltas
+        });
+      }
+      // Ctrl+X: Cut selected node(s)
+      if (event.ctrlKey && event.key === 'x') {
+        console.log('Ctrl+X');
+        event.preventDefault();
+        if (selectedNodeIds.length === 0) return;
+        const currentNodes = getNodes();
+        const currentEdges = getEdges();
+        // Only cut operator/reference nodes (not groups)
+        const nodesToCut = currentNodes.filter(n => selectedNodeIds.includes(n.id) && n.type !== 'group');
+        if (nodesToCut.length === 0) return;
+        // Cut edges between selected nodes
+        const nodeIds = new Set(nodesToCut.map(n => n.id));
+        const edgesToCut = currentEdges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+        // Deep copy for buffer
+        const nodesCopy = nodesToCut.map(n => ({
+          ...JSON.parse(JSON.stringify(n)),
+          parentId: undefined,
+          selected: false,
+        }));
+        const edgesCopy = edgesToCut.map(e => ({ ...JSON.parse(JSON.stringify(e)) }));
+        copyBuffer.current = { nodes: nodesCopy, edges: edgesCopy };
+        // Remove nodes and edges from graph
+        setNodes(nds => nds.filter(n => !nodeIds.has(n.id)));
+        setEdges(eds => eds.filter(e => !nodeIds.has(e.source) && !nodeIds.has(e.target)));
+        setSelectedNodeIds([]);
+        // Add history entry
+        const { nodeDeltas, edgeDeltas } = createStateDeltas(
+          getNodes().filter(n => !nodeIds.has(n.id)),
+          getEdges().filter(e => !nodeIds.has(e.source) && !nodeIds.has(e.target))
+        );
+        addEntry({
+          type: 'cut',
+          title: `Cut ${nodesToCut.length} node${nodesToCut.length > 1 ? 's' : ''}`,
+          description: `Cut node(s) from graph`,
+          nodeDeltas,
+          edgeDeltas
+        });
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo, handleCreateGroup, handleUngroupGroup, handleAutoResizeGroup]);
+  }, [handleUndo, handleRedo, handleCreateGroup, handleUngroupGroup, handleAutoResizeGroup, selectedNodeIds, getNodes, getEdges, setNodes, setEdges, addEntry, createStateDeltas]);
 
   // Toggle group/ungroup with G key
   const handleToggleGroup = useCallback(() => {
@@ -951,9 +1062,6 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers }: GraphProps) 
       });
     }
   }, [nodes, getNodes, setNodes]);
-
-  // Commented out or removed unused variables and imports to resolve TS6133 errors
-  // const dynamicBoundary = useMemo(() => calculateGraphBoundary(nodes), [nodes]); // REMOVED
 
   // Create nodeTypes with drag-over state for groups
   const nodeTypesWithDragOver = useMemo(() => ({
