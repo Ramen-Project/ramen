@@ -149,10 +149,10 @@ export default function App() {
                 <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'row' }}>
                   {/* Sidebar on the left */}
                   {sidebarVisible && (
-                    <div style={{ width: 320, minWidth: 320, height: '100%', zIndex: 10 }}>
+                    <div style={{ width: 400, minWidth: 400, height: '100%', zIndex: 10 }}>
                       {/* Sidebar is visually separate, not covered by tabs */}
                       <Sidebar 
-                        width={320}
+                        width={400}
                         nodes={graphNodes}
                         edges={graphEdges}
                       >

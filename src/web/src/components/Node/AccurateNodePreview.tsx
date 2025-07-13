@@ -158,9 +158,12 @@ export default function AccurateNodePreview({ nodeData, scale = 0.8 }: AccurateN
             <div style={{ 
                 transform: `scale(${scale})`, 
                 transformOrigin: 'center',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                width: 'fit-content'
             }}>
-                <NodeBody $selected={false} $width={3} $height={1}>
+                <NodeBody $selected={false} $width={3} $height={1} style={{
+                    minWidth: scale < 0.7 ? '280px' : '260px'
+                }}>
                     <AccurateNodeHeader nodeName={nodeData.name} namespace={nodeData.namespace} />
                     <Box px="4" py="2">
                         <Text size="2" style={{

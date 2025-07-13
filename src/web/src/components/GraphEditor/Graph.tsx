@@ -31,6 +31,7 @@ import {
 import { useHistoryTracker } from '../../hooks/useHistoryTracker';
 import { useHistoryStore, NodeDelta, EdgeDelta } from '../../stores/HistoryStore';
 import { useSelectionStore } from '../../stores/SelectionStore';
+import { useNodeDefinitionStore } from '../../stores/NodeDefinitionStore';
 
 import * as Constants from '../../constants';
 import { nanoid } from 'nanoid';
@@ -357,6 +358,15 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
         y: event.clientY,
       });
 
+      // Get node definition from store to ensure consistency with preview
+      const { getNodeDefinition } = useNodeDefinitionStore.getState();
+      const nodeDefinition = getNodeDefinition(dragType);
+      
+      if (!nodeDefinition) {
+        console.warn(`No node definition found for: ${dragType}`);
+        return;
+      }
+
       // Use getUniqueId to avoid collision
       const existingNodeIds = new Set(getNodes().map(n => n.id));
       const newNode = {
@@ -364,15 +374,11 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
         type: 'operator',
         position,
         data: {
-          name: dragType,
-          namespace: 'DataOps',
-          brief: `A ${dragType} operation`,
-          inputs: [
-            { name: 'input', typeId: 'any' }
-          ],
-          outputs: [
-            { name: 'output', typeId: 'any' }
-          ]
+          name: nodeDefinition.name,
+          namespace: nodeDefinition.namespace,
+          brief: nodeDefinition.description,
+          inputs: nodeDefinition.inputs,
+          outputs: nodeDefinition.outputs
         },
       };
 
