@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { PerformanceConfig, PerformanceAlert, DEFAULT_PERFORMANCE_CONFIG } from '../types/performance';
 
 interface PerformanceMetrics {
@@ -35,6 +35,7 @@ export function usePerformanceMonitor(config: Partial<PerformanceConfig> = {}) {
   const frameCountRef = useRef(0);
   const lastFrameTimeRef = useRef(performance.now());
   const alertsRef = useRef<PerformanceAlert[]>([]);
+  const animationFrameRef = useRef<number | null>(null);
 
   const addAlert = useCallback((alert: PerformanceAlert) => {
     if (alertsRef.current.length >= 50) {
@@ -86,6 +87,30 @@ export function usePerformanceMonitor(config: Partial<PerformanceConfig> = {}) {
     }
   }, [finalConfig.enabled, finalConfig.warnOnLowFPS, finalConfig.fpsThreshold, addAlert]);
 
+  // Continuous frame rate monitoring
+  const frameRateLoop = useCallback(() => {
+    if (!finalConfig.enabled) return;
+    
+    updateFrameRate();
+    animationFrameRef.current = requestAnimationFrame(frameRateLoop);
+  }, [finalConfig.enabled, updateFrameRate]);
+
+  // Start/stop frame rate monitoring
+  useEffect(() => {
+    if (finalConfig.enabled) {
+      frameCountRef.current = 0;
+      lastFrameTimeRef.current = performance.now();
+      animationFrameRef.current = requestAnimationFrame(frameRateLoop);
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [finalConfig.enabled, frameRateLoop]);
+
   const startDragSession = useCallback(() => {
     if (!finalConfig.enabled || Math.random() > finalConfig.sampleRate) return;
     
@@ -125,9 +150,7 @@ export function usePerformanceMonitor(config: Partial<PerformanceConfig> = {}) {
       
       console.warn(`Slow drag operation: ${operationName} took ${duration.toFixed(2)}ms`);
     }
-
-    updateFrameRate();
-  }, [finalConfig.enabled, finalConfig.slowThreshold, finalConfig.warnOnSlowDrag, updateFrameRate, addAlert]);
+  }, [finalConfig.enabled, finalConfig.slowThreshold, finalConfig.warnOnSlowDrag, addAlert]);
 
   const endDragSession = useCallback(() => {
     if (!finalConfig.enabled || !sessionRef.current) return;
@@ -203,6 +226,8 @@ export function usePerformanceMonitor(config: Partial<PerformanceConfig> = {}) {
   const reset = useCallback(() => {
     historyRef.current = [];
     alertsRef.current = [];
+    frameCountRef.current = 0;
+    lastFrameTimeRef.current = performance.now();
     setMetrics({
       dragDuration: 0,
       frameRate: 0,
