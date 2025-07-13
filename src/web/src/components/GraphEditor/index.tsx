@@ -27,7 +27,6 @@ export default function GraphEditor({ sidebarVisible: _sidebarVisible = true, on
         <div style={style}>
             <div style={{ flex: 1, minHeight: 0, width: '100%', height: '100%', position: 'relative' }}>
                 <ReactFlowProvider>
-                    <EditorStatus />
                     <EditorCoordinate />
                     <Workspace 
                         onNodeSelect={() => {}}
@@ -64,14 +63,3 @@ function EditorCoordinate() {
 
 
 
-const StatusElement = styled(Panel)`
-    margin: 0;
-    margin-left: 7px;
-    font-size: small;
-    color: #aaaa;
-    user-select: none;
-`;
-
-function EditorStatus() {
-    return (<StatusElement position='bottom-left'>Connected</StatusElement>);
-}

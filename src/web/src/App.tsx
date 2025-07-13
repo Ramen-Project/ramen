@@ -9,7 +9,7 @@ import { Theme } from "@radix-ui/themes";
 import * as Tabs from '@radix-ui/react-tabs';
 import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
 import Sidebar from './components/Sidebar';
-import { NodeLibrary, Properties, History } from './components/Sidebar/Panels';
+import { NodeLibrary } from './components/Sidebar/Panels';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -157,17 +157,6 @@ export default function App() {
                         edges={graphEdges}
                       >
                         <NodeLibrary />
-                        <Properties 
-                          onUpdateNode={() => {}}
-                        />
-                        <History 
-                          onUndo={() => {}}
-                          onRedo={() => {}}
-                          canUndo={false}
-                          canRedo={false}
-                          onGoToHistory={() => {}}
-                          onClearHistory={() => {}}
-                        />
                       </Sidebar>
                     </div>
                   )}

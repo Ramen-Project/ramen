@@ -20,8 +20,52 @@ import {
   // UpdateIcon
 } from '@radix-ui/react-icons';
 
+import AccurateNodePreview from '../../Node/AccurateNodePreview';
+import { createNodePreviewData } from '../../../utils/nodePreviewData';
+
 const PanelContainer = styled.div`
   margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+`;
+
+const LibraryLayout = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 12px;
+`;
+
+const NodeListSection = styled.div`
+  flex: 1;
+  min-height: 0;
+`;
+
+const PreviewSection = styled.div`
+  height: 200px;
+  border-top: 1px solid var(--gray-6);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  background: var(--gray-2);
+  border-radius: 8px;
+`;
+
+const PreviewHeader = styled.div`
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-6);
+  background: var(--gray-3);
+  border-radius: 8px 8px 0 0;
+`;
+
+const PreviewContent = styled.div`
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 `;
 
 // const PanelHeader = styled.div`
@@ -388,6 +432,11 @@ const nodeCategories = [
 
 export default function NodeLibrary() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<{
+    name: string;
+    description: string;
+    category: string;
+  } | null>(null);
 
   const handleDragStart = (event: React.DragEvent, nodeType: string) => {
     console.log('Drag started for:', nodeType);
@@ -403,45 +452,74 @@ export default function NodeLibrary() {
 
   return (
     <PanelContainer>
-      
-      <ScrollArea style={{ height: 'calc(100vh - 120px)' }}>
-        {nodeCategories.map((category) => {
-          const isExpanded = activeCategory === category.name;
-          return (
-            <NodeCategory key={category.name}>
-              <CategoryHeader onClick={() => toggleCategory(category.name)}>
-                <CollapseIcon>
-                  {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                </CollapseIcon>
-                <Box style={{ color: category.color }}>
-                  {category.icon}
-                </Box>
-                <CategoryName size="2" weight="medium" color="gray">
-                  {category.name}
-                </CategoryName>
-                <Badge color="gray" variant="soft">
-                  {category.nodes.length}
-                </Badge>
-              </CategoryHeader>
-              {isExpanded && category.nodes.map((node) => (
-                <NodeItem
-                  key={node.name}
-                  draggable={true}
-                  onDragStart={(e) => handleDragStart(e, node.name)}
-                >
-                  <NodeIcon $color={category.color}>
-                    <PlusIcon />
-                  </NodeIcon>
-                  <NodeInfo>
-                    <NodeName>{node.name}</NodeName>
-                    <NodeDescription>{node.description}</NodeDescription>
-                  </NodeInfo>
-                </NodeItem>
-              ))}
-            </NodeCategory>
-          );
-        })}
-      </ScrollArea>
+      <LibraryLayout>
+        <NodeListSection>
+          <ScrollArea style={{ height: 'calc(100vh - 320px)' }}>
+            {nodeCategories.map((category) => {
+              const isExpanded = activeCategory === category.name;
+              return (
+                <NodeCategory key={category.name}>
+                  <CategoryHeader onClick={() => toggleCategory(category.name)}>
+                    <CollapseIcon>
+                      {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                    </CollapseIcon>
+                    <Box style={{ color: category.color }}>
+                      {category.icon}
+                    </Box>
+                    <CategoryName size="2" weight="medium" color="gray">
+                      {category.name}
+                    </CategoryName>
+                    <Badge color="gray" variant="soft">
+                      {category.nodes.length}
+                    </Badge>
+                  </CategoryHeader>
+                  {isExpanded && category.nodes.map((node) => (
+                    <NodeItem
+                      key={node.name}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, node.name)}
+                      onMouseEnter={() => setHoveredNode({
+                        name: node.name,
+                        description: node.description,
+                        category: category.name
+                      })}
+                      onMouseLeave={() => setHoveredNode(null)}
+                    >
+                      <NodeIcon $color={category.color}>
+                        <PlusIcon />
+                      </NodeIcon>
+                      <NodeInfo>
+                        <NodeName>{node.name}</NodeName>
+                        <NodeDescription>{node.description}</NodeDescription>
+                      </NodeInfo>
+                    </NodeItem>
+                  ))}
+                </NodeCategory>
+              );
+            })}
+          </ScrollArea>
+        </NodeListSection>
+        
+        <PreviewSection>
+          <PreviewHeader>
+            <Text size="2" weight="medium" color="gray">
+              {hoveredNode ? `Preview: ${hoveredNode.name}` : 'Hover over a node to preview'}
+            </Text>
+          </PreviewHeader>
+          <PreviewContent>
+            {hoveredNode ? (
+              <AccurateNodePreview 
+                nodeData={createNodePreviewData(hoveredNode.name, hoveredNode.description, hoveredNode.category)} 
+                scale={0.7} 
+              />
+            ) : (
+              <Text size="2" color="gray" style={{ fontStyle: 'italic' }}>
+                Hover over a node to see its preview
+              </Text>
+            )}
+          </PreviewContent>
+        </PreviewSection>
+      </LibraryLayout>
     </PanelContainer>
   );
 } 

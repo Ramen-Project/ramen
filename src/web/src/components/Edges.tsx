@@ -67,7 +67,7 @@ export function DefaultEdge({
         }
     }
     
-    const type = typeReg.typesRegistries[typeId]
+    const type = typeReg?.typesRegistries?.[typeId] || typeReg?.typesRegistries?.['unknown'] || { name: 'Unknown', color: '#888888' }
     const [d, labelX, labelY] = getBezierPath({
       sourceX: sourceX+4,
       sourceY: sourceY+3,
@@ -123,7 +123,7 @@ export function ConnectionLine({ fromX, fromY, toX, toY, fromPosition, toPositio
         }
     }
     
-    const type = typeReg.typesRegistries[typeId]
+    const type = typeReg?.typesRegistries?.[typeId] || typeReg?.typesRegistries?.['unknown'] || { name: 'Unknown', color: '#888888' }
     const dragFromInput = fromHandle?.position == Position.Left
     const [d] = getBezierPath({
       // align connection line to edge
