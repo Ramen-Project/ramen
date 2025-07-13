@@ -101,15 +101,17 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
             </div>
           </div>
 
-          <div style={{ marginBottom: '6px' }}>
-            <div style={{ 
-              display: 'flex',
-              justifyContent: 'space-between'
-            }}>
-              <span>Memory:</span>
-              <span>{formatMemory(metrics.memoryUsage)}</span>
+          {metrics.memoryUsage > 0 && (
+            <div style={{ marginBottom: '6px' }}>
+              <div style={{ 
+                display: 'flex',
+                justifyContent: 'space-between'
+              }}>
+                <span>Memory:</span>
+                <span>{formatMemory(metrics.memoryUsage)}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           <div style={{ marginBottom: '6px' }}>
             <div style={{ 

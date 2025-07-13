@@ -45,10 +45,19 @@ export function usePerformanceMonitor(config: Partial<PerformanceConfig> = {}) {
   }, []);
 
   const getMemoryUsage = useCallback(() => {
-    if ('memory' in performance) {
-      return (performance as any).memory.usedJSHeapSize / 1024 / 1024; // MB
+    try {
+      // Check if performance.memory is available (Chrome/Edge only)
+      if (typeof performance !== 'undefined' && 
+          'memory' in performance && 
+          performance.memory && 
+          'usedJSHeapSize' in performance.memory) {
+        return (performance.memory as any).usedJSHeapSize / 1024 / 1024; // MB
+      }
+    } catch (error) {
+      // Silently handle any errors accessing performance.memory
+      console.debug('Performance memory API not available:', error);
     }
-    return 0;
+    return 0; // Return 0 if memory API is not available
   }, []);
 
   const updateFrameRate = useCallback(() => {
@@ -136,8 +145,8 @@ export function usePerformanceMonitor(config: Partial<PerformanceConfig> = {}) {
     const avgTime = historyRef.current.reduce((a, b) => a + b, 0) / historyRef.current.length;
     const memoryUsage = getMemoryUsage();
     
-    // Check memory usage warning
-    if (memoryUsage > finalConfig.memoryWarningThreshold) {
+    // Check memory usage warning (only if memory API is available)
+    if (memoryUsage > 0 && memoryUsage > finalConfig.memoryWarningThreshold) {
       addAlert({
         type: 'warning',
         message: `High memory usage: ${memoryUsage.toFixed(1)}MB`,
