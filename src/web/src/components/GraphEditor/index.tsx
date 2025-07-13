@@ -8,9 +8,19 @@ interface GraphEditorProps {
   sidebarVisible?: boolean;
   onGraphDataChange?: (nodes: Node[], edges: Edge[]) => void;
   onSelectionChange?: (selection: { node?: Node; edge?: Edge } | null) => void;
+  initialNodes?: Node[];
+  initialEdges?: Edge[];
+  graphId?: string;
 }
 
-export default function GraphEditor({ sidebarVisible: _sidebarVisible = true, onGraphDataChange, onSelectionChange }: GraphEditorProps) {
+export default function GraphEditor({ 
+  sidebarVisible: _sidebarVisible = true, 
+  onGraphDataChange, 
+  onSelectionChange,
+  initialNodes = [],
+  initialEdges = [],
+  graphId
+}: GraphEditorProps) {
     // const [undoHandler, setUndoHandler] = useState<(() => void) | null>(null);
     // const [redoHandler, setRedoHandler] = useState<(() => void) | null>(null);
     
@@ -36,6 +46,9 @@ export default function GraphEditor({ sidebarVisible: _sidebarVisible = true, on
                         }}
                         onGraphDataChange={onGraphDataChange}
                         onSelectionChange={onSelectionChange}
+                        initialNodes={initialNodes}
+                        initialEdges={initialEdges}
+                        graphId={graphId}
                     />
                 </ReactFlowProvider>
             </div>

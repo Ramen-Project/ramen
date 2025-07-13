@@ -14,7 +14,6 @@ import {
   NodeChange,
   useReactFlow,
   Node as FlowNode,
-  ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
 import './Graph.css';
@@ -34,9 +33,11 @@ import { useHistoryStore, NodeDelta, EdgeDelta } from '../../stores/HistoryStore
 import { useSelectionStore } from '../../stores/SelectionStore';
 import { useNodeDefinitionStore } from '../../stores/NodeDefinitionStore';
 import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor';
+import { useGraphStore } from '../../stores/GraphStore';
 
 import * as Constants from '../../constants';
 import { nanoid } from 'nanoid';
+// import { isEqual } from 'lodash-es';
 
 // Namespace colors for operator nodes
 const NAMESPACE_COLORS: Record<string, string> = {
@@ -94,9 +95,7 @@ const edgeTypes = {
 //   ];
 // };
 
-const initialNodes: Node<any>[] = [];
 
-const initialEdges: Edge[] = [];
 
 function connectionCheck(connection: Connection | Edge): boolean {
   // Prevent self-connections (node connecting to itself)
@@ -115,12 +114,22 @@ interface GraphProps {
   onUndoRedoHandlers?: (undo: () => void, redo: () => void) => void;
   onGraphDataChange?: (nodes: Node[], edges: Edge[]) => void;
   onSelectionChange?: (selection: { node?: Node; edge?: Edge } | null) => void;
+  graphId?: string;
 }
 
-export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataChange, onSelectionChange }: GraphProps) {
+export default function Graph({ 
+  onNodeSelect, 
+  onUndoRedoHandlers, 
+  onGraphDataChange, 
+  onSelectionChange,
+  graphId
+}: GraphProps) {
   const { setSelection } = useSelectionStore();
-  const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const getGraph = useGraphStore(s => s.getGraph);
+  const updateGraphData = useGraphStore(s => s.updateGraphData);
+  const graph = graphId ? getGraph(graphId) : null;
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState(graph?.nodes || []);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(graph?.edges || []);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
@@ -150,10 +159,34 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
   // History management
   const { undo, redo, canUndo, canRedo, addEntry, goToHistory } = useHistoryStore();
   
-  // Notify parent of graph data changes
+  // When graphId changes, update local state to match the store
   useEffect(() => {
-    onGraphDataChange?.(nodes, edges);
-  }, [nodes, edges, onGraphDataChange]);
+    if (graph) {
+      // Only update if different (shallow check)
+      const nodesChanged = nodes.length !== graph.nodes.length || nodes.some((n, i) => n.id !== graph.nodes[i]?.id);
+      const edgesChanged = edges.length !== graph.edges.length || edges.some((e, i) => e.id !== graph.edges[i]?.id);
+      if (nodesChanged) {
+        setNodes(graph.nodes);
+      }
+      if (edgesChanged) {
+        setEdges(graph.edges);
+      }
+    }
+  }, [graphId]);
+
+  // Remove the onGraphDataChange useEffect that causes infinite loop
+  // useEffect(() => {
+  //   onGraphDataChange?.(nodes, edges);
+  // }, [nodes, edges, onGraphDataChange]);
+
+  // Update store when graph data changes (but not on every React Flow internal change)
+  const updateStoreData = useCallback(() => {
+    if (graphId) {
+      const currentNodes = getNodes();
+      const currentEdges = getEdges();
+      updateGraphData(graphId, currentNodes, currentEdges);
+    }
+  }, [graphId, getNodes, getEdges, updateGraphData]);
   
   // Helper function to create specific deltas for paste operations
   const createPasteDeltas = (pastedNodes: Node[], pastedEdges: Edge[]) => {
@@ -397,6 +430,8 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
 
       setNodes((nds) => nds.concat(newNode));
       setDragType(null); // Reset drag type
+      // Update store after adding node
+      setTimeout(updateStoreData, 0);
     },
     [screenToFlowPosition, dragType, getNodes, setNodes]
   );
@@ -718,10 +753,13 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
     // End performance monitoring session
     endDragSession();
     
+    // Update store after drag operation
+    setTimeout(updateStoreData, 0);
+    
     if (isPerformanceEnabled) {
       console.log(`Ended drag session for node: ${node.id}`, metrics);
     }
-  }, [addEntry, nodes, edges, selectedNodeIds, getNodes, setNodes, trackOperation, endDragSession, isPerformanceEnabled, metrics]);
+  }, [addEntry, nodes, edges, selectedNodeIds, getNodes, setNodes, trackOperation, endDragSession, isPerformanceEnabled, metrics, updateStoreData]);
 
   // Toolbar callback functions
   const handleCreateGroup = useCallback(() => {
@@ -731,6 +769,9 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
       const selectedNodes = currentNodes.filter(n => selectedNodeIds.includes(n.id));
       
       createGroup(currentNodes, currentEdges, selectedNodeIds, setNodes, setEdges);
+      
+      // Update store after group creation
+      setTimeout(updateStoreData, 0);
       
       // Skip history for group creation to avoid duplicate key issues
       // TODO: Implement proper delta tracking for group creation
@@ -748,6 +789,9 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
       const childNodes = currentNodes.filter(n => n.parentId === groupNode.id);
       
       ungroupGroup(currentNodes, currentEdges, groupNode.id, setNodes, setEdges);
+      
+      // Update store after group ungrouping
+      setTimeout(updateStoreData, 0);
       
       // Skip history for group ungrouping to avoid duplicate key issues
       // TODO: Implement proper delta tracking for group ungrouping
@@ -857,10 +901,12 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
         setNodes(nds => nds.map(n => ({ ...n, selected: false })).concat(pastedNodes));
         setEdges(eds => eds.concat(pastedEdges));
         setSelectedNodeIds(pastedNodes.map(n => n.id));
+        // Update store after pasting nodes
+        setTimeout(updateStoreData, 0);
         // Add history entry with only the pasted items
         const { nodeDeltas, edgeDeltas } = createPasteDeltas(pastedNodes, pastedEdges);
         addEntry({
-          type: 'paste',
+          type: 'add',
           title: `Pasted ${pastedNodes.length} node${pastedNodes.length > 1 ? 's' : ''}`,
           description: `Pasted node(s) at offset`,
           nodeDeltas,
@@ -892,11 +938,13 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
         setNodes(nds => nds.filter(n => !nodeIds.has(n.id)));
         setEdges(eds => eds.filter(e => !nodeIds.has(e.source) && !nodeIds.has(e.target)));
         setSelectedNodeIds([]);
+        // Update store after cutting nodes
+        setTimeout(updateStoreData, 0);
         // Add history entry for the cut items
         const cutEdges = currentEdges.filter(e => nodeIds.has(e.source) || nodeIds.has(e.target));
         const { nodeDeltas, edgeDeltas } = createCutDeltas(nodesToCut, cutEdges);
         addEntry({
-          type: 'cut',
+          type: 'delete',
           title: `Cut ${nodesToCut.length} node${nodesToCut.length > 1 ? 's' : ''}`,
           description: `Cut node(s) from graph`,
           nodeDeltas,
@@ -907,7 +955,7 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo, handleCreateGroup, handleUngroupGroup, handleAutoResizeGroup, selectedNodeIds, getNodes, getEdges, setNodes, setEdges, addEntry]);
+  }, [handleUndo, handleRedo, handleCreateGroup, handleUngroupGroup, handleAutoResizeGroup, selectedNodeIds, getNodes, getEdges, setNodes, setEdges, addEntry, updateStoreData]);
 
   // Toggle group/ungroup with G key
   const handleToggleGroup = useCallback(() => {
