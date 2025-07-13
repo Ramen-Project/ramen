@@ -27,6 +27,8 @@ const EdgeLabel = styled.div.attrs<{$posX: number, $posY: number, $color: string
   position: absolute;
   border: solid 1px;
   border-radius: 3px;
+  z-index: 1000;
+  padding: 0 6px;
 `;
 
 export function DefaultEdge({

@@ -413,6 +413,10 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
       setDragOverGroupId(null);
     });
     
+    // Clear caches for fresh drag session
+    dragCacheRef.current = { nodes: [], lastUpdate: 0 };
+    groupCacheRef.current = { groups: [], lastUpdate: 0 };
+    
     // Start performance monitoring session
     startDragSession();
     
@@ -421,12 +425,28 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
     }
   }, [trackOperation, startDragSession, isPerformanceEnabled]);
 
+  // Cache nodes and throttle group detection during drag
+  const dragCacheRef = useRef<{ nodes: Node[], lastUpdate: number }>({ nodes: [], lastUpdate: 0 });
+  const DRAG_THROTTLE_MS = 50; // Throttle to 20fps for smooth performance
+
   const onNodeDrag = useCallback((_event: React.MouseEvent, node: FlowNode) => {
     // Check if node is being dragged over a group
     if (node.type !== 'group') {
+      const now = performance.now();
+      
+      // Throttle expensive operations
+      if (now - dragCacheRef.current.lastUpdate < DRAG_THROTTLE_MS) {
+        return;
+      }
+      
       trackOperation('groupDetection', () => {
-        const currentNodes = getNodes();
-        const groupUnderNode = findGroupUnderNode(node, currentNodes);
+        // Use cached nodes if available, otherwise get fresh ones
+        if (dragCacheRef.current.nodes.length === 0 || now - dragCacheRef.current.lastUpdate > 200) {
+          dragCacheRef.current.nodes = getNodes();
+        }
+        dragCacheRef.current.lastUpdate = now;
+        
+        const groupUnderNode = findGroupUnderNode(node, dragCacheRef.current.nodes);
         
         if (groupUnderNode && groupUnderNode.id !== node.parentId) {
           setDragOverGroupId(groupUnderNode.id);
@@ -574,9 +594,23 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
     );
   }
 
+  // Cache group nodes for better performance
+  const groupCacheRef = useRef<{ groups: Node[], lastUpdate: number }>({ groups: [], lastUpdate: 0 });
+
   // Helper to find the group that a node is being dragged over
   function findGroupUnderNode(node: Node, allNodes: Node[]): Node | null {
-    const groupNodes = allNodes.filter(n => n.type === 'group');
+    const now = performance.now();
+    
+    // Use cached group nodes if available
+    if (groupCacheRef.current.groups.length === 0 || now - groupCacheRef.current.lastUpdate > 500) {
+      groupCacheRef.current.groups = allNodes.filter(n => n.type === 'group');
+      groupCacheRef.current.lastUpdate = now;
+    }
+    
+    // Early exit if no groups
+    if (groupCacheRef.current.groups.length === 0) {
+      return null;
+    }
     
     // Calculate the center point of the node
     const nodeCenter = {
@@ -585,7 +619,7 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
     };
     
     // Find the group that contains this point
-    for (const groupNode of groupNodes) {
+    for (const groupNode of groupCacheRef.current.groups) {
       if (isPointInGroup(nodeCenter, groupNode)) {
         return groupNode;
       }
