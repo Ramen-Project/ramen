@@ -145,9 +145,19 @@ export default function Graph({
     trackOperation,
     endDragSession,
     measureAsync,
+    updatePositionChangeTime,
+    incrementOperation,
     reset: resetPerformanceMetrics,
     isEnabled: isPerformanceEnabled
   } = usePerformanceMonitor();
+  
+  // Track position changes for performance monitoring
+  const positionChangeRef = useRef<{
+    nodeId: string;
+    startPosition: { x: number; y: number };
+    startTime: number;
+    hasChanged: boolean;
+  } | null>(null);
   
   // Drag and drop handler
   const onDragStart = useCallback((event: React.DragEvent, nodeType: string) => {
@@ -304,6 +314,7 @@ export default function Graph({
 
   // Handle undo/redo (no animation)
   const handleUndo = useCallback(() => {
+    incrementOperation();
     const result = undo();
     if (result) {
       handleHistoryChange(result.nodes, result.edges);
@@ -316,9 +327,10 @@ export default function Graph({
         });
       }, 0);
     }
-  }, [undo, handleHistoryChange, getNodes, setNodes]);
+  }, [undo, handleHistoryChange, getNodes, setNodes, incrementOperation]);
 
   const handleRedo = useCallback(() => {
+    incrementOperation();
     const result = redo();
     if (result) {
       handleHistoryChange(result.nodes, result.edges);
@@ -331,7 +343,7 @@ export default function Graph({
         });
       }, 0);
     }
-  }, [redo, handleHistoryChange, getNodes, setNodes]);
+  }, [redo, handleHistoryChange, getNodes, setNodes, incrementOperation]);
 
   // Expose undo/redo to parent component
   useEffect(() => {
@@ -376,15 +388,18 @@ export default function Graph({
   }, [handleUndo, handleRedo, goToHistory, handleHistoryChange, onDragStart]);
 
   const onConnect = useCallback(
-    (connection: any) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges]
+    (connection: any) => {
+      incrementOperation();
+      setEdges((eds) => addEdge(connection, eds));
+    },
+    [setEdges, incrementOperation]
   );
 
   // Helper to generate a unique ID not in the provided set
-  function getUniqueId(existingIds: Set<string>): string {
-    let id = nanoid();
+  function getUniqueId(existingIds: Set<string>, prefix: string): string {
+    let id = `${prefix}-${nanoid()}`;
     while (existingIds.has(id)) {
-      id = nanoid();
+      id = `${prefix}-${nanoid()}`;
     }
     return id;
   }
@@ -416,7 +431,7 @@ export default function Graph({
       // Use getUniqueId to avoid collision
       const existingNodeIds = new Set(getNodes().map(n => n.id));
       const newNode = {
-        id: getUniqueId(existingNodeIds),
+        id: getUniqueId(existingNodeIds, 'node'),
         type: 'operator',
         position,
         data: {
@@ -428,6 +443,7 @@ export default function Graph({
         },
       };
 
+      incrementOperation();
       setNodes((nds) => nds.concat(newNode));
       setDragType(null); // Reset drag type
       // Update store after adding node
@@ -442,7 +458,7 @@ export default function Graph({
   }, []);
 
   // Track when nodes are being dragged over groups
-  const onNodeDragStart = useCallback((_event: React.MouseEvent, _node: FlowNode) => {
+  const onNodeDragStart = useCallback((_event: React.MouseEvent, node: FlowNode) => {
     // Clear any previous drag-over state
     trackOperation('dragOverStateReset', () => {
       setDragOverGroupId(null);
@@ -455,8 +471,16 @@ export default function Graph({
     // Start performance monitoring session
     startDragSession();
     
+    // Track position change for this node
+    positionChangeRef.current = {
+      nodeId: node.id,
+      startPosition: { ...node.position },
+      startTime: performance.now(),
+      hasChanged: false
+    };
+    
     if (isPerformanceEnabled) {
-      console.log(`Started drag session for node: ${_node.id}`);
+      console.log(`Started drag session for node: ${node.id} at position`, node.position);
     }
   }, [trackOperation, startDragSession, isPerformanceEnabled]);
 
@@ -465,6 +489,28 @@ export default function Graph({
   const DRAG_THROTTLE_MS = 50; // Throttle to 20fps for smooth performance
 
   const onNodeDrag = useCallback((_event: React.MouseEvent, node: FlowNode) => {
+    // Track position change for performance monitoring
+    if (positionChangeRef.current && positionChangeRef.current.nodeId === node.id) {
+      const startPos = positionChangeRef.current.startPosition;
+      const currentPos = node.position;
+      
+      // Check if position has actually changed (with some tolerance for floating point precision)
+      const hasPositionChanged = Math.abs(currentPos.x - startPos.x) > 0.1 || Math.abs(currentPos.y - startPos.y) > 0.1;
+      
+      if (hasPositionChanged && !positionChangeRef.current.hasChanged) {
+        // Position just changed for the first time
+        positionChangeRef.current.hasChanged = true;
+        const positionChangeTime = performance.now() - positionChangeRef.current.startTime;
+        
+        if (isPerformanceEnabled) {
+          console.log(`Node ${node.id} position changed in ${positionChangeTime.toFixed(2)}ms`);
+        }
+        
+        // Update the performance metrics with position change time
+        updatePositionChangeTime(positionChangeTime);
+      }
+    }
+    
     // Check if node is being dragged over a group
     if (node.type !== 'group') {
       const now = performance.now();
@@ -490,28 +536,31 @@ export default function Graph({
         }
       });
     }
-  }, [getNodes, trackOperation]);
+  }, [getNodes, trackOperation, isPerformanceEnabled]);
 
   const onMouseEnterEdge = useCallback(
     (_: MouseEvent, edge: Edge) => {
+      incrementOperation();
       setEdges((eds) => eds.map((value) => {
         if (value.id !== edge.id) return value;
         return { ...edge, data: { ...edge.data, highlighted: true } };
       }));
-    }, [setEdges]
+    }, [setEdges, incrementOperation]
   );
 
   const onMouseLeaveEdge = useCallback(
     (_: MouseEvent, edge: Edge) => {
+      incrementOperation();
       setEdges((eds) => eds.map((value) => {
         if (value.id !== edge.id) return value;
         return { ...edge, data: { ...edge.data, highlighted: false } };
       }))
-    }, [setEdges]
+    }, [setEdges, incrementOperation]
   );
 
   useOnSelectionChange({
     onChange: (args) => {
+      incrementOperation();
       const selectedNodeIds = args.nodes.map(node => node.id);
       const selectedEdgeIds = args.edges.map(edge => edge.id);
       
@@ -753,6 +802,9 @@ export default function Graph({
     // End performance monitoring session
     endDragSession();
     
+    // Clear position change tracking
+    positionChangeRef.current = null;
+    
     // Update store after drag operation
     setTimeout(updateStoreData, 0);
     
@@ -871,7 +923,7 @@ export default function Graph({
         const existingNodeIds = new Set(getNodes().map(n => n.id));
         const existingEdgeIds = new Set(getEdges().map(e => e.id));
         const idMap: Record<string, string> = {};
-        nodesToPaste.forEach(n => { idMap[n.id] = getUniqueId(existingNodeIds); existingNodeIds.add(idMap[n.id]); });
+        nodesToPaste.forEach(n => { idMap[n.id] = getUniqueId(existingNodeIds, 'node'); existingNodeIds.add(idMap[n.id]); });
         // Offset for paste (e.g., 40px right and down)
         const OFFSET = 40;
         // Paste nodes with new IDs and offset positions
@@ -883,7 +935,7 @@ export default function Graph({
         }));
         // Paste edges with new source/target IDs and unique edge IDs
         const pastedEdges = edgesToPaste.map(e => {
-          const newId = getUniqueId(existingEdgeIds);
+          const newId = getUniqueId(existingEdgeIds, 'connection');
           existingEdgeIds.add(newId);
           return {
             ...e,
@@ -1106,6 +1158,9 @@ export default function Graph({
         metrics={metrics}
         isEnabled={isPerformanceEnabled}
         onReset={resetPerformanceMetrics}
+        nodeCount={nodes.length}
+        edgeCount={edges.length}
+        graphId={graphId}
       />
       <ReactFlow
         nodes={nodes}
@@ -1140,6 +1195,7 @@ export default function Graph({
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         onNodeClick={(event, node) => {
+          incrementOperation();
           // Manually trigger selection
           setNodes(nodes => nodes.map(n => ({
             ...n,
@@ -1149,6 +1205,7 @@ export default function Graph({
           setSelection({ node });
         }}
         onEdgeClick={(event, edge) => {
+          incrementOperation();
           // Manually trigger edge selection
           setEdges(edges => edges.map(e => ({
             ...e,
@@ -1160,6 +1217,7 @@ export default function Graph({
           })));
         }}
         onPaneClick={() => {
+          incrementOperation();
           // Clear all selections
           setNodes(nodes => nodes.map(n => ({
             ...n,

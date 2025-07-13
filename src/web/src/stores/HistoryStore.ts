@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Node, Edge } from '@xyflow/react';
+import { nanoid } from 'nanoid';
 
 // Delta types for different operations
 export interface NodeDelta {
@@ -177,7 +178,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => {
       // Add the new entry
       const newEntry: HistoryEntry = {
         ...entry,
-        id: Date.now().toString(),
+        id: nanoid(),
         timestamp: new Date()
       };
       

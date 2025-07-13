@@ -1,4 +1,5 @@
 import { Node, Edge } from '@xyflow/react';
+import { nanoid } from 'nanoid';
 
 export interface GroupNode extends Node {
   data: {
@@ -195,7 +196,7 @@ export const createGroup = (
   const groupX = minX - 40; // Changed padding to 40
   const groupY = minY - 40; // Changed padding to 40
 
-  const groupId = `group-${Date.now()}`;
+  const groupId = `group-${nanoid()}`;
 
   // Create group node without initial dimensions - will be set after first resize
   const groupNode: GroupNode = {

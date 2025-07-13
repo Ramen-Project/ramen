@@ -6,13 +6,19 @@ interface PerformanceMonitorProps {
   isEnabled: boolean;
   onReset: () => void;
   className?: string;
+  nodeCount?: number;
+  edgeCount?: number;
+  graphId?: string;
 }
 
 const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
   metrics,
   isEnabled,
   onReset,
-  className = ''
+  className = '',
+  nodeCount = 0,
+  edgeCount = 0,
+  graphId
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -32,6 +38,13 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     if (value < threshold * 0.5) return '#22c55e'; // green
     if (value < threshold) return '#f59e0b'; // yellow
     return '#ef4444'; // red
+  }, []);
+
+  const getGraphComplexityColor = useCallback((nodeCount: number) => {
+    if (nodeCount < 10) return '#22c55e'; // green
+    if (nodeCount < 50) return '#f59e0b'; // yellow
+    if (nodeCount < 100) return '#ef4444'; // red
+    return '#dc2626'; // dark red for very complex graphs
   }, []);
 
   if (!isEnabled) {
@@ -68,14 +81,52 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
 
       {isExpanded && (
         <div style={{ lineHeight: '1.4' }}>
+          {/* Graph Statistics Section */}
+          <div style={{ 
+            borderBottom: '1px solid #374151', 
+            paddingBottom: '6px', 
+            marginBottom: '6px' 
+          }}>
+            {graphId && (
+              <div style={{ 
+                color: '#60a5fa',
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: '2px',
+                fontSize: '10px'
+              }}>
+                <span>Graph:</span>
+                <span>{graphId}</span>
+              </div>
+            )}
+            <div style={{ 
+              color: getGraphComplexityColor(nodeCount),
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '2px'
+            }}>
+              <span>Nodes:</span>
+              <span>{nodeCount}</span>
+            </div>
+            <div style={{ 
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '2px'
+            }}>
+              <span>Edges:</span>
+              <span>{edgeCount}</span>
+            </div>
+          </div>
+
+          {/* Performance Metrics Section */}
           <div style={{ marginBottom: '6px' }}>
             <div style={{ 
-              color: getPerformanceColor(metrics.dragDuration, 100),
+              color: getPerformanceColor(metrics.positionChangeTime, 50),
               display: 'flex',
               justifyContent: 'space-between'
             }}>
-              <span>Last Drag:</span>
-              <span>{formatDuration(metrics.dragDuration)}</span>
+              <span>Position Change:</span>
+              <span>{formatDuration(metrics.positionChangeTime)}</span>
             </div>
           </div>
 
@@ -85,14 +136,14 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
               display: 'flex',
               justifyContent: 'space-between'
             }}>
-              <span>Avg Drag:</span>
+              <span>Avg Position:</span>
               <span>{formatDuration(metrics.averageDragTime)}</span>
             </div>
           </div>
 
           <div style={{ marginBottom: '6px' }}>
             <div style={{ 
-              color: metrics.frameRate < 30 ? '#ef4444' : metrics.frameRate < 50 ? '#f59e0b' : '#22c55e',
+              color: metrics.frameRate === 0 ? '#9ca3af' : metrics.frameRate < 30 ? '#ef4444' : metrics.frameRate < 50 ? '#f59e0b' : '#22c55e',
               display: 'flex',
               justifyContent: 'space-between'
             }}>
