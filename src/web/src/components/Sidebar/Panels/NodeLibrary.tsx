@@ -6,7 +6,7 @@ import {
   ChevronRightIcon,
 } from '@radix-ui/react-icons';
 
-import NodePreviewItem from '../../Node/NodePreviewWrapper';
+import StandaloneNodePreview from '../../Node/StandaloneNodePreview';
 import { useNodeDefinitionStore } from '../../../stores/NodeDefinitionStore';
 
 const PanelContainer = styled.div`
@@ -108,7 +108,7 @@ export default function NodeLibrary() {
                 };
                 
                 return (
-                  <NodePreviewItem
+                  <StandaloneNodePreview
                     key={node.name}
                     nodeData={previewData} 
                     scale={0.9} 
