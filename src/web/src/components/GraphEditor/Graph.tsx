@@ -23,6 +23,7 @@ import './Graph.css';
 import { ConnectionLine, DefaultEdge } from '../Edges';
 import { nodeTypes } from '../Node';
 import GroupNode from '../Node/GroupNode';
+import PerformanceMonitor from '../PerformanceMonitor';
 import { 
   ungroupGroup, 
   autoResizeGroup, 
@@ -32,6 +33,7 @@ import { useHistoryTracker } from '../../hooks/useHistoryTracker';
 import { useHistoryStore, NodeDelta, EdgeDelta } from '../../stores/HistoryStore';
 import { useSelectionStore } from '../../stores/SelectionStore';
 import { useNodeDefinitionStore } from '../../stores/NodeDefinitionStore';
+import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor';
 
 import * as Constants from '../../constants';
 import { nanoid } from 'nanoid';
@@ -126,6 +128,17 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
   const { getNodes, getEdges, screenToFlowPosition } = useReactFlow();
   const copyBuffer = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
   const [dragType, setDragType] = useState<string | null>(null);
+  
+  // Performance monitoring
+  const {
+    metrics,
+    startDragSession,
+    trackOperation,
+    endDragSession,
+    measureAsync,
+    reset: resetPerformanceMetrics,
+    isEnabled: isPerformanceEnabled
+  } = usePerformanceMonitor();
   
   // Drag and drop handler
   const onDragStart = useCallback((event: React.DragEvent, nodeType: string) => {
@@ -396,22 +409,33 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
   // Track when nodes are being dragged over groups
   const onNodeDragStart = useCallback((_event: React.MouseEvent, _node: FlowNode) => {
     // Clear any previous drag-over state
-    setDragOverGroupId(null);
-  }, []);
+    trackOperation('dragOverStateReset', () => {
+      setDragOverGroupId(null);
+    });
+    
+    // Start performance monitoring session
+    startDragSession();
+    
+    if (isPerformanceEnabled) {
+      console.log(`Started drag session for node: ${_node.id}`);
+    }
+  }, [trackOperation, startDragSession, isPerformanceEnabled]);
 
   const onNodeDrag = useCallback((_event: React.MouseEvent, node: FlowNode) => {
     // Check if node is being dragged over a group
     if (node.type !== 'group') {
-      const currentNodes = getNodes();
-      const groupUnderNode = findGroupUnderNode(node, currentNodes);
-      
-      if (groupUnderNode && groupUnderNode.id !== node.parentId) {
-        setDragOverGroupId(groupUnderNode.id);
-      } else {
-        setDragOverGroupId(null);
-      }
+      trackOperation('groupDetection', () => {
+        const currentNodes = getNodes();
+        const groupUnderNode = findGroupUnderNode(node, currentNodes);
+        
+        if (groupUnderNode && groupUnderNode.id !== node.parentId) {
+          setDragOverGroupId(groupUnderNode.id);
+        } else {
+          setDragOverGroupId(null);
+        }
+      });
     }
-  }, [getNodes]);
+  }, [getNodes, trackOperation]);
 
   const onMouseEnterEdge = useCallback(
     (_: MouseEvent, edge: Edge) => {
@@ -463,70 +487,76 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
 
   // Enhanced onNodesChange to resize group when nodes are dragged
   const onNodesChange = useCallback((changes: NodeChange[]) => {
-    // Step 1: Map current parentIds and positions
-    const prevNodes = getNodes();
-    const prevParentMap: Record<string, string | undefined> = {};
-    const prevPositionMap: Record<string, { x: number; y: number }> = {};
-    prevNodes.forEach(node => {
-      prevParentMap[node.id] = node.parentId;
-      prevPositionMap[node.id] = node.position;
-    });
-
-    // Step 2: Apply changes
-    onNodesChangeBase(changes);
-
-    // Step 3: After a tick (to ensure state is updated), check for changes
-    setTimeout(() => {
-      const updatedNodes = getNodes();
-      const affectedGroupIds = new Set<string>();
-      
-      updatedNodes.forEach(node => {
-        const prevParent = prevParentMap[node.id];
-        const currParent = node.parentId;
-        const prevPos = prevPositionMap[node.id];
-        
-        // Check if node left a group
-        if (
-          prevParent &&
-          prevParent.startsWith('group-') &&
-          prevParent !== currParent
-        ) {
-          affectedGroupIds.add(prevParent);
-        }
-        
-        // Check if node is being dragged within or outside a group (for resizing)
-        if (
-          currParent &&
-          currParent.startsWith('group-') &&
-          prevPos &&
-          (node.position.x !== prevPos.x || node.position.y !== prevPos.y)
-        ) {
-          // Always trigger resize when node in group is moved
-          affectedGroupIds.add(currParent);
-        }
-        
-        // Check for drag-to-join: node moved from no parent to a group
-        if (
-          !prevParent &&
-          currParent &&
-          currParent.startsWith('group-') &&
-          node.type !== 'group' // Don't handle group-to-group joins here
-        ) {
-          // Node joined a group via drag
-          console.log(`Node ${node.id} joined group ${currParent}`);
-          affectedGroupIds.add(currParent);
-        }
+    trackOperation('nodesChangeAnalysis', () => {
+      // Step 1: Map current parentIds and positions
+      const prevNodes = getNodes();
+      const prevParentMap: Record<string, string | undefined> = {};
+      const prevPositionMap: Record<string, { x: number; y: number }> = {};
+      prevNodes.forEach(node => {
+        prevParentMap[node.id] = node.parentId;
+        prevPositionMap[node.id] = node.position;
       });
-      
-      // Step 4: Resize all affected groups
-      if (affectedGroupIds.size > 0) {
-        const nodesNow = getNodes();
-        affectedGroupIds.forEach(groupId => {
-          autoResizeGroup(nodesNow, groupId, setNodes);
+
+      // Step 2: Apply changes
+      onNodesChangeBase(changes);
+
+      // Step 3: After a tick (to ensure state is updated), check for changes
+      setTimeout(() => {
+        trackOperation('groupResizeAnalysis', () => {
+          const updatedNodes = getNodes();
+          const affectedGroupIds = new Set<string>();
+          
+          updatedNodes.forEach(node => {
+            const prevParent = prevParentMap[node.id];
+            const currParent = node.parentId;
+            const prevPos = prevPositionMap[node.id];
+            
+            // Check if node left a group
+            if (
+              prevParent &&
+              prevParent.startsWith('group-') &&
+              prevParent !== currParent
+            ) {
+              affectedGroupIds.add(prevParent);
+            }
+            
+            // Check if node is being dragged within or outside a group (for resizing)
+            if (
+              currParent &&
+              currParent.startsWith('group-') &&
+              prevPos &&
+              (node.position.x !== prevPos.x || node.position.y !== prevPos.y)
+            ) {
+              // Always trigger resize when node in group is moved
+              affectedGroupIds.add(currParent);
+            }
+            
+            // Check for drag-to-join: node moved from no parent to a group
+            if (
+              !prevParent &&
+              currParent &&
+              currParent.startsWith('group-') &&
+              node.type !== 'group' // Don't handle group-to-group joins here
+            ) {
+              // Node joined a group via drag
+              console.log(`Node ${node.id} joined group ${currParent}`);
+              affectedGroupIds.add(currParent);
+            }
+          });
+          
+          // Step 4: Resize all affected groups
+          if (affectedGroupIds.size > 0) {
+            const nodesNow = getNodes();
+            affectedGroupIds.forEach(groupId => {
+              trackOperation(`autoResize-${groupId}`, () => {
+                autoResizeGroup(nodesNow, groupId, setNodes);
+              });
+            });
+          }
         });
-      }
-    }, 0);
-  }, [onNodesChangeBase, getNodes, setNodes]);
+      }, 0);
+    });
+  }, [onNodesChangeBase, getNodes, setNodes, trackOperation]);
 
   // Helper to check if a point is inside a group
   function isPointInGroup(point: { x: number; y: number }, groupNode: Node): boolean {
@@ -566,47 +596,58 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
 
   const onNodeDragStop = useCallback((_event: React.MouseEvent, node: FlowNode) => {
     // Clear drag-over state
-    setDragOverGroupId(null);
+    trackOperation('dragOverClear', () => {
+      setDragOverGroupId(null);
+    });
     
     // Find the previous node position from the previous state
     const prevNode = nodes.find(n => n.id === node.id);
-    if (!prevNode) return;
+    if (!prevNode) {
+      endDragSession();
+      return;
+    }
     
     const currentNodes = getNodes();
     
     // Check for drag-to-join: if node is not already in a group, check if it's over a group
     if (!node.parentId && node.type !== 'group') {
-      const groupUnderNode = findGroupUnderNode(node, currentNodes);
+      let groupUnderNode: Node | null = null;
+      trackOperation('dragToJoinCheck', () => {
+        groupUnderNode = findGroupUnderNode(node, currentNodes);
+      });
       
       if (groupUnderNode) {
         // Node was dragged into a group - join it
-        const updatedNodes = currentNodes.map(n => {
-          if (n.id === node.id) {
-            return {
-              ...n,
-              parentId: groupUnderNode.id,
-              // Remove extent restriction to allow dragging outside group for resizing
-              // extent: 'parent' as const,
-              // Adjust position to be relative to group
-              position: {
-                x: n.position.x - groupUnderNode.position.x,
-                y: n.position.y - groupUnderNode.position.y
-              }
-            };
-          }
-          return n;
+        trackOperation('dragToJoinUpdate', () => {
+          const updatedNodes = currentNodes.map(n => {
+            if (n.id === node.id) {
+              return {
+                ...n,
+                parentId: groupUnderNode!.id,
+                // Remove extent restriction to allow dragging outside group for resizing
+                // extent: 'parent' as const,
+                // Adjust position to be relative to group
+                position: {
+                  x: n.position.x - groupUnderNode!.position.x,
+                  y: n.position.y - groupUnderNode!.position.y
+                }
+              };
+            }
+            return n;
+          });
+          
+          setNodes(updatedNodes);
+          
+          // Auto-resize the group to accommodate the new member
+          setTimeout(() => {
+            trackOperation('autoResizeAfterJoin', () => {
+              autoResizeGroup(updatedNodes, groupUnderNode!.id, setNodes);
+            });
+          }, 0);
         });
         
-        setNodes(updatedNodes);
-        
-        // Auto-resize the group to accommodate the new member
-        setTimeout(() => {
-          autoResizeGroup(updatedNodes, groupUnderNode.id, setNodes);
-        }, 0);
-        
-        // Skip history entry for drag-to-join to avoid duplicate key issues
-        // TODO: Implement proper delta tracking for group join operations
-        
+        // Skip the normal drag history entry
+        endDragSession();
         return; // Skip the normal drag history entry
       }
     }
@@ -639,7 +680,14 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
         // TODO: Implement proper delta tracking for single node moves
       }
     }
-  }, [addEntry, nodes, edges, selectedNodeIds, getNodes, setNodes]);
+    
+    // End performance monitoring session
+    endDragSession();
+    
+    if (isPerformanceEnabled) {
+      console.log(`Ended drag session for node: ${node.id}`, metrics);
+    }
+  }, [addEntry, nodes, edges, selectedNodeIds, getNodes, setNodes, trackOperation, endDragSession, isPerformanceEnabled, metrics]);
 
   // Toolbar callback functions
   const handleCreateGroup = useCallback(() => {
@@ -972,6 +1020,11 @@ export default function Graph({ onNodeSelect, onUndoRedoHandlers, onGraphDataCha
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <PerformanceMonitor
+        metrics={metrics}
+        isEnabled={isPerformanceEnabled}
+        onReset={resetPerformanceMetrics}
+      />
       <ReactFlow
         nodes={nodes}
         edges={edges}
