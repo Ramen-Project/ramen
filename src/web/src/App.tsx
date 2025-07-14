@@ -14,7 +14,6 @@ import LandingPage from './pages/LandingPage';
 import AboutModal from './components/AboutModal';
 import { useGraphStore } from './stores/GraphStore';
 import { nanoid } from 'nanoid';
-import TabBar from './components/TabBar/TabBar';
 import { useHotkey, useCtrlHotkey } from './hooks/useHotkeys';
 
 export default function App() {
@@ -94,9 +93,9 @@ export default function App() {
                 <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'row' }}>
                   {/* NodeLibrary sidebar */}
                   {nodeLibraryVisible && (
-                    <div style={{ width: 400, minWidth: 400, height: '100%', zIndex: 10 }}>
+                    <div style={{ width: 374, minWidth: 374, height: '100%', zIndex: 10 }}>
                       <Sidebar 
-                        width={400}
+                        width={374}
                         nodes={currentNodes}
                         edges={currentEdges}
                       >
@@ -104,24 +103,9 @@ export default function App() {
                       </Sidebar>
                     </div>
                   )}
-                  {/* Main content: tabs bar above graph editor */}
+                  {/* Main content: graph editor */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
-                    {/* Tabs bar only above the graph editor */}
-                    <div style={{ height: 36, minHeight: 36, maxHeight: 36, zIndex: 20 }}>
-                      <TabBar
-                        tabs={graphs.map(graph => ({
-                          id: graph.id,
-                          name: graph.name,
-                          isActive: graph.id === activeGraphId
-                        }))}
-                        activeTabId={activeGraphId}
-                        onTabSelect={setActiveGraph}
-                        onTabClose={handleCloseGraph}
-                        onTabAdd={handleAddGraph}
-                        onTabReorder={handleTabReorder}
-                      />
-                    </div>
-                    {/* Graph editor below tabs bar */}
+                    {/* Graph editor */}
                     <div style={{ flex: 1, minHeight: 0 }}>
                       <GraphEditor 
                         sidebarVisible={false} 
