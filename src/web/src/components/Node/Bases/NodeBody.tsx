@@ -9,11 +9,12 @@ export const NodeBody = styled(Card)<{
     $height: number
 }>`
     padding: 0;
+    padding-bottom: 4px;
     margin: 0;
     min-width: ${props => props.$width * Constants.DotsGap}px;
     min-height: ${props => props.$height * Constants.DotsGap}px;
-    border-radius: 8px;
-    border-color: ${props => props.$selected ? "var(--focus-9)" : "#ffffff00"};
+    border-radius: 11px;
+    border: ${props => props.$selected ? "3px solid var(--focus-9)" : "3px solid transparent"};
     // prevents Radix Card from hiding ports
     contain: none; 
     overflow: visible;

@@ -66,7 +66,7 @@ const SidebarContent = styled.div`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px;
+  padding: 32px;
   background: var(--gray-2);
   /* Hide scrollbar for Chrome, Safari and Opera */
   &::-webkit-scrollbar {

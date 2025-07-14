@@ -52,7 +52,11 @@ export class HotkeyManager {
   private handleKeyDown = (event: KeyboardEvent) => {
     // Skip if user is typing in an input field
     const target = event.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+    if (target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.isContentEditable ||
+        target.closest('[role="textbox"]') ||
+        target.closest('input')) {
       return;
     }
 

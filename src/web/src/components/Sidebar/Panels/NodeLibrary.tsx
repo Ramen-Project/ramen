@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { Text, Box, ScrollArea, Badge, TextField } from '@radix-ui/themes';
 import { 
@@ -68,6 +68,37 @@ export default function NodeLibrary() {
   const [searchQuery, setSearchQuery] = useState('');
   const { getAllCategories, getNodeDefinition } = useNodeDefinitionStore();
   const allCategories = getAllCategories();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle letter keys to focus search bar and ESC to unfocus
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check if a letter key is pressed (a-z, A-Z)
+      if (event.key.length === 1 && event.key.match(/[a-zA-Z]/)) {
+        // Don't focus if already focused or if typing in another input
+        const target = event.target as HTMLElement;
+        if (target.tagName === 'INPUT' || 
+            target.tagName === 'TEXTAREA' || 
+            target.isContentEditable ||
+            target.closest('[role="textbox"]') ||
+            target.closest('input')) {
+          return;
+        }
+        
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }
+      
+      // Handle ESC key to unfocus search bar
+      if (event.key === 'Escape' && searchInputRef.current) {
+        searchInputRef.current.blur();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleDragStart = (event: React.DragEvent, nodeType: string) => {
     console.log('Drag started for:', nodeType);
@@ -126,6 +157,7 @@ export default function NodeLibrary() {
     <PanelContainer>
       <SearchContainer>
         <TextField.Root
+          ref={searchInputRef}
           placeholder="Search nodes..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}

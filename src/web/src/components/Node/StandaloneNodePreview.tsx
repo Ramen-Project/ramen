@@ -43,8 +43,8 @@ const PreviewContainer = styled.div<{ $scale: number }>`
     cursor: grab;
     transition: all 0.2s ease;
     position: relative;
-    padding: 0 2.5rem;
-    margin: 0 -2.5rem 8px -2.5rem;
+    padding: 0 0 0 2.5rem;
+    margin: 0 0 8px -2.5rem;
     
     &:hover {
         background: var(--gray-2);

@@ -22,6 +22,8 @@ import './Graph.css';
 import { ConnectionLine, DefaultEdge } from '../Edges';
 import { nodeTypes } from '../Node';
 import GroupNode from '../Node/GroupNode';
+import { OpNodeProps } from '../Node/OperationNode';
+import { Box, Flex, Text, Kbd } from '@radix-ui/themes';
 import PerformanceMonitor from '../PerformanceMonitor';
 import { 
   ungroupGroup, 
@@ -97,9 +99,38 @@ const edgeTypes = {
 
 
 
-function connectionCheck(connection: Connection | Edge): boolean {
+// Connection validation will be done inside the Graph component with access to getNodes
+function connectionCheck(connection: Connection | Edge, nodes: Node[]): boolean {
   // Prevent self-connections (node connecting to itself)
   if (connection.source === connection.target) {
+    return false;
+  }
+  
+  const sourceNode = nodes.find((n: Node) => n.id === connection.source);
+  const targetNode = nodes.find((n: Node) => n.id === connection.target);
+  
+  if (!sourceNode || !targetNode) {
+    return false;
+  }
+  
+  // Extract port indices from handles (e.g., "output0" -> 0, "input1" -> 1)
+  const sourcePortIndex = connection.sourceHandle ? parseInt(connection.sourceHandle.replace('output', ''), 10) : 0;
+  const targetPortIndex = connection.targetHandle ? parseInt(connection.targetHandle.replace('input', ''), 10) : 0;
+  
+  // Get port type information from node data
+  const sourceNodeData = sourceNode.data as OpNodeProps;
+  const targetNodeData = targetNode.data as OpNodeProps;
+  
+  const sourcePort = sourceNodeData.outputs?.[sourcePortIndex];
+  const targetPort = targetNodeData.inputs?.[targetPortIndex];
+  
+  if (!sourcePort || !targetPort) {
+    return false;
+  }
+  
+  // Check if port types are compatible
+  if (sourcePort.typeId !== targetPort.typeId) {
+    console.warn(`Port type mismatch: ${sourcePort.typeId} -> ${targetPort.typeId}`);
     return false;
   }
   
@@ -133,6 +164,7 @@ export default function Graph({
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+  const [showHotkeys, setShowHotkeys] = useState<boolean>(false);
   const multiMoveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { getNodes, getEdges, screenToFlowPosition } = useReactFlow();
   const copyBuffer = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
@@ -1009,11 +1041,18 @@ export default function Graph({
           edgeDeltas
         });
       }
+      
+      // H key: Toggle hotkey dialog
+      if (event.key === 'h' && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+        console.log('H key');
+        event.preventDefault();
+        setShowHotkeys(prev => !prev);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo, handleCreateGroup, handleUngroupGroup, handleAutoResizeGroup, selectedNodeIds, getNodes, getEdges, setNodes, setEdges, addEntry, updateStoreData]);
+  }, [handleUndo, handleRedo, handleCreateGroup, handleUngroupGroup, handleAutoResizeGroup, selectedNodeIds, getNodes, getEdges, setNodes, setEdges, addEntry, updateStoreData, setShowHotkeys]);
 
   // Toggle group/ungroup with G key
   const handleToggleGroup = useCallback(() => {
@@ -1160,14 +1199,58 @@ export default function Graph({
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <PerformanceMonitor
-        metrics={metrics}
-        isEnabled={isPerformanceEnabled}
-        onReset={resetPerformanceMetrics}
-        nodeCount={nodes.length}
-        edgeCount={edges.length}
-        graphId={graphId}
-      />
+      {/* Performance monitor in top right */}
+      <Box
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 1000
+        }}
+      >
+        <PerformanceMonitor
+          metrics={metrics}
+          isEnabled={isPerformanceEnabled}
+          onReset={resetPerformanceMetrics}
+          nodeCount={nodes.length}
+          edgeCount={edges.length}
+          graphId={graphId}
+        />
+      </Box>
+      
+      {/* Hotkey descriptions in bottom left (togglable) */}
+      {showHotkeys && (
+        <Box
+          style={{
+            position: 'absolute',
+            bottom: '1rem',
+            left: '1rem',
+            zIndex: 1000,
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '8px',
+            padding: '0.75rem',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+          }}
+        >
+          <Flex direction="column" gap="1">
+            <Text size="1" weight="medium" style={{ color: '#333', marginBottom: '0.25rem' }}>Hotkeys</Text>
+            <Flex align="center" gap="2">
+              <Kbd size="1">G</Kbd>
+              <Text size="1" style={{ color: '#666' }}>Group/Ungroup</Text>
+            </Flex>
+            <Flex align="center" gap="2">
+              <Kbd size="1">Q</Kbd>
+              <Text size="1" style={{ color: '#666' }}>Toggle Node Library</Text>
+            </Flex>
+            <Flex align="center" gap="2">
+              <Kbd size="1">H</Kbd>
+              <Text size="1" style={{ color: '#666' }}>Toggle Hotkeys</Text>
+            </Flex>
+          </Flex>
+        </Box>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -1189,7 +1272,7 @@ export default function Graph({
         deleteKeyCode={'Delete'}
 
         // Callbacks
-        isValidConnection={connectionCheck}
+        isValidConnection={(connection) => connectionCheck(connection, nodes)}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onEdgeMouseEnter={onMouseEnterEdge}

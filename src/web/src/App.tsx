@@ -14,7 +14,7 @@ import LandingPage from './pages/LandingPage';
 import AboutModal from './components/AboutModal';
 import { useGraphStore } from './stores/GraphStore';
 import { nanoid } from 'nanoid';
-import { useHotkey, useCtrlHotkey } from './hooks/useHotkeys';
+import { useHotkey, useCtrlHotkey, useHotkeys } from './hooks/useHotkeys';
 
 export default function App() {
   const [sidebarVisible] = useState(false);
@@ -59,9 +59,16 @@ export default function App() {
   };
 
   // Keyboard shortcuts
-  useHotkey('q', () => {
+  useHotkeys({ key: 'q', preventDefault: true }, () => {
     console.log('Q pressed, toggling NodeLibrary from', nodeLibraryVisible, 'to', !nodeLibraryVisible);
     setNodeLibraryVisible(!nodeLibraryVisible);
+  }, [nodeLibraryVisible]);
+
+  useHotkey('Escape', () => {
+    if (nodeLibraryVisible) {
+      console.log('ESC pressed, closing NodeLibrary');
+      setNodeLibraryVisible(false);
+    }
   }, [nodeLibraryVisible]);
 
   useCtrlHotkey('n', () => {
