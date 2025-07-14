@@ -137,7 +137,7 @@ export default function NodeLibrary() {
         </TextField.Root>
       </SearchContainer>
       
-      <ScrollArea style={{ height: 'calc(100vh - 180px)' }}>
+      <ScrollArea>
         {filteredCategories.map((category) => {
           // Auto-expand categories when searching, otherwise use manual toggle
           const isExpanded = searchQuery.trim() ? true : activeCategory === category.name;
