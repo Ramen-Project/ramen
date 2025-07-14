@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
-import { Text, Box, ScrollArea, Badge } from '@radix-ui/themes';
+import { Text, Box, ScrollArea, Badge, TextField } from '@radix-ui/themes';
 import { 
   ChevronDownIcon,
   ChevronRightIcon,
+  MagnifyingGlassIcon,
 } from '@radix-ui/react-icons';
 
 import StandaloneNodePreview from '../../Node/StandaloneNodePreview';
@@ -14,6 +15,11 @@ const PanelContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
+`;
+
+const SearchContainer = styled.div`
+  padding: 16px;
+  background-color: var(--gray-2);
 `;
 
 
@@ -59,8 +65,9 @@ const CollapseIcon = styled.div`
 
 export default function NodeLibrary() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { getAllCategories, getNodeDefinition } = useNodeDefinitionStore();
-  const categories = getAllCategories();
+  const allCategories = getAllCategories();
 
   const handleDragStart = (event: React.DragEvent, nodeType: string) => {
     console.log('Drag started for:', nodeType);
@@ -74,11 +81,66 @@ export default function NodeLibrary() {
     setActiveCategory(prev => prev === categoryName ? null : categoryName);
   };
 
+  // Filter categories and nodes based on search query
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return allCategories;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return allCategories.map(category => {
+      const filteredNodes = category.nodes.filter(node => {
+        const nodeDefinition = getNodeDefinition(node.name);
+        if (!nodeDefinition) return false;
+        
+        // Search in basic properties
+        const matchesBasic = (
+          nodeDefinition.name.toLowerCase().includes(query) ||
+          nodeDefinition.description.toLowerCase().includes(query) ||
+          nodeDefinition.namespace.toLowerCase().includes(query)
+        );
+        
+        // Search in input types
+        const matchesInputs = nodeDefinition.inputs.some(input => 
+          (input.typeId && input.typeId.toLowerCase().includes(query)) ||
+          (input.name && input.name.toLowerCase().includes(query))
+        );
+        
+        // Search in output types
+        const matchesOutputs = nodeDefinition.outputs.some(output => 
+          (output.typeId && output.typeId.toLowerCase().includes(query)) ||
+          (output.name && output.name.toLowerCase().includes(query))
+        );
+        
+        return matchesBasic || matchesInputs || matchesOutputs;
+      });
+
+      return {
+        ...category,
+        nodes: filteredNodes
+      };
+    }).filter(category => category.nodes.length > 0);
+  }, [allCategories, searchQuery, getNodeDefinition]);
+
   return (
     <PanelContainer>
-      <ScrollArea style={{ height: 'calc(100vh - 120px)' }}>
-        {categories.map((category) => {
-          const isExpanded = activeCategory === category.name;
+      <SearchContainer>
+        <TextField.Root
+          placeholder="Search nodes..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          size="2"
+        >
+          <TextField.Slot>
+            <MagnifyingGlassIcon height="16" width="16" />
+          </TextField.Slot>
+        </TextField.Root>
+      </SearchContainer>
+      
+      <ScrollArea style={{ height: 'calc(100vh - 180px)' }}>
+        {filteredCategories.map((category) => {
+          // Auto-expand categories when searching, otherwise use manual toggle
+          const isExpanded = searchQuery.trim() ? true : activeCategory === category.name;
           return (
             <NodeCategory key={category.name}>
               <CategoryHeader onClick={() => toggleCategory(category.name)}>

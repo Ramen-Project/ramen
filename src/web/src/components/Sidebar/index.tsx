@@ -110,19 +110,6 @@ export default function Sidebar({ width = 300, nodes = [], edges = [], ...props 
 
   return (
     <SidebarContainer width={width}>
-      <ActivityBar>
-        {panels.map((panel) => (
-          <ActivityIcon
-            key={panel.key}
-            $active={activePanel === panel.key}
-            onClick={() => setActivePanel(panel.key)}
-            title={panel.label}
-            tabIndex={0}
-          >
-            {panel.icon}
-          </ActivityIcon>
-        ))}
-      </ActivityBar>
       <SidebarContent>
         <PanelHeader>
           {panels.find((p) => p.key === activePanel)?.icon}

@@ -863,6 +863,12 @@ export default function Graph({
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Skip if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
       // Ctrl+Z: Undo
       if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
         console.log('Ctrl+Z');

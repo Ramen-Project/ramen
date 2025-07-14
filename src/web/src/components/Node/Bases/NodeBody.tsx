@@ -12,8 +12,8 @@ export const NodeBody = styled(Card)<{
     margin: 0;
     min-width: ${props => props.$width * Constants.DotsGap}px;
     min-height: ${props => props.$height * Constants.DotsGap}px;
-    border-radius: var(--radius-5);
-    border: 3px solid ${props => props.$selected ? "var(--focus-9)" : "#ffffff00"};
+    border-radius: 8px;
+    border-color: ${props => props.$selected ? "var(--focus-9)" : "#ffffff00"};
     // prevents Radix Card from hiding ports
     contain: none; 
     overflow: visible;
