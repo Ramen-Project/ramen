@@ -17,6 +17,7 @@ const Container = styled.div`
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
+  height: 90%;
   
   &::-webkit-scrollbar {
     height: ${SCROLLBAR_HEIGHT}px;

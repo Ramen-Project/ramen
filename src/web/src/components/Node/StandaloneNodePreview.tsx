@@ -37,23 +37,21 @@ const PreviewContainer = styled.div<{ $scale: number }>`
     transform: scale(${props => props.$scale});
     transform-origin: center;
     width: fit-content;
+    height: fit-content;
     border-radius: 6px;
     background: transparent;
     margin-bottom: 8px;
     cursor: grab;
-    transition: transform 0.2s ease, background 0.2s ease;
     position: relative;
-    padding: 0 0 0 2.5rem;
-    margin: 0 0 8px -2.5rem;
+    padding: 0;
+    margin: 0 0 8px 0;
+    pointer-events: auto;
+    user-select: none;
+    transition: transform 0.2s ease, background 0.2s ease;
     
     &:hover {
         background: var(--gray-2);
-        transform: scale(${props => props.$scale}) translateY(-1px);
-    }
-    
-    &:active {
-        cursor: grabbing;
-        transform: scale(${props => props.$scale}) translateY(0);
+        transform: scale(${props => props.$scale * 1.05}) translateY(-3px);
     }
 `;
 
@@ -114,7 +112,7 @@ interface StandaloneNodePreviewProps {
 
 export default function StandaloneNodePreview({ 
     nodeData, 
-    scale = 0.9, 
+    scale = 1, 
     draggable = false, 
     onDragStart 
 }: StandaloneNodePreviewProps) {
