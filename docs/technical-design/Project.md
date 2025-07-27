@@ -8,7 +8,8 @@ Ramen is a next-generation visual programming environment for Python. It enables
 - Provide an intuitive, node-based interface for constructing complex workflows.
 - Compile/JIT graphs into efficient Python bytecode for high performance.
 - Execute graphs in isolated, reproducible Python environments managed by `uv`.
-- Support seamless integration of native Python code and third-party libraries via a plugin (“topping”) system.
+- Support seamless integration of native Python code and third-party libraries via a plugin ("topping") system.
+- Enable command-line execution for production deployment, automation, and CI/CD integration.
 - Ensure reproducibility, modularity, and extensibility for data science, automation, and educational use cases.
 
 ## Architecture
@@ -61,6 +62,8 @@ flowchart TD
 - Prevents conflicting edits and ensures graph state consistency.
 
 ### Deployment
-- Ramen can be run locally (localhost) or as a remote server.
-- Same codebase and architecture for both use cases.
-- All features (multi-session, project isolation, toppings, etc.) are available in both modes. 
+- **Visual Development**: Run locally (localhost) or as a remote server for graph editing
+- **Production Execution**: Command-line execution (`ramen-cli run`) for headless deployment
+- **VSCode Integration**: Planned extension for IDE-based development
+- Same codebase and architecture across all deployment modes
+- All features (project isolation, toppings, etc.) available in both GUI and CLI modes 

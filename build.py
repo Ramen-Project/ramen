@@ -25,6 +25,7 @@ def build():
 
 @cli.command()
 def build_package():
+    build_web()
     CMD("uv build --all-packages")
 
 @cli.command()

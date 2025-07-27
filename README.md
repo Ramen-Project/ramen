@@ -9,6 +9,7 @@ Ramen is a next-generation visual programming environment for Python. It enables
 - Each project runs in its own isolated uv-managed environment
 - Supports both local and remote (server) deployment
 - Extensible via "toppings" (plugins) for numpy, pandas, torch, plots, and more
+- Command-line execution for production and automation
 - Python API for programmatic graph execution (with `ramen` or minimal `ramenrt`)
 - Project management and dependency isolation via `uv`
 - Real-time logs, error reporting, and result streaming
@@ -54,7 +55,24 @@ pip install ramen-topping-pandas
 5. **Create and edit graphs visually**
 6. **Execute graphs** (compiled/JIT in isolated environment)
 
-## Python API Example
+## Usage Examples
+
+### Command-Line Execution
+
+Execute graphs from the command line with parameters:
+
+```bash
+# Basic graph execution (auto-resolves to my_pipeline.ramen)
+ramen-cli run my_pipeline input=data.csv output=results.json
+
+# ML training with hyperparameters  
+ramen-cli run train_model dataset=mnist.pkl learning_rate=0.01 epochs=100
+
+# Data processing pipeline
+ramen-cli run process_data source=raw.csv target=clean.csv batch_size=1000
+```
+
+### Python API
 
 ```python
 import ramen
