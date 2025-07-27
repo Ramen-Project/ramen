@@ -1241,7 +1241,7 @@ export default function Graph({
               <Text size="1" style={{ color: '#666' }}>Group/Ungroup</Text>
             </Flex>
             <Flex align="center" gap="2">
-              <Kbd size="1">Q</Kbd>
+              <Kbd size="1">Space</Kbd>
               <Text size="1" style={{ color: '#666' }}>Toggle Node Library</Text>
             </Flex>
             <Flex align="center" gap="2">
