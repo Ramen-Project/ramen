@@ -22,8 +22,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Preview**: `cd src/web && npm run preview` (or `bun run preview`)
 
 ### Testing and Quality
+- **TDD Approach**: Use Test-Driven Development (TDD) on this project
+- **Frontend Testing**: `bun run test` (watch mode), `bun run test:run` (single run), `bun run test:ui` (UI mode)
+- **Testing Framework**: Vitest + React Testing Library + jsdom
 - Always use the linter to check code before committing
-- No specific test commands found - check with project maintainer for testing strategy
 
 ## Architecture Overview
 
@@ -76,12 +78,46 @@ Ramen is a visual programming environment for Python with the following key comp
 
 ## Development Guidelines
 
+### Core Principles
+- **TDD + KANBAN**: Follow Test-Driven Development with KANBAN workflow management
 - Use uv for all Python package management
 - Use bun for Node.js package management (frontend)
 - Write PoC code before production implementation
 - Always lint code before committing
 - Follow existing patterns in component structure and naming
 - Check `docs/technical-design/` for detailed architectural guidance
+- Always ask questions for implementation details
+
+### TDD + KANBAN Workflow
+1. **Before starting any feature**:
+   - Update KANBAN.md with new tasks
+   - Move task to "IN PROGRESS"
+   - Write failing tests first (TDD Red phase)
+   
+2. **During development**:
+   - Write minimal code to make tests pass (TDD Green phase)
+   - Refactor code while keeping tests green (TDD Refactor phase)
+   - Update KANBAN.md task status as you progress
+   
+3. **Before completing a feature**:
+   - Ensure all tests pass
+   - Run linter and fix any issues
+   - Move KANBAN task to "TESTING" or "DONE"
+   - Update task with completion notes if needed
+
+### KANBAN Management
+- **TO DO**: New tasks, planned features, bug reports
+- **IN PROGRESS**: Currently working on (limit to 1-2 items)
+- **TESTING**: Code complete, needs verification
+- **DONE**: Completed and verified tasks
+
+### Testing Strategy
+- Write tests before implementation (TDD)
+- Use appropriate testing frameworks for each component:
+  - Python backend: pytest or unittest
+  - React frontend: Jest + React Testing Library
+  - Integration tests for API endpoints
+- Maintain test coverage and update tests when refactoring
 
 ## CLI Graph Execution Examples
 
@@ -112,3 +148,7 @@ Benefits:
 - This project is mainly for Machine Learning usage, but not limited to.
 - Supports both visual development (GUI) and programmatic execution (CLI)
 - Planned VSCode extension for IDE integration
+
+## Feature Request and Development Guidelines
+
+- When user requests new features, you should always put it to the KANBAN.md first.
