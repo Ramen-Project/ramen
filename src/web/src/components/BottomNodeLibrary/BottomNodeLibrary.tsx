@@ -5,23 +5,16 @@ import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useNodeDefinitionStore } from '../../stores/NodeDefinitionStore';
 import CategoryTabs from './CategoryTabs';
 import HorizontalNodeList from './HorizontalNodeList';
-import ResizeHandle from './ResizeHandle';
 
 // Constants
-const DEFAULT_HEIGHT = 300;
-const MIN_HEIGHT = 100;
-const MAX_HEIGHT = 800;
+const FIXED_HEIGHT = 300;
 const ANIMATION_DURATION = '0.3s';
 
 const Container = styled.div`
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   width: 100%;
   background: var(--gray-2);
   border-top: 1px solid var(--gray-6);
-  z-index: 100;
 `;
 
 const SearchContainer = styled.div`
@@ -39,7 +32,6 @@ const ContentArea = styled.div<{ $isExpanded: boolean, $height: number }>`
 export default function BottomNodeLibrary() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-  const [height, setHeight] = useState(DEFAULT_HEIGHT);
   const [searchQuery, setSearchQuery] = useState('');
   const { getAllCategories, getNodeDefinition } = useNodeDefinitionStore();
   const allCategories = getAllCategories();
@@ -136,13 +128,6 @@ export default function BottomNodeLibrary() {
 
   return (
     <Container data-testid="bottom-node-library">
-      <ResizeHandle 
-        height={height}
-        minHeight={MIN_HEIGHT}
-        maxHeight={MAX_HEIGHT}
-        defaultHeight={DEFAULT_HEIGHT}
-        onHeightChange={setHeight}
-      />
       
       {isExpanded && (
         <SearchContainer>
@@ -165,7 +150,7 @@ export default function BottomNodeLibrary() {
         onTabChange={setActiveTab}
       />
 
-      <ContentArea $isExpanded={isExpanded} $height={height}>
+      <ContentArea $isExpanded={isExpanded} $height={FIXED_HEIGHT}>
         {isExpanded && activeCategory && (
           <HorizontalNodeList
             nodes={activeCategory.nodes}

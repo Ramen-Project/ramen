@@ -103,13 +103,6 @@ describe('BottomNodeLibrary', () => {
     expect(screen.queryByText('ReadFile')).not.toBeInTheDocument()
   })
 
-  it('should have a resizable height', () => {
-    render(<BottomNodeLibrary />)
-    
-    // Should have a resize handle at the top
-    expect(screen.getByTestId('resize-handle')).toBeInTheDocument()
-  })
-
   it('should be full width', () => {
     render(<BottomNodeLibrary />)
     
