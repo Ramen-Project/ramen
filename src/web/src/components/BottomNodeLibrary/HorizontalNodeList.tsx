@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import StandaloneNodePreview from '../Node/StandaloneNodePreview';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
@@ -60,6 +60,8 @@ export default function HorizontalNodeList({
   getNodeDefinition, 
   onNodeDragStart 
 }: HorizontalNodeListProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Responsive scaling hook
   const { scale } = useResponsiveScale({
     baseNodeWidth: BASE_NODE_WIDTH,
@@ -69,6 +71,16 @@ export default function HorizontalNodeList({
     maxScale: 1,
     minNodesVisible: 2
   });
+
+  // Handle mouse wheel scrolling
+  const handleWheel = useCallback((event: React.WheelEvent) => {
+    if (containerRef.current) {
+      event.preventDefault();
+      const container = containerRef.current;
+      const scrollAmount = event.deltaY || event.deltaX;
+      container.scrollLeft += scrollAmount;
+    }
+  }, []);
 
   // Memoized drag handler for better performance
   const handleDragStart = useCallback((event: React.DragEvent, nodeType: string) => {
@@ -93,7 +105,11 @@ export default function HorizontalNodeList({
   }), []);
 
   return (
-    <Container data-testid="horizontal-node-list">
+    <Container 
+      data-testid="horizontal-node-list"
+      ref={containerRef}
+      onWheel={handleWheel}
+    >
       {nodes.map((node) => {
         const nodeDefinition = getNodeDefinition(node.name);
         if (!nodeDefinition) return null;
