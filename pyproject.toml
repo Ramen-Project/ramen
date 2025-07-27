@@ -29,6 +29,9 @@ full = [
 ]
 
 [dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
 ml = [
     "ramen-topping-torch",
     "ramen-topping-numpy",
