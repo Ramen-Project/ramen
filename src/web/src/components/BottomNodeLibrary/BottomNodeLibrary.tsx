@@ -20,7 +20,7 @@ const Container = styled.div`
 `;
 
 const SearchContainer = styled.div`
-  padding: 12px 16px;
+  padding: 6px 8px;
   background: var(--gray-2);
   border-bottom: 1px solid var(--gray-6);
 `;

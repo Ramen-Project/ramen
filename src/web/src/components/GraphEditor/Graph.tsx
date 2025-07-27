@@ -1231,7 +1231,8 @@ export default function Graph({
             borderRadius: '8px',
             padding: '0.75rem',
             border: '1px solid rgba(0, 0, 0, 0.1)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            userSelect: 'none'
           }}
         >
           <Flex direction="column" gap="1">
