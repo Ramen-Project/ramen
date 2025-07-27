@@ -41,7 +41,7 @@ const PreviewContainer = styled.div<{ $scale: number }>`
     background: transparent;
     margin-bottom: 8px;
     cursor: grab;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease;
     position: relative;
     padding: 0 0 0 2.5rem;
     margin: 0 0 8px -2.5rem;

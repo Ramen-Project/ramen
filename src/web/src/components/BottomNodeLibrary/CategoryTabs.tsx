@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { Badge, Text } from '@radix-ui/themes';
 
@@ -9,16 +9,30 @@ const ICON_SIZE = 16;
 const TRANSITION_DURATION = '0.2s';
 const TAB_GAP = '8px';
 
-const TabContainer = styled.div`
+const TabContainer = styled.div<{ $isCompact: boolean; $isBottom?: boolean }>`
   display: flex;
   background: var(--gray-3);
-  border-bottom: 1px solid var(--gray-6);
+  border-bottom: ${props => props.$isBottom ? 'none' : '1px solid var(--gray-6)'};
+  border-top: ${props => props.$isBottom ? '1px solid var(--gray-6)' : 'none'};
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
+  scroll-behavior: smooth;
   
   &::-webkit-scrollbar {
     display: none;
   }
+  
+  ${props => props.$isCompact && `
+    flex-wrap: wrap;
+    max-height: 120px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  `}
 `;
 
 const Tab = styled.button<{ $active: boolean; $color: string }>`
@@ -67,13 +81,60 @@ export interface CategoryTabsProps {
   categories: Category[];
   activeTabIndex: number;
   onTabChange: (index: number) => void;
+  isBottom?: boolean;
 }
 
 export default function CategoryTabs({ 
   categories, 
   activeTabIndex, 
-  onTabChange 
+  onTabChange,
+  isBottom = false
 }: CategoryTabsProps) {
+  const [isCompact, setIsCompact] = useState(false);
+  const tabContainerRef = useRef<HTMLDivElement>(null);
+  const activeTabRef = useRef<HTMLButtonElement>(null);
+
+  // Check if tabs should be compact based on window width  
+  useEffect(() => {
+    function checkCompactMode() {
+      const shouldBeCompact = window.innerWidth < 768; // Mobile breakpoint
+      setIsCompact(shouldBeCompact);
+    }
+
+    checkCompactMode();
+    window.addEventListener('resize', checkCompactMode);
+    
+    return () => window.removeEventListener('resize', checkCompactMode);
+  }, []);
+
+  // Auto-scroll to active tab when it changes
+  useEffect(() => {
+    if (activeTabRef.current && tabContainerRef.current && !isCompact) {
+      const container = tabContainerRef.current;
+      const activeTab = activeTabRef.current;
+      
+      const containerRect = container.getBoundingClientRect();
+      const tabRect = activeTab.getBoundingClientRect();
+      
+      if (tabRect.left < containerRect.left) {
+        // Tab is to the left of visible area
+        container.scrollLeft -= containerRect.left - tabRect.left + 20;
+      } else if (tabRect.right > containerRect.right) {
+        // Tab is to the right of visible area
+        container.scrollLeft += tabRect.right - containerRect.right + 20;
+      }
+    }
+  }, [activeTabIndex, isCompact]);
+
+  // Handle mouse wheel scrolling
+  const handleWheel = useCallback((event: React.WheelEvent) => {
+    if (tabContainerRef.current && !isCompact) {
+      event.preventDefault();
+      const container = tabContainerRef.current;
+      const scrollAmount = event.deltaY || event.deltaX;
+      container.scrollLeft += scrollAmount;
+    }
+  }, [isCompact]);
   
   // Memoized tab click handler
   const handleTabClick = useCallback((index: number) => {
@@ -113,6 +174,7 @@ export default function CategoryTabs({
     return (
       <Tab
         key={category.name}
+        ref={isActive ? activeTabRef : null}
         role="tab"
         aria-selected={isActive}
         aria-controls={`tabpanel-${index}`}
@@ -138,7 +200,13 @@ export default function CategoryTabs({
   }, [activeTabIndex, handleTabClick, handleKeyDown]);
 
   return (
-    <TabContainer role="tablist">
+    <TabContainer 
+      role="tablist" 
+      $isCompact={isCompact}
+      $isBottom={isBottom}
+      ref={tabContainerRef}
+      onWheel={handleWheel}
+    >
       {categories.map(renderTab)}
     </TabContainer>
   );

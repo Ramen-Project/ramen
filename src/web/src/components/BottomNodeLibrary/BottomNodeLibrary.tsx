@@ -15,6 +15,8 @@ const Container = styled.div`
   width: 100%;
   background: var(--gray-2);
   border-top: 1px solid var(--gray-6);
+  display: flex;
+  flex-direction: column;
 `;
 
 const SearchContainer = styled.div`
@@ -130,6 +132,15 @@ export default function BottomNodeLibrary() {
     <Container data-testid="bottom-node-library">
       
       {isExpanded && (
+        <CategoryTabs
+          categories={displayCategories}
+          activeTabIndex={activeTab}
+          onTabChange={setActiveTab}
+          isBottom={false}
+        />
+      )}
+
+      {isExpanded && (
         <SearchContainer>
           <TextField.Root
             placeholder="Search nodes..."
@@ -143,12 +154,6 @@ export default function BottomNodeLibrary() {
           </TextField.Root>
         </SearchContainer>
       )}
-
-      <CategoryTabs
-        categories={displayCategories}
-        activeTabIndex={activeTab}
-        onTabChange={setActiveTab}
-      />
 
       <ContentArea $isExpanded={isExpanded} $height={FIXED_HEIGHT}>
         {isExpanded && activeCategory && (

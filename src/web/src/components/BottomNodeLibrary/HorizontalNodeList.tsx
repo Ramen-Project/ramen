@@ -1,12 +1,14 @@
 import React, { useCallback } from 'react';
 import styled from 'styled-components';
 import StandaloneNodePreview from '../Node/StandaloneNodePreview';
+import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 
 // Constants
 const NODE_GAP = 16;
 const CONTAINER_PADDING = 16;
 const SCROLLBAR_HEIGHT = 8;
 const SCROLLBAR_RADIUS = 4;
+const BASE_NODE_WIDTH = 300; // 3 * DotsGap from constants
 
 const Container = styled.div`
   display: flex;
@@ -58,6 +60,16 @@ export default function HorizontalNodeList({
   getNodeDefinition, 
   onNodeDragStart 
 }: HorizontalNodeListProps) {
+  // Responsive scaling hook
+  const { scale } = useResponsiveScale({
+    baseNodeWidth: BASE_NODE_WIDTH,
+    nodeGap: NODE_GAP,
+    containerPadding: CONTAINER_PADDING,
+    minScale: 0.5,
+    maxScale: 1,
+    minNodesVisible: 2
+  });
+
   // Memoized drag handler for better performance
   const handleDragStart = useCallback((event: React.DragEvent, nodeType: string) => {
     if (onNodeDragStart) {
@@ -92,7 +104,7 @@ export default function HorizontalNodeList({
           <StandaloneNodePreview
             key={node.name}
             nodeData={previewData} 
-            scale={0.8} 
+            scale={scale * 0.8} 
             draggable={true}
             onDragStart={(e) => handleDragStart(e, node.name)}
           />
