@@ -13,6 +13,7 @@ dependencies = [
     "pydantic>=2.10.3",
     "rich>=13.9.4",
     "uv>=0.5.4",
+    "nanoid>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +32,8 @@ full = [
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    "httpx>=0.25.0",
+    "fastapi>=0.104.0",
 ]
 ml = [
     "ramen-topping-torch",
