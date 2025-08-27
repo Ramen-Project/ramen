@@ -14,12 +14,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Server mode**: `ramen-cli server` for remote deployment
 - **Execute graphs**: `ramen-cli run <graph_name> <kwargs>` for command-line execution
 
-### Frontend (Web UI)
-- **Package manager**: Use `bun` for Node.js packages (specified in Cursor rules)
-- **Development server**: `cd src/web && npm run dev` (or `bun run dev`)
-- **Build**: `cd src/web && npm run build` (or `bun run build`)
-- **Lint**: `cd src/web && npm run lint` (or `bun run lint`)
-- **Preview**: `cd src/web && npm run preview` (or `bun run preview`)
+### VSCode Extension
+- **Location**: `vscode-extension/` directory
+- **Webview Build**: `cd vscode-extension/webview-build && bun run build`
+- **Extension Build**: `cd vscode-extension && npm run compile`
+- **Package Extension**: `cd vscode-extension && npm run package`
+- **Development**: Edit extension TypeScript files and webview React app separately
 
 ### Testing and Quality
 - **TDD Approach**: Use Test-Driven Development (TDD) on this project
@@ -38,16 +38,18 @@ Ramen is a visual programming environment for Python with the following key comp
 - **Toppings**: Plugin system for extending functionality (numpy, pandas, torch, plots)
 - **UV Wrapper**: Integration with uv for environment management
 
-### Frontend (`src/web/`)
-- **React + TypeScript**: Modern web UI built with Vite
+### VSCode Extension (`vscode-extension/`)
+- **Extension Backend**: TypeScript extension host, custom editor providers
+- **Webview Frontend**: React + TypeScript graph editor (in `webview-build/`)
 - **Graph Editor**: Visual node-based editor using @xyflow/react
-- **Components**: Node system, sidebar panels, tab management
+- **Components**: Node system, bottom node library, graph management
 - **State Management**: Zustand stores for app state
-- **Styling**: Radix UI components with custom CSS
+- **Styling**: Radix UI components with VSCode theming
+- **Communication**: VSCode webview API + REST API to backend
 
 ### Project Structure
 - **Main Python package**: `src/ramen/` - core backend functionality
-- **Web frontend**: `src/web/` - React-based graph editor
+- **VSCode Extension**: `vscode-extension/` - VSCode extension with embedded graph editor
 - **Toppings**: `toppings/` - plugin packages (numpy, pandas, torch, plots)
 - **Documentation**: `docs/technical-design/` - detailed architecture specs
 - **Build script**: `build.py` - custom build automation

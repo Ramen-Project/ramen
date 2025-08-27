@@ -1,37 +1,37 @@
 """
-Ramen ; API !D
-t@	 API ï1
+Ramen API Module
+Main FastAPI application for Ramen visual programming environment
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api import project_router
+from .api.project import router as project_router
 
-# uú FastAPI É(
+# Create FastAPI app
 app = FastAPI(
     title="Ramen API",
     description="Visual Programming Environment API",
     version="1.0.0"
 )
 
-# -n CORS
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite ‹|:h
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite dev server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ;Šï1
+# Include routers
 app.include_router(project_router)
 
-# 9ï‘
+# Root endpoint
 @app.get("/")
 async def root():
     return {"message": "Ramen API is running"}
 
-# e·¢å
+# Health check endpoint
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
