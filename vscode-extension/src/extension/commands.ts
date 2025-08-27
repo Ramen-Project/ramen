@@ -3,12 +3,18 @@ import * as path from 'path';
 import { RamenServerManager } from './server/serverManager';
 import { RamenWebviewManager } from './webview/webviewManager';
 import { RamenGraphProvider } from './providers/graphProvider';
+import { RamenVariablesProvider } from './providers/variablesProvider';
+import { RamenServerProvider } from './providers/serverProvider';
+import { RamenDependenciesProvider } from './providers/dependenciesProvider';
 
 export class RamenCommands {
     constructor(
         private serverManager: RamenServerManager,
         private webviewManager: RamenWebviewManager,
-        private graphProvider: RamenGraphProvider
+        private graphProvider: RamenGraphProvider,
+        private variablesProvider?: RamenVariablesProvider,
+        private serverProvider?: RamenServerProvider,
+        private dependenciesProvider?: RamenDependenciesProvider
     ) {}
 
     async openGraphEditor(uri?: vscode.Uri) {
@@ -50,7 +56,7 @@ export class RamenCommands {
         await this.webviewManager.openGraph(uri);
     }
 
-    async createNewGraph() {
+    async createNewGraph(uri?: vscode.Uri) {
         // Prompt for graph name
         const graphName = await vscode.window.showInputBox({
             prompt: 'Enter graph name',
@@ -70,27 +76,39 @@ export class RamenCommands {
             return;
         }
         
-        // Select location
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders || workspaceFolders.length === 0) {
-            vscode.window.showErrorMessage('No workspace folder open');
-            return;
-        }
-        
+        // Select location - use provided URI if available (from context menu)
         let targetFolder: vscode.Uri;
         
-        if (workspaceFolders.length === 1) {
-            targetFolder = workspaceFolders[0].uri;
+        if (uri) {
+            // Called from context menu - use the selected folder
+            const stat = await vscode.workspace.fs.stat(uri);
+            if (stat.type === vscode.FileType.Directory) {
+                targetFolder = uri;
+            } else {
+                // If it's a file, use its parent directory
+                targetFolder = vscode.Uri.joinPath(uri, '..');
+            }
         } else {
-            const selected = await vscode.window.showWorkspaceFolderPick({
-                placeHolder: 'Select workspace folder for new graph'
-            });
-            
-            if (!selected) {
+            // Called from command palette or toolbar - prompt for location
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+                vscode.window.showErrorMessage('No workspace folder open');
                 return;
             }
             
-            targetFolder = selected.uri;
+            if (workspaceFolders.length === 1) {
+                targetFolder = workspaceFolders[0].uri;
+            } else {
+                const selected = await vscode.window.showWorkspaceFolderPick({
+                    placeHolder: 'Select workspace folder for new graph'
+                });
+                
+                if (!selected) {
+                    return;
+                }
+                
+                targetFolder = selected.uri;
+            }
         }
         
         // Create new graph file
@@ -112,15 +130,59 @@ export class RamenCommands {
             // File doesn't exist, which is what we want
         }
         
-        // Create initial graph content
+        // Create initial graph content with sample nodes
         const initialGraph = {
             version: '1.0',
-            nodes: [],
-            edges: [],
+            nodes: [
+                {
+                    id: 'input-1',
+                    type: 'input',
+                    position: { x: 100, y: 100 },
+                    data: {
+                        label: 'Input',
+                        description: 'Start your graph here'
+                    }
+                },
+                {
+                    id: 'process-1', 
+                    type: 'process',
+                    position: { x: 300, y: 100 },
+                    data: {
+                        label: 'Process',
+                        description: 'Add your processing logic'
+                    }
+                },
+                {
+                    id: 'output-1',
+                    type: 'output',
+                    position: { x: 500, y: 100 },
+                    data: {
+                        label: 'Output',
+                        description: 'Final result'
+                    }
+                }
+            ],
+            edges: [
+                {
+                    id: 'edge-1',
+                    source: 'input-1',
+                    target: 'process-1',
+                    sourceHandle: 'output',
+                    targetHandle: 'input'
+                },
+                {
+                    id: 'edge-2', 
+                    source: 'process-1',
+                    target: 'output-1',
+                    sourceHandle: 'output',
+                    targetHandle: 'input'
+                }
+            ],
             metadata: {
                 name: graphName,
                 created: new Date().toISOString(),
-                description: ''
+                description: 'A sample Ramen graph - delete these nodes and create your own!',
+                author: 'Ramen VSCode Extension'
             }
         };
         
@@ -227,5 +289,31 @@ export class RamenCommands {
         terminal.sendText('uv sync');
         
         vscode.window.showInformationMessage('Running uv sync to update dependencies...');
+    }
+
+    async startServer() {
+        if (this.serverManager.isRunning()) {
+            vscode.window.showWarningMessage('Ramen server is already running');
+            return;
+        }
+
+        const started = await this.serverManager.start();
+        if (started) {
+            vscode.window.showInformationMessage('Ramen server started successfully');
+        } else {
+            vscode.window.showErrorMessage('Failed to start Ramen server');
+        }
+    }
+
+    async refreshGraphs() {
+        this.graphProvider.refresh();
+        vscode.window.showInformationMessage('Refreshed graphs view');
+    }
+
+    async refreshDependencies() {
+        if (this.dependenciesProvider) {
+            this.dependenciesProvider.refresh();
+            vscode.window.showInformationMessage('Refreshed dependencies view');
+        }
     }
 }

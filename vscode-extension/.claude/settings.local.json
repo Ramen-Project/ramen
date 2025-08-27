@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run compile:*)",
+      "Read(C:\\Users\\LTY\\Desktop\\ramen/**)",
+      "Bash(bun run:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\Users\\LTY\\Desktop\\ramen"
+    ]
+  }
+}

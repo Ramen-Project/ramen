@@ -8,6 +8,10 @@ export class RamenServerManager {
     private port: number;
     private outputChannel: vscode.OutputChannel;
     private isServerRunning: boolean = false;
+    private startTime: number | null = null;
+    private pythonPath: string | null = null;
+    private _onDidChangeStatus = new vscode.EventEmitter<void>();
+    readonly onDidChangeStatus = this._onDidChangeStatus.event;
     
     constructor(private context: vscode.ExtensionContext) {
         const config = vscode.workspace.getConfiguration('ramen');
@@ -122,6 +126,8 @@ export class RamenServerManager {
                 // Check if server started successfully
                 if (message.includes('Server started') || message.includes('Uvicorn running')) {
                     this.isServerRunning = true;
+                    this.startTime = Date.now();
+                    this._onDidChangeStatus.fire();
                     vscode.window.showInformationMessage('Ramen server started successfully');
                 }
             });
@@ -135,6 +141,8 @@ export class RamenServerManager {
             // Handle process exit
             this.serverProcess.on('exit', (code) => {
                 this.isServerRunning = false;
+                this.startTime = null;
+                this._onDidChangeStatus.fire();
                 this.outputChannel.appendLine(`Server process exited with code ${code}`);
                 if (code !== 0) {
                     vscode.window.showErrorMessage(`Ramen server exited with code ${code}`);
@@ -159,6 +167,8 @@ export class RamenServerManager {
             this.serverProcess.kill();
             this.serverProcess = null;
             this.isServerRunning = false;
+            this.startTime = null;
+            this._onDidChangeStatus.fire();
         }
     }
     
@@ -204,6 +214,7 @@ export class RamenServerManager {
         const configuredPath = config.get<string>('pythonPath');
         
         if (configuredPath) {
+            this.pythonPath = configuredPath;
             return configuredPath;
         }
         
@@ -231,6 +242,7 @@ export class RamenServerManager {
                             stdio: 'ignore'
                         });
                         this.outputChannel.appendLine(`Using Ramen project Python: ${uvVenvPath}`);
+                        this.pythonPath = uvVenvPath;
                         return uvVenvPath;
                     } catch {
                         this.outputChannel.appendLine(`Ramen module not found in ${uvVenvPath}`);
@@ -247,6 +259,7 @@ export class RamenServerManager {
                 execSync('uv --version', { encoding: 'utf8', stdio: 'ignore' });
                 // If uv is available, we can use "uv run python"
                 this.outputChannel.appendLine('Using uv run python for Ramen project');
+                this.pythonPath = 'uv run python';
                 return 'uv run python';
             } catch {
                 this.outputChannel.appendLine('uv not available');
@@ -269,6 +282,7 @@ export class RamenServerManager {
                     const minor = parseInt(versionMatch[2]);
                     
                     if (major === 3 && minor >= 12) {
+                        this.pythonPath = candidate;
                         return candidate;
                     }
                 }
@@ -285,6 +299,7 @@ export class RamenServerManager {
                 const pythonApi = pythonExtension.exports;
                 const interpreter = await pythonApi.settings.getExecutionDetails();
                 if (interpreter?.execCommand) {
+                    this.pythonPath = interpreter.execCommand[0];
                     return interpreter.execCommand[0];
                 }
             }
@@ -351,5 +366,20 @@ export class RamenServerManager {
         }
         
         return response.json();
+    }
+    
+    getProcessId(): number | null {
+        return this.serverProcess?.pid || null;
+    }
+    
+    getUptime(): number | null {
+        if (!this.isServerRunning || !this.startTime) {
+            return null;
+        }
+        return Date.now() - this.startTime;
+    }
+    
+    getPythonPath(): string | null {
+        return this.pythonPath;
     }
 }

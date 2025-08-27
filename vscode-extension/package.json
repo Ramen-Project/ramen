@@ -78,6 +78,21 @@
         "command": "ramen.restartServer",
         "title": "Ramen: Restart Server",
         "icon": "$(debug-restart)"
+      },
+      {
+        "command": "ramen.startServer",
+        "title": "Ramen: Start Server",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "ramen.refreshGraphs",
+        "title": "Ramen: Refresh Graphs",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "ramen.refreshDependencies",
+        "title": "Ramen: Refresh Dependencies",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -110,6 +125,45 @@
           "command": "ramen.openGraphEditor",
           "when": "resourceExtname == .ramen"
         }
+      ],
+      "view/title": [
+        {
+          "command": "ramen.createNewGraph",
+          "when": "view == ramenGraphs",
+          "group": "navigation"
+        },
+        {
+          "command": "ramen.refreshGraphs",
+          "when": "view == ramenGraphs",
+          "group": "navigation"
+        },
+        {
+          "command": "ramen.startServer",
+          "when": "view == ramenServer && !ramen:serverRunning",
+          "group": "navigation"
+        },
+        {
+          "command": "ramen.stopServer",
+          "when": "view == ramenServer && ramen:serverRunning",
+          "group": "navigation"
+        },
+        {
+          "command": "ramen.restartServer",
+          "when": "view == ramenServer",
+          "group": "navigation"
+        },
+        {
+          "command": "ramen.refreshDependencies",
+          "when": "view == ramenDependencies",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "ramen.createNewGraph",
+          "when": "explorerResourceIsFolder",
+          "group": "2_workspace@1"
+        }
       ]
     },
     "keybindings": [
@@ -123,6 +177,11 @@
         "command": "ramen.executeGraph",
         "key": "f5",
         "when": "resourceExtname == .ramen"
+      },
+      {
+        "command": "ramen.createNewGraph",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n"
       }
     ],
     "configuration": {
@@ -171,12 +230,31 @@
       }
     },
     "views": {
-      "explorer": [
+      "ramen": [
         {
           "id": "ramenGraphs",
-          "name": "Ramen Graphs",
+          "name": "Graphs",
           "icon": "$(graph)",
           "contextualTitle": "Ramen Graphs"
+        },
+        {
+          "id": "ramenVariables",
+          "name": "Variables",
+          "icon": "$(symbol-variable)",
+          "contextualTitle": "Graph Variables",
+          "when": "ramen:hasActiveGraph"
+        },
+        {
+          "id": "ramenServer",
+          "name": "Server",
+          "icon": "$(server)",
+          "contextualTitle": "Ramen Server Status"
+        },
+        {
+          "id": "ramenDependencies",
+          "name": "Dependencies",
+          "icon": "$(package)",
+          "contextualTitle": "Project Dependencies"
         }
       ]
     },

@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import { RamenGraphProvider } from './providers/graphProvider';
 import { RamenCustomEditorProvider } from './providers/customEditorProvider';
+import { RamenVariablesProvider } from './providers/variablesProvider';
+import { RamenServerProvider } from './providers/serverProvider';
+import { RamenDependenciesProvider } from './providers/dependenciesProvider';
 import { RamenWebviewManager } from './webview/webviewManager';
 import { RamenServerManager } from './server/serverManager';
 import { RamenLanguageClient } from './language/languageClient';
@@ -10,6 +13,9 @@ let serverManager: RamenServerManager;
 let webviewManager: RamenWebviewManager;
 let languageClient: RamenLanguageClient;
 let graphProvider: RamenGraphProvider;
+let variablesProvider: RamenVariablesProvider;
+let serverProvider: RamenServerProvider;
+let dependenciesProvider: RamenDependenciesProvider;
 
 export async function activate(context: vscode.ExtensionContext) {
     console.log('Ramen extension is activating...');
@@ -27,10 +33,30 @@ export async function activate(context: vscode.ExtensionContext) {
         await languageClient.start();
     }
     
-    // Initialize graph tree view provider
+    // Initialize tree view providers
     graphProvider = new RamenGraphProvider(context);
+    variablesProvider = new RamenVariablesProvider(context);
+    serverProvider = new RamenServerProvider(context, serverManager);
+    dependenciesProvider = new RamenDependenciesProvider(context);
+    
+    // Create tree views
     vscode.window.createTreeView('ramenGraphs', {
         treeDataProvider: graphProvider,
+        showCollapseAll: true
+    });
+    
+    vscode.window.createTreeView('ramenVariables', {
+        treeDataProvider: variablesProvider,
+        showCollapseAll: true
+    });
+    
+    vscode.window.createTreeView('ramenServer', {
+        treeDataProvider: serverProvider,
+        showCollapseAll: false
+    });
+    
+    vscode.window.createTreeView('ramenDependencies', {
+        treeDataProvider: dependenciesProvider,
         showCollapseAll: true
     });
 
@@ -41,15 +67,15 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     // Register commands
-    const commands = new RamenCommands(serverManager, webviewManager, graphProvider);
+    const commands = new RamenCommands(serverManager, webviewManager, graphProvider, variablesProvider, serverProvider, dependenciesProvider);
     
     context.subscriptions.push(
         vscode.commands.registerCommand('ramen.openGraphEditor', (uri?: vscode.Uri) => {
             commands.openGraphEditor(uri);
         }),
         
-        vscode.commands.registerCommand('ramen.createNewGraph', async () => {
-            await commands.createNewGraph();
+        vscode.commands.registerCommand('ramen.createNewGraph', async (uri?: vscode.Uri) => {
+            await commands.createNewGraph(uri);
         }),
         
         vscode.commands.registerCommand('ramen.executeGraph', async (uri?: vscode.Uri) => {
@@ -68,6 +94,18 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('ramen.restartServer', async () => {
             await serverManager.restart();
             vscode.window.showInformationMessage('Ramen server restarted');
+        }),
+        
+        vscode.commands.registerCommand('ramen.startServer', async () => {
+            await commands.startServer();
+        }),
+        
+        vscode.commands.registerCommand('ramen.refreshGraphs', async () => {
+            await commands.refreshGraphs();
+        }),
+        
+        vscode.commands.registerCommand('ramen.refreshDependencies', async () => {
+            await commands.refreshDependencies();
         })
     );
 
