@@ -1,0 +1,59 @@
+.react-flow__node-group {
+  /* Remove the default border */
+  border: none !important;
+}
+
+.group-node {
+  /* Removed transition to prevent lag during resize */
+}
+
+.group-control-btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.group-control-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.group-control-btn:active {
+  transform: scale(0.95);
+}
+
+/* Group expand/collapse animation */
+.group-node .group-content {
+  transition: none;
+}
+
+.group-node.collapsed .group-content {
+  opacity: 0.5;
+}
+
+/* Group border style */
+.group-node .group-border {
+  stroke: #0096ff;
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 5,5;
+  animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .group-node {
+    min-width: 200px;
+    min-height: 150px;
+  }
+  
+  .group-control-btn {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 12px !important;
+  }
+} 

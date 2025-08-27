@@ -1,0 +1,36 @@
+out/
+node_modules/
+.vscode-test/
+.vsix
+*.vsix
+.vscode/settings.json
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+dist/
+coverage/
+.nyc_output/
+temp/
+tmp/
+
+# Compiled output
+**/*.js.map
+**/*.d.ts
+!src/**/*.d.ts
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

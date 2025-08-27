@@ -1,0 +1,250 @@
+{
+  "name": "ramen-vscode",
+  "displayName": "Ramen Visual Programming",
+  "description": "Visual programming environment for Python with node-based graph editor",
+  "version": "0.1.0",
+  "publisher": "ramen",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Data Science",
+    "Machine Learning",
+    "Visualization"
+  ],
+  "keywords": [
+    "ramen",
+    "visual programming",
+    "node editor",
+    "python",
+    "machine learning",
+    "data science"
+  ],
+  "icon": "resources/ramen-icon.svg",
+  "activationEvents": [
+    "onLanguage:ramen",
+    "onCommand:ramen.openGraphEditor",
+    "onCommand:ramen.createNewGraph",
+    "workspaceContains:**/*.ramen"
+  ],
+  "main": "./out/extension/extension.js",
+  "browser": "./out/extension/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "ramen",
+        "aliases": [
+          "Ramen",
+          "ramen"
+        ],
+        "extensions": [
+          ".ramen"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./resources/file-icon.svg",
+          "dark": "./resources/file-icon.svg"
+        }
+      }
+    ],
+    "commands": [
+      {
+        "command": "ramen.openGraphEditor",
+        "title": "Ramen: Open Graph Editor",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "ramen.createNewGraph",
+        "title": "Ramen: Create New Graph",
+        "icon": "$(add)"
+      },
+      {
+        "command": "ramen.executeGraph",
+        "title": "Ramen: Execute Graph",
+        "icon": "$(run)"
+      },
+      {
+        "command": "ramen.manageProjectDependencies",
+        "title": "Ramen: Manage Project Dependencies",
+        "icon": "$(package)"
+      },
+      {
+        "command": "ramen.stopServer",
+        "title": "Ramen: Stop Server",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "ramen.restartServer",
+        "title": "Ramen: Restart Server",
+        "icon": "$(debug-restart)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .ramen",
+          "command": "ramen.openGraphEditor",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .ramen",
+          "command": "ramen.executeGraph",
+          "group": "1_ramen"
+        }
+      ],
+      "editor/title": [
+        {
+          "when": "resourceExtname == .ramen",
+          "command": "ramen.openGraphEditor",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .ramen",
+          "command": "ramen.executeGraph",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "ramen.openGraphEditor",
+          "when": "resourceExtname == .ramen"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "ramen.openGraphEditor",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "resourceExtname == .ramen"
+      },
+      {
+        "command": "ramen.executeGraph",
+        "key": "f5",
+        "when": "resourceExtname == .ramen"
+      }
+    ],
+    "configuration": {
+      "title": "Ramen",
+      "properties": {
+        "ramen.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Python interpreter for Ramen backend (leave empty to use system default)"
+        },
+        "ramen.serverPort": {
+          "type": "number",
+          "default": 8000,
+          "description": "Port for Ramen backend server"
+        },
+        "ramen.autoStartServer": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start Ramen server when opening a .ramen file"
+        },
+        "ramen.enableLanguageServer": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Language Server Protocol features for .ramen files"
+        },
+        "ramen.theme": {
+          "type": "string",
+          "enum": [
+            "light",
+            "dark",
+            "auto"
+          ],
+          "default": "auto",
+          "description": "UI theme for Ramen graph editor"
+        },
+        "ramen.debugMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging for troubleshooting"
+        },
+        "ramen.autoOpenEditor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically open graph editor when a .ramen file is selected"
+        }
+      }
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "ramenGraphs",
+          "name": "Ramen Graphs",
+          "icon": "$(graph)",
+          "contextualTitle": "Ramen Graphs"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ramen",
+          "title": "Ramen",
+          "icon": "resources/ramen-icon.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "ramenGraphs",
+        "contents": "No Ramen graphs found in this workspace.\n[Create New Graph](command:ramen.createNewGraph)"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "ramen.graphEditor",
+        "displayName": "Ramen Graph Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.ramen"
+          }
+        ],
+        "priority": "option"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build:webview && npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build:webview": "cd webview-build && bun run build",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "./scripts/validate-extension.sh",
+    "test:vscode": "node ./out/test/runTest.js",
+    "validate": "./scripts/validate-extension.sh",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "20.x",
+    "@types/vscode": "^1.85.0",
+    "@types/mocha": "^10.0.6",
+    "@types/glob": "^8.1.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.32.0",
+    "eslint": "^8.56.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "nanoid": "^5.0.4",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ramen.git"
+  },
+  "homepage": "https://github.com/yourusername/ramen#readme",
+  "license": "MIT"
+}

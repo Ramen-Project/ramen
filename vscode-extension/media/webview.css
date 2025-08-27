@@ -1,0 +1,338 @@
+/* Webview specific styles for Ramen Graph Editor */
+
+#root {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Graph editor container */
+.graph-editor {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background-color: var(--vscode-editor-background);
+}
+
+/* React Flow overrides for VSCode theme */
+.react-flow {
+    background-color: var(--vscode-editor-background);
+}
+
+.react-flow__renderer {
+    background-color: var(--vscode-editor-background);
+}
+
+.react-flow__background {
+    background-color: var(--vscode-editor-background);
+}
+
+.react-flow__node {
+    background-color: var(--vscode-panel-background);
+    border: 1px solid var(--vscode-panel-border);
+    color: var(--vscode-foreground);
+    box-shadow: 0 2px 4px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.16));
+}
+
+.react-flow__node.selected {
+    border-color: var(--vscode-focusBorder, #007acc);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007acc);
+}
+
+.react-flow__edge-path {
+    stroke: var(--vscode-panel-border);
+    stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+    stroke: var(--vscode-focusBorder, #007acc);
+}
+
+.react-flow__handle {
+    background-color: var(--vscode-button-background);
+    border: 2px solid var(--vscode-editor-background);
+}
+
+.react-flow__handle-connecting {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.react-flow__handle-valid {
+    background-color: var(--vscode-notificationsSuccessIcon-foreground, #4caf50);
+}
+
+.react-flow__controls {
+    background-color: var(--vscode-panel-background);
+    border: 1px solid var(--vscode-panel-border);
+    box-shadow: 0 2px 4px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.16));
+}
+
+.react-flow__controls-button {
+    background-color: var(--vscode-panel-background);
+    border-bottom: 1px solid var(--vscode-panel-border);
+    color: var(--vscode-foreground);
+}
+
+.react-flow__controls-button:hover {
+    background-color: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.1));
+}
+
+.react-flow__controls-button svg {
+    fill: currentColor;
+}
+
+/* Minimap */
+.react-flow__minimap {
+    background-color: var(--vscode-panel-background);
+    border: 1px solid var(--vscode-panel-border);
+    box-shadow: 0 2px 4px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.16));
+}
+
+.react-flow__minimap-mask {
+    fill: var(--vscode-panel-background);
+}
+
+.react-flow__minimap-node {
+    fill: var(--vscode-badge-background);
+}
+
+/* Node library panel */
+.node-library {
+    background-color: var(--vscode-panel-background);
+    border: 1px solid var(--vscode-panel-border);
+    padding: 8px;
+}
+
+.node-library-search {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.node-library-category {
+    margin-bottom: 8px;
+}
+
+.node-library-category-header {
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    cursor: pointer;
+    user-select: none;
+    background-color: var(--vscode-list-hoverBackground, transparent);
+    border-radius: 2px;
+}
+
+.node-library-category-header:hover {
+    background-color: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.1));
+}
+
+.node-library-category-icon {
+    margin-right: 4px;
+}
+
+.node-library-items {
+    padding-left: 20px;
+    margin-top: 4px;
+}
+
+.node-library-item {
+    padding: 4px 8px;
+    cursor: move;
+    border-radius: 2px;
+    margin-bottom: 2px;
+    background-color: var(--vscode-input-background);
+    border: 1px solid transparent;
+}
+
+.node-library-item:hover {
+    background-color: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.1));
+    border-color: var(--vscode-panel-border);
+}
+
+.node-library-item.dragging {
+    opacity: 0.5;
+}
+
+/* Sidebar panels */
+.sidebar {
+    background-color: var(--vscode-sideBar-background, var(--vscode-panel-background));
+    border-left: 1px solid var(--vscode-sideBar-border, var(--vscode-panel-border));
+    height: 100%;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 8px 12px;
+    background-color: var(--vscode-sideBarTitle-background, var(--vscode-panel-background));
+    border-bottom: 1px solid var(--vscode-panel-border);
+    font-weight: 600;
+}
+
+.sidebar-content {
+    padding: 12px;
+}
+
+/* Bottom panel */
+.bottom-panel {
+    background-color: var(--vscode-panel-background);
+    border-top: 1px solid var(--vscode-panel-border);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transition: height 0.3s ease;
+}
+
+.bottom-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background-color: var(--vscode-panelTitle-activeForeground, var(--vscode-panel-background));
+    border-bottom: 1px solid var(--vscode-panel-border);
+    cursor: ns-resize;
+}
+
+.bottom-panel-tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.bottom-panel-tab {
+    padding: 4px 12px;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    background-color: transparent;
+    color: var(--vscode-panelTitle-inactiveForeground, var(--vscode-foreground));
+    opacity: 0.7;
+}
+
+.bottom-panel-tab:hover {
+    opacity: 1;
+    background-color: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.1));
+}
+
+.bottom-panel-tab.active {
+    opacity: 1;
+    background-color: var(--vscode-panel-background);
+    color: var(--vscode-panelTitle-activeForeground, var(--vscode-foreground));
+}
+
+.bottom-panel-content {
+    padding: 12px;
+    overflow-y: auto;
+}
+
+/* Error and warning styles */
+.error-message {
+    color: var(--vscode-errorForeground, #f44336);
+    background-color: var(--vscode-inputValidation-errorBackground, rgba(244, 67, 54, 0.1));
+    border: 1px solid var(--vscode-inputValidation-errorBorder, #f44336);
+    padding: 8px;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.warning-message {
+    color: var(--vscode-editorWarning-foreground, #ff8c00);
+    background-color: var(--vscode-inputValidation-warningBackground, rgba(255, 140, 0, 0.1));
+    border: 1px solid var(--vscode-inputValidation-warningBorder, #ff8c00);
+    padding: 8px;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.info-message {
+    color: var(--vscode-editorInfo-foreground, #007acc);
+    background-color: var(--vscode-inputValidation-infoBackground, rgba(0, 122, 204, 0.1));
+    border: 1px solid var(--vscode-inputValidation-infoBorder, #007acc);
+    padding: 8px;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+/* Tooltips */
+.tooltip {
+    position: absolute;
+    z-index: 1000;
+    background-color: var(--vscode-editorHoverWidget-background, var(--vscode-panel-background));
+    color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+    border: 1px solid var(--vscode-editorHoverWidget-border, var(--vscode-panel-border));
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.16));
+    pointer-events: none;
+}
+
+/* Context menu */
+.context-menu {
+    position: absolute;
+    z-index: 1000;
+    background-color: var(--vscode-menu-background, var(--vscode-panel-background));
+    border: 1px solid var(--vscode-menu-border, var(--vscode-panel-border));
+    border-radius: 4px;
+    box-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.16));
+    min-width: 160px;
+    padding: 4px 0;
+}
+
+.context-menu-item {
+    padding: 4px 16px;
+    cursor: pointer;
+    color: var(--vscode-menu-foreground, var(--vscode-foreground));
+}
+
+.context-menu-item:hover {
+    background-color: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground));
+    color: var(--vscode-menu-selectionForeground, var(--vscode-foreground));
+}
+
+.context-menu-separator {
+    height: 1px;
+    background-color: var(--vscode-menu-separatorBackground, var(--vscode-panel-border));
+    margin: 4px 0;
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background-color: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+}
+
+/* Progress bar */
+.progress-bar {
+    height: 4px;
+    background-color: var(--vscode-progressBar-background, var(--vscode-panel-border));
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: var(--vscode-progressBar-foreground, var(--vscode-button-background));
+    transition: width 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 300px;
+        z-index: 100;
+        box-shadow: -2px 0 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.16));
+    }
+    
+    .bottom-panel {
+        max-height: 50vh;
+    }
+}

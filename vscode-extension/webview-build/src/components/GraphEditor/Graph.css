@@ -1,0 +1,17 @@
+/* Node and group transitions removed for instant updates */
+.react-flow__node {
+  transition: none;
+}
+
+.react-flow__node-group {
+  transition: none;
+}
+
+/* Edge transitions remain disabled */
+.react-flow__edge {
+  transition: none;
+}
+
+.react-flow__edge-path {
+  transition: none;
+} 
