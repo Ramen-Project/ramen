@@ -7,8 +7,31 @@ import CategoryTabs from './CategoryTabs';
 import HorizontalNodeList from './HorizontalNodeList';
 
 // Constants
-const FIXED_HEIGHT = 300;
 const ANIMATION_DURATION = '0.3s';
+
+// Responsive height calculation based on viewport
+const getResponsiveHeight = () => {
+  const vh = window.innerHeight;
+  console.log('🍜 Node Library - Viewport height:', vh);
+  
+  let calculatedHeight;
+  // Balanced heights for usability and space efficiency
+  if (vh < 400) {
+    calculatedHeight = Math.min(140, vh * 0.3); // Very small screens: 30% max, 140px max
+    console.log('🍜 Node Library - Very small screen, height:', calculatedHeight);
+  } else if (vh < 600) {
+    calculatedHeight = Math.min(180, vh * 0.3); // Small screens: 30% max, 180px max  
+    console.log('🍜 Node Library - Small screen, height:', calculatedHeight);
+  } else if (vh < 800) {
+    calculatedHeight = Math.min(220, vh * 0.3); // Medium screens: 30% max, 220px max
+    console.log('🍜 Node Library - Medium screen, height:', calculatedHeight);
+  } else {
+    calculatedHeight = Math.min(260, vh * 0.3); // Large screens: 30% max, 260px max
+    console.log('🍜 Node Library - Large screen, height:', calculatedHeight);
+  }
+  
+  return calculatedHeight;
+};
 
 const Container = styled.div`
   position: relative;
@@ -35,8 +58,48 @@ export default function BottomNodeLibrary() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentHeight, setCurrentHeight] = useState(() => getResponsiveHeight());
   const { getAllCategories, getNodeDefinition } = useNodeDefinitionStore();
   const allCategories = getAllCategories();
+
+  // Update height on window resize and container changes
+  useEffect(() => {
+    const updateHeight = () => {
+      console.log('🍜 Node Library - Resize event triggered');
+      const newHeight = getResponsiveHeight();
+      console.log('🍜 Node Library - Setting new height:', newHeight);
+      setCurrentHeight(newHeight);
+    };
+
+    console.log('🍜 Node Library - Setting up resize listener');
+    
+    // Listen to window resize
+    window.addEventListener('resize', updateHeight);
+    
+    // Also use ResizeObserver to detect parent container changes
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        console.log('🍜 Node Library - ResizeObserver triggered');
+        updateHeight();
+      });
+      
+      // Observe the body element for VSCode webview changes
+      resizeObserver.observe(document.body);
+    }
+    
+    // Trigger initial update after mount
+    const timer = setTimeout(updateHeight, 100);
+    
+    return () => {
+      console.log('🍜 Node Library - Cleaning up resize listeners');
+      window.removeEventListener('resize', updateHeight);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Toggle expanded state
   const toggleExpanded = useCallback(() => {
@@ -130,6 +193,22 @@ export default function BottomNodeLibrary() {
 
   return (
     <Container data-testid="bottom-node-library">
+      {/* Debug info - temporary for troubleshooting */}
+      {(
+        <div style={{
+          position: 'absolute',
+          top: '-30px',
+          right: '10px',
+          background: 'rgba(0,0,0,0.7)',
+          color: 'white',
+          padding: '2px 8px',
+          fontSize: '10px',
+          borderRadius: '3px',
+          zIndex: 1000
+        }}>
+          Height: {Math.round(currentHeight)}px (VH: {window.innerHeight}px)
+        </div>
+      )}
       
       {isExpanded && (
         <CategoryTabs
@@ -155,7 +234,7 @@ export default function BottomNodeLibrary() {
         </SearchContainer>
       )}
 
-      <ContentArea $isExpanded={isExpanded} $height={FIXED_HEIGHT}>
+      <ContentArea $isExpanded={isExpanded} $height={currentHeight}>
         {isExpanded && activeCategory && (
           <HorizontalNodeList
             nodes={activeCategory.nodes}

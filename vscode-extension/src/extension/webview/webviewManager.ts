@@ -33,7 +33,6 @@ export class RamenWebviewManager {
                 retainContextWhenHidden: true,
                 localResourceRoots: [
                     vscode.Uri.joinPath(this.context.extensionUri, 'media'),
-                    vscode.Uri.joinPath(this.context.extensionUri, 'out', 'webview'),
                     uri
                 ]
             }
@@ -73,7 +72,7 @@ export class RamenWebviewManager {
         
         // Get URIs for resources
         const scriptUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this.context.extensionUri, 'out', 'webview', 'webview.js')
+            vscode.Uri.joinPath(this.context.extensionUri, 'media', 'webview', 'webview.js')
         );
         
         const styleUri = webview.asWebviewUri(
@@ -98,24 +97,37 @@ export class RamenWebviewManager {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; 
                 img-src ${webview.cspSource} data: https:; 
-                script-src 'nonce-${nonce}' ${webview.cspSource}; 
+                script-src 'unsafe-eval' 'unsafe-inline' ${webview.cspSource}; 
                 style-src ${webview.cspSource} 'unsafe-inline';
                 connect-src ws://localhost:${serverPort} http://localhost:${serverPort};">
             <link href="${vscodeStyleUri}" rel="stylesheet">
-            <link href="${styleUri}" rel="stylesheet">
             <title>Ramen Graph Editor</title>
+            <style>
+                body {
+                    margin: 0;
+                    padding: 0;
+                    font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+                    background-color: var(--vscode-editor-background, #1e1e1e);
+                    color: var(--vscode-foreground, #cccccc);
+                    overflow: hidden;
+                }
+                #root {
+                    width: 100vw;
+                    height: 100vh;
+                    overflow: hidden;
+                }
+            </style>
         </head>
         <body data-theme="${theme}">
-            <div id="root">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Loading Ramen Graph Editor...</p>
-                </div>
-            </div>
-            <script nonce="${nonce}">
+            <div id="root"></div>
+            <script>
+                // VSCode API
                 const vscode = acquireVsCodeApi();
                 
-                // Initial configuration
+                // Make VSCode API available globally for the React app
+                window.vscode = vscode;
+                
+                // Initial configuration for the React app
                 window.ramenConfig = {
                     graphPath: '${graphPath.replace(/\\/g, '\\\\')}',
                     serverPort: ${serverPort},
@@ -124,7 +136,7 @@ export class RamenWebviewManager {
                     isVSCode: true
                 };
                 
-                // Save state
+                // Save initial state
                 vscode.setState({
                     graphPath: '${graphPath.replace(/\\/g, '\\\\')}',
                     graphData: window.ramenConfig.graphData
@@ -136,19 +148,15 @@ export class RamenWebviewManager {
                     switch (message.command) {
                         case 'updateTheme':
                             document.body.dataset.theme = message.theme;
-                            if (window.ramenApp) {
-                                window.ramenApp.updateTheme(message.theme);
-                            }
+                            window.ramenConfig.theme = message.theme;
+                            // Dispatch custom event for React app to handle
+                            window.dispatchEvent(new CustomEvent('vscode:updateTheme', { detail: message.theme }));
                             break;
                         case 'fileChanged':
-                            if (window.ramenApp) {
-                                window.ramenApp.reloadGraph();
-                            }
+                            window.dispatchEvent(new CustomEvent('vscode:fileChanged', { detail: message.path }));
                             break;
                         case 'serverRestarted':
-                            if (window.ramenApp) {
-                                window.ramenApp.reconnect();
-                            }
+                            window.dispatchEvent(new CustomEvent('vscode:serverRestarted'));
                             break;
                     }
                 });
@@ -159,7 +167,7 @@ export class RamenWebviewManager {
                     window.ramenConfig.graphData = previousState.graphData;
                 }
             </script>
-            <script nonce="${nonce}" src="${scriptUri}"></script>
+            <script type="module" src="${scriptUri}"></script>
         </body>
         </html>`;
     }

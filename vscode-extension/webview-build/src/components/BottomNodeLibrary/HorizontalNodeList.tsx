@@ -4,9 +4,9 @@ import StandaloneNodePreview from '../Node/StandaloneNodePreview';
 import { useResponsiveScale } from '../../hooks/useResponsiveScale';
 
 // Constants
-const NODE_GAP = 16;
-const CONTAINER_PADDING = 16;
-const SCROLLBAR_HEIGHT = 8;
+const NODE_GAP = 12;  // Reduced gap for more compact layout
+const CONTAINER_PADDING = 12;  // Reduced padding to save space
+const SCROLLBAR_HEIGHT = 6;  // Smaller scrollbar
 const SCROLLBAR_RADIUS = 4;
 const BASE_NODE_WIDTH = 300; // 3 * DotsGap from constants
 
@@ -63,14 +63,14 @@ export default function HorizontalNodeList({
 }: HorizontalNodeListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Responsive scaling hook
+  // Responsive scaling hook - balanced scale for readable nodes
   const { scale } = useResponsiveScale({
     baseNodeWidth: BASE_NODE_WIDTH,
     nodeGap: NODE_GAP,
     containerPadding: CONTAINER_PADDING,
-    minScale: 0.5,
-    maxScale: 1,
-    minNodesVisible: 2
+    minScale: 0.6,  // Minimum scale for readability
+    maxScale: 0.9,  // Slightly reduced from full size
+    minNodesVisible: 2  // Show at least 2 nodes
   });
 
   // Handle mouse wheel scrolling
@@ -121,7 +121,7 @@ export default function HorizontalNodeList({
           <StandaloneNodePreview
             key={node.name}
             nodeData={previewData} 
-            scale={scale * 0.8} 
+            scale={scale * 0.85} 
             draggable={true}
             onDragStart={(e) => handleDragStart(e, node.name)}
           />

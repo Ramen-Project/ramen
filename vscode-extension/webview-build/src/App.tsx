@@ -21,6 +21,20 @@ export default function App() {
   const [apiClient, setApiClient] = useState<RamenApiClient | null>(null);
   const [isServerHealthy, setIsServerHealthy] = useState(false);
   
+  console.log('🍜 App render - isLoading:', isLoading, 'error:', error);
+  
+  // Fallback timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('🍜 Loading timeout reached, forcing loading to stop');
+        setIsLoading(false);
+      }
+    }, 5000); // 5 second timeout
+    
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
+  
   // Use GraphStore for graph management
   const {
     graphs,
@@ -31,23 +45,31 @@ export default function App() {
   } = useGraphStore();
 
   useEffect(() => {
-    // Initialize API client
+    // Initialize API client only once
     const initApiClient = async () => {
-      if (window.ramenConfig?.serverPort) {
+      if (window.ramenConfig?.serverPort && !apiClient) {
         const client = getApiClient(window.ramenConfig.serverPort);
         setApiClient(client);
         
-        // Check server health
-        const healthy = await client.healthCheck();
-        setIsServerHealthy(healthy);
-        
-        if (!healthy) {
-          console.warn('Ramen server is not healthy, some features may not work');
+        // Check server health only if VSCode config allows it
+        if (!window.ramenConfig.disableServiceWorker) {
+          const healthy = await client.healthCheck();
+          setIsServerHealthy(healthy);
+          
+          if (!healthy) {
+            console.warn('Ramen server is not healthy, some features may not work');
+          }
+        } else {
+          // In VSCode mode, assume server is healthy to reduce requests
+          setIsServerHealthy(true);
         }
       }
     };
     
-    initApiClient();
+    // Only run if we don't have an API client yet
+    if (!apiClient) {
+      initApiClient();
+    }
     
     // Initialize VSCode communication
     const handleMessage = (event: MessageEvent) => {
@@ -86,9 +108,19 @@ export default function App() {
     };
 
     window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []); // Run only once on mount
+
+  // Separate effect for graph initialization
+  useEffect(() => {
+    console.log('🍜 Graph init effect - ramenConfig:', !!window.ramenConfig, 'graphData:', !!window.ramenConfig?.graphData, 'graphs.length:', graphs.length);
     
-    // Initialize with config if available
-    if (window.ramenConfig?.graphData) {
+    // Only initialize graph data once when we have the config
+    if (window.ramenConfig?.graphData && graphs.length === 0) {
+      console.log('🍜 Initializing with graph data');
       try {
         const parsed = typeof window.ramenConfig.graphData === 'string' 
           ? JSON.parse(window.ramenConfig.graphData) 
@@ -105,23 +137,30 @@ export default function App() {
           updateGraphData(graphId, parsed.nodes, parsed.edges);
         }
         
+        console.log('🍜 Graph initialized successfully');
         setIsLoading(false);
       } catch (err) {
+        console.error('🍜 Failed to parse graph data:', err);
         setError(`Failed to parse initial graph data: ${err}`);
         setIsLoading(false);
       }
-    } else {
+    } else if (!window.ramenConfig?.graphData && graphs.length === 0) {
+      console.log('🍜 Creating empty graph');
       // Create empty graph if no data
       const graphId = `vscode-graph-${nanoid()}`;
       addGraph(graphId, 'Untitled');
       setActiveGraph(graphId);
+      console.log('🍜 Empty graph created');
       setIsLoading(false);
+    } else {
+      console.log('🍜 Skipping graph init - condition not met');
+      // Force stop loading if we have graphs already
+      if (graphs.length > 0) {
+        console.log('🍜 Graphs exist, stopping loading state');
+        setIsLoading(false);
+      }
     }
-
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, [addGraph, setActiveGraph, updateGraphData, activeGraphId]);
+  }, [addGraph, setActiveGraph, updateGraphData, graphs.length]);
 
   // Handle graph data changes from GraphEditor
   const handleGraphDataChange = (nodes: Node[], edges: Edge[]) => {
@@ -269,12 +308,14 @@ export default function App() {
       <Theme accentColor="blue" appearance="dark" grayColor="mauve">
         <div style={{ 
           position: 'relative',
-          width: '100vw',
+          width: '100%',
           height: '100vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          backgroundColor: 'var(--vscode-editor-background, #1e1e1e)'
+          backgroundColor: 'var(--vscode-editor-background, #1e1e1e)',
+          minWidth: 320, // Minimum width for usability
+          boxSizing: 'border-box'
         }}>
           {/* Main content: graph editor with bottom node library */}
           <div style={{ 

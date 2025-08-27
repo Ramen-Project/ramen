@@ -88,6 +88,28 @@ export class RamenLanguageClient {
             return configuredPath;
         }
         
+        // First try to find the project's virtual environment
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (workspaceFolder) {
+            // Check for ramen project .venv (Windows)
+            const venvPath = path.join(workspaceFolder.uri.fsPath, '.venv', 'Scripts', 'python.exe');
+            try {
+                await vscode.workspace.fs.stat(vscode.Uri.file(venvPath));
+                return venvPath;
+            } catch {
+                // .venv doesn't exist, continue to other methods
+            }
+            
+            // Check for ramen project .venv (Unix)
+            const venvPathUnix = path.join(workspaceFolder.uri.fsPath, '.venv', 'bin', 'python');
+            try {
+                await vscode.workspace.fs.stat(vscode.Uri.file(venvPathUnix));
+                return venvPathUnix;
+            } catch {
+                // .venv doesn't exist, continue to other methods
+            }
+        }
+        
         // Try to get Python from the Python extension
         try {
             const pythonExtension = vscode.extensions.getExtension('ms-python.python');

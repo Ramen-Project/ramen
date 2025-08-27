@@ -204,7 +204,7 @@
             "filenamePattern": "*.ramen"
           }
         ],
-        "priority": "option"
+        "priority": "default"
       }
     ]
   },

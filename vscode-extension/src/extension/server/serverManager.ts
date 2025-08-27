@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { spawn, execSync, ChildProcess } from 'child_process';
 import * as net from 'net';
+import * as path from 'path';
 
 export class RamenServerManager {
     private serverProcess: ChildProcess | null = null;
@@ -210,27 +211,36 @@ export class RamenServerManager {
         if (workspaceFolder) {
             // First, try to find the Ramen project's virtual environment
             const ramenProjectPath = workspaceFolder.uri.fsPath.replace(/vscode-extension.*$/, '');
-            const uvVenvPath = `${ramenProjectPath}/.venv/bin/python`;
             
-            try {
-                const result = execSync(`${uvVenvPath} --version`, {
-                    encoding: 'utf8'
-                });
-                
-                // Check if ramen module is available in this environment
+            // Try both Windows and Unix paths
+            const pythonPaths = [
+                path.join(ramenProjectPath, '.venv', 'Scripts', 'python.exe'), // Windows
+                path.join(ramenProjectPath, '.venv', 'bin', 'python')          // Unix
+            ];
+            
+            for (const uvVenvPath of pythonPaths) {
                 try {
-                    execSync(`${uvVenvPath} -c "import ramen"`, {
-                        encoding: 'utf8',
-                        stdio: 'ignore'
+                    const result = execSync(`"${uvVenvPath}" --version`, {
+                        encoding: 'utf8'
                     });
-                    this.outputChannel.appendLine(`Using Ramen project Python: ${uvVenvPath}`);
-                    return uvVenvPath;
+                    
+                    // Check if ramen module is available in this environment
+                    try {
+                        execSync(`"${uvVenvPath}" -c "import ramen"`, {
+                            encoding: 'utf8',
+                            stdio: 'ignore'
+                        });
+                        this.outputChannel.appendLine(`Using Ramen project Python: ${uvVenvPath}`);
+                        return uvVenvPath;
+                    } catch {
+                        this.outputChannel.appendLine(`Ramen module not found in ${uvVenvPath}`);
+                    }
                 } catch {
-                    this.outputChannel.appendLine(`Ramen module not found in ${uvVenvPath}`);
+                    // Try next path
                 }
-            } catch {
-                this.outputChannel.appendLine(`Virtual environment not found at ${uvVenvPath}`);
             }
+            
+            this.outputChannel.appendLine(`Virtual environment not found at ${ramenProjectPath}/.venv`);
             
             // Try uv run command as an alternative
             try {

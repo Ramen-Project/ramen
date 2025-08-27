@@ -5,6 +5,44 @@
     font-optical-sizing: auto;
     font-weight: normal;
     font-style: normal;
+    box-sizing: border-box;
+}
+
+/* Responsive base styles for VSCode webview */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Root container responsive styles */
+#root {
+    width: 100%;
+    height: 100vh;
+    min-width: 320px; /* Minimum usable width */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Responsive font sizing */
+@media (max-width: 480px) {
+    * {
+        font-size: 12px;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    * {
+        font-size: 13px;
+    }
+}
+
+@media (min-width: 769px) {
+    * {
+        font-size: 14px;
+    }
 }
 
 /* --- React Flow connection z-index fix --- */

@@ -1,6 +1,3 @@
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 (function() {
   "use strict";
   var __vite_style__ = document.createElement("style");
@@ -589,6 +586,47 @@ svg.react-flow__connectionline {
     font-optical-sizing: auto;
     font-weight: normal;
     font-style: normal;
+    box-sizing: border-box;
+}
+
+/* Responsive base styles for VSCode webview */
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Root container responsive styles */
+
+#root {
+    width: 100%;
+    height: 100vh;
+    min-width: 320px; /* Minimum usable width */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Responsive font sizing */
+
+@media (max-width: 480px) {
+    * {
+        font-size: 12px;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    * {
+        font-size: 13px;
+    }
+}
+
+@media (min-width: 769px) {
+    * {
+        font-size: 14px;
+    }
 }
 
 /* --- React Flow connection z-index fix --- */
@@ -52995,7 +53033,8 @@ template {
     )
   );
   const DEFAULT_PERFORMANCE_CONFIG = {
-    enabled: false,
+    enabled: true,
+    // Always enable performance monitor
     slowThreshold: 16,
     // 60fps budget
     sampleRate: 1,
@@ -54481,9 +54520,9 @@ template {
     }, [baseNodeWidth, nodeGap, containerPadding, minScale, maxScale, minNodesVisible]);
     return { scale: scale2, containerWidth };
   }
-  const NODE_GAP = 16;
-  const CONTAINER_PADDING = 16;
-  const SCROLLBAR_HEIGHT = 8;
+  const NODE_GAP = 12;
+  const CONTAINER_PADDING = 12;
+  const SCROLLBAR_HEIGHT = 6;
   const SCROLLBAR_RADIUS = 4;
   const BASE_NODE_WIDTH = 300;
   const Container$1 = dt.div`
@@ -54523,9 +54562,12 @@ template {
       baseNodeWidth: BASE_NODE_WIDTH,
       nodeGap: NODE_GAP,
       containerPadding: CONTAINER_PADDING,
-      minScale: 0.5,
-      maxScale: 1,
+      minScale: 0.6,
+      // Minimum scale for readability
+      maxScale: 0.9,
+      // Slightly reduced from full size
       minNodesVisible: 2
+      // Show at least 2 nodes
     });
     const handleWheel = reactExports.useCallback((event) => {
       if (containerRef.current) {
@@ -54566,7 +54608,7 @@ template {
             StandaloneNodePreview,
             {
               nodeData: previewData,
-              scale: scale2 * 0.8,
+              scale: scale2 * 0.85,
               draggable: true,
               onDragStart: (e2) => handleDragStart(e2, node2.name)
             },
@@ -54576,8 +54618,26 @@ template {
       }
     );
   }
-  const FIXED_HEIGHT = 300;
   const ANIMATION_DURATION = "0.3s";
+  const getResponsiveHeight = () => {
+    const vh2 = window.innerHeight;
+    console.log("🍜 Node Library - Viewport height:", vh2);
+    let calculatedHeight;
+    if (vh2 < 400) {
+      calculatedHeight = Math.min(140, vh2 * 0.3);
+      console.log("🍜 Node Library - Very small screen, height:", calculatedHeight);
+    } else if (vh2 < 600) {
+      calculatedHeight = Math.min(180, vh2 * 0.3);
+      console.log("🍜 Node Library - Small screen, height:", calculatedHeight);
+    } else if (vh2 < 800) {
+      calculatedHeight = Math.min(220, vh2 * 0.3);
+      console.log("🍜 Node Library - Medium screen, height:", calculatedHeight);
+    } else {
+      calculatedHeight = Math.min(260, vh2 * 0.3);
+      console.log("🍜 Node Library - Large screen, height:", calculatedHeight);
+    }
+    return calculatedHeight;
+  };
   const Container = dt.div`
   position: relative;
   width: 100%;
@@ -54600,8 +54660,36 @@ template {
     const [isExpanded, setIsExpanded] = reactExports.useState(false);
     const [activeTab, setActiveTab] = reactExports.useState(0);
     const [searchQuery, setSearchQuery] = reactExports.useState("");
+    const [currentHeight, setCurrentHeight] = reactExports.useState(() => getResponsiveHeight());
     const { getAllCategories, getNodeDefinition } = useNodeDefinitionStore();
     const allCategories = getAllCategories();
+    reactExports.useEffect(() => {
+      const updateHeight = () => {
+        console.log("🍜 Node Library - Resize event triggered");
+        const newHeight = getResponsiveHeight();
+        console.log("🍜 Node Library - Setting new height:", newHeight);
+        setCurrentHeight(newHeight);
+      };
+      console.log("🍜 Node Library - Setting up resize listener");
+      window.addEventListener("resize", updateHeight);
+      let resizeObserver = null;
+      if (typeof ResizeObserver !== "undefined") {
+        resizeObserver = new ResizeObserver(() => {
+          console.log("🍜 Node Library - ResizeObserver triggered");
+          updateHeight();
+        });
+        resizeObserver.observe(document.body);
+      }
+      const timer2 = setTimeout(updateHeight, 100);
+      return () => {
+        console.log("🍜 Node Library - Cleaning up resize listeners");
+        window.removeEventListener("resize", updateHeight);
+        if (resizeObserver) {
+          resizeObserver.disconnect();
+        }
+        clearTimeout(timer2);
+      };
+    }, []);
     const toggleExpanded = reactExports.useCallback(() => {
       setIsExpanded((prev2) => !prev2);
     }, []);
@@ -54667,6 +54755,23 @@ template {
     }, [isSearching]);
     const activeCategory = displayCategories[activeTab];
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(Container, { "data-testid": "bottom-node-library", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        position: "absolute",
+        top: "-30px",
+        right: "10px",
+        background: "rgba(0,0,0,0.7)",
+        color: "white",
+        padding: "2px 8px",
+        fontSize: "10px",
+        borderRadius: "3px",
+        zIndex: 1e3
+      }, children: [
+        "Height: ",
+        Math.round(currentHeight),
+        "px (VH: ",
+        window.innerHeight,
+        "px)"
+      ] }),
       isExpanded && /* @__PURE__ */ jsxRuntimeExports.jsx(
         CategoryTabs,
         {
@@ -54686,7 +54791,7 @@ template {
           children: /* @__PURE__ */ jsxRuntimeExports.jsx(c, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(MagnifyingGlassIcon, { height: "16", width: "16" }) })
         }
       ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(ContentArea, { $isExpanded: isExpanded, $height: FIXED_HEIGHT, children: isExpanded && activeCategory && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ContentArea, { $isExpanded: isExpanded, $height: currentHeight, children: isExpanded && activeCategory && /* @__PURE__ */ jsxRuntimeExports.jsx(
         HorizontalNodeList,
         {
           nodes: activeCategory.nodes,
@@ -56960,11 +57065,11 @@ template {
   const HTML5Backend = function createBackend(manager, context, options) {
     return new HTML5BackendImpl(manager, context, options);
   };
-  const _HotkeyManager = class _HotkeyManager {
+  class HotkeyManager {
     constructor() {
-      __publicField(this, "handlers", /* @__PURE__ */ new Map());
-      __publicField(this, "isListening", false);
-      __publicField(this, "handleKeyDown", (event) => {
+      this.handlers = /* @__PURE__ */ new Map();
+      this.isListening = false;
+      this.handleKeyDown = (event) => {
         const target = event.target;
         if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable || target.closest('[role="textbox"]') || target.closest("input")) {
           return;
@@ -56984,13 +57089,13 @@ template {
             }
           }
         }
-      });
+      };
     }
     static getInstance() {
-      if (!_HotkeyManager.instance) {
-        _HotkeyManager.instance = new _HotkeyManager();
+      if (!HotkeyManager.instance) {
+        HotkeyManager.instance = new HotkeyManager();
       }
-      return _HotkeyManager.instance;
+      return HotkeyManager.instance;
     }
     getHotkeyId(config) {
       const modifiers = [
@@ -57049,9 +57154,7 @@ template {
       }
       return result;
     }
-  };
-  __publicField(_HotkeyManager, "instance");
-  let HotkeyManager = _HotkeyManager;
+  }
   function useHotkeys(config, callback, deps = []) {
     const callbackRef = reactExports.useRef(callback);
     callbackRef.current = callback;
@@ -57066,7 +57169,6 @@ template {
   }
   class RamenApiClient {
     constructor(port) {
-      __publicField(this, "baseUrl");
       this.baseUrl = `http://localhost:${port}/api`;
     }
     async healthCheck() {
@@ -57258,6 +57360,16 @@ template {
     const [error, setError] = reactExports.useState(null);
     const [apiClient2, setApiClient] = reactExports.useState(null);
     const [isServerHealthy, setIsServerHealthy] = reactExports.useState(false);
+    console.log("🍜 App render - isLoading:", isLoading, "error:", error);
+    reactExports.useEffect(() => {
+      const timeout2 = setTimeout(() => {
+        if (isLoading) {
+          console.log("🍜 Loading timeout reached, forcing loading to stop");
+          setIsLoading(false);
+        }
+      }, 5e3);
+      return () => clearTimeout(timeout2);
+    }, [isLoading]);
     const {
       graphs,
       activeGraphId,
@@ -57267,17 +57379,23 @@ template {
     } = useGraphStore();
     reactExports.useEffect(() => {
       const initApiClient = async () => {
-        if (window.ramenConfig?.serverPort) {
+        if (window.ramenConfig?.serverPort && !apiClient2) {
           const client2 = getApiClient(window.ramenConfig.serverPort);
           setApiClient(client2);
-          const healthy = await client2.healthCheck();
-          setIsServerHealthy(healthy);
-          if (!healthy) {
-            console.warn("Ramen server is not healthy, some features may not work");
+          if (!window.ramenConfig.disableServiceWorker) {
+            const healthy = await client2.healthCheck();
+            setIsServerHealthy(healthy);
+            if (!healthy) {
+              console.warn("Ramen server is not healthy, some features may not work");
+            }
+          } else {
+            setIsServerHealthy(true);
           }
         }
       };
-      initApiClient();
+      if (!apiClient2) {
+        initApiClient();
+      }
       const handleMessage = (event) => {
         const message = event.data;
         console.log("Received message from VSCode:", message);
@@ -57307,7 +57425,14 @@ template {
         }
       };
       window.addEventListener("message", handleMessage);
-      if (window.ramenConfig?.graphData) {
+      return () => {
+        window.removeEventListener("message", handleMessage);
+      };
+    }, []);
+    reactExports.useEffect(() => {
+      console.log("🍜 Graph init effect - ramenConfig:", !!window.ramenConfig, "graphData:", !!window.ramenConfig?.graphData, "graphs.length:", graphs.length);
+      if (window.ramenConfig?.graphData && graphs.length === 0) {
+        console.log("🍜 Initializing with graph data");
         try {
           const parsed = typeof window.ramenConfig.graphData === "string" ? JSON.parse(window.ramenConfig.graphData) : window.ramenConfig.graphData;
           const graphId = `vscode-graph-${nanoid()}`;
@@ -57317,21 +57442,28 @@ template {
           if (parsed.nodes && parsed.edges) {
             updateGraphData(graphId, parsed.nodes, parsed.edges);
           }
+          console.log("🍜 Graph initialized successfully");
           setIsLoading(false);
         } catch (err) {
+          console.error("🍜 Failed to parse graph data:", err);
           setError(`Failed to parse initial graph data: ${err}`);
           setIsLoading(false);
         }
-      } else {
+      } else if (!window.ramenConfig?.graphData && graphs.length === 0) {
+        console.log("🍜 Creating empty graph");
         const graphId = `vscode-graph-${nanoid()}`;
         addGraph(graphId, "Untitled");
         setActiveGraph(graphId);
+        console.log("🍜 Empty graph created");
         setIsLoading(false);
+      } else {
+        console.log("🍜 Skipping graph init - condition not met");
+        if (graphs.length > 0) {
+          console.log("🍜 Graphs exist, stopping loading state");
+          setIsLoading(false);
+        }
       }
-      return () => {
-        window.removeEventListener("message", handleMessage);
-      };
-    }, [addGraph, setActiveGraph, updateGraphData, activeGraphId]);
+    }, [addGraph, setActiveGraph, updateGraphData, graphs.length]);
     const handleGraphDataChange = (nodes, edges) => {
       if (activeGraphId) {
         updateGraphData(activeGraphId, nodes, edges);
@@ -57446,12 +57578,15 @@ template {
     const currentEdges = activeGraph?.edges || [];
     return /* @__PURE__ */ jsxRuntimeExports.jsx(DndProvider, { backend: HTML5Backend, children: /* @__PURE__ */ jsxRuntimeExports.jsx(R, { accentColor: "blue", appearance: "dark", grayColor: "mauve", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
       position: "relative",
-      width: "100vw",
+      width: "100%",
       height: "100vh",
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
-      backgroundColor: "var(--vscode-editor-background, #1e1e1e)"
+      backgroundColor: "var(--vscode-editor-background, #1e1e1e)",
+      minWidth: 320,
+      // Minimum width for usability
+      boxSizing: "border-box"
     }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
       flex: 1,
       display: "flex",

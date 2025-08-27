@@ -109,22 +109,23 @@ export async function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    // Auto-open graph editor when .ramen file is opened
-    context.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor((editor) => {
-            if (editor && editor.document.fileName.endsWith('.ramen')) {
-                const config = vscode.workspace.getConfiguration('ramen');
-                const autoOpenEditor = config.get<boolean>('autoOpenEditor', true);
-                
-                if (autoOpenEditor) {
-                    // Small delay to ensure the text editor is ready
-                    setTimeout(() => {
-                        commands.openGraphEditor(editor.document.uri);
-                    }, 100);
-                }
-            }
-        })
-    );
+    // Auto-open graph editor when .ramen file is opened (disabled - using custom editor instead)
+    // The custom editor with "default" priority should handle .ramen files directly
+    // context.subscriptions.push(
+    //     vscode.window.onDidChangeActiveTextEditor((editor) => {
+    //         if (editor && editor.document.fileName.endsWith('.ramen')) {
+    //             const config = vscode.workspace.getConfiguration('ramen');
+    //             const autoOpenEditor = config.get<boolean>('autoOpenEditor', true);
+    //             
+    //             if (autoOpenEditor) {
+    //                 // Small delay to ensure the text editor is ready
+    //                 setTimeout(() => {
+    //                     commands.openGraphEditor(editor.document.uri);
+    //                 }, 100);
+    //             }
+    //         }
+    //     })
+    // );
 
     console.log('Ramen extension activated successfully');
 }

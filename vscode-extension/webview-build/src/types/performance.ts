@@ -18,7 +18,7 @@ export interface PerformanceAlert {
 }
 
 export const DEFAULT_PERFORMANCE_CONFIG: PerformanceConfig = {
-  enabled: process.env.NODE_ENV === 'development',
+  enabled: true, // Always enable performance monitor
   slowThreshold: 16, // 60fps budget
   sampleRate: 1.0,
   maxHistorySize: 100,

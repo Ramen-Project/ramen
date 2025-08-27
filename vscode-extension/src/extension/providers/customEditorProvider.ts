@@ -167,12 +167,12 @@ export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvide
             vscode.Uri.joinPath(this.context.extensionUri, 'media', 'webview', 'webview.js')
         );
         
-        const cssUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this.context.extensionUri, 'media', 'webview', 'assets', 'webview.css')
+        const vscodeStyleUri = webview.asWebviewUri(
+            vscode.Uri.joinPath(this.context.extensionUri, 'media', 'vscode.css')
         );
         
         console.log('🍜 Script URI:', scriptUri.toString());
-        console.log('🍜 CSS URI:', cssUri.toString());
+        console.log('🍜 VSCode Style URI:', vscodeStyleUri.toString());
         
         // Read graph content
         let graphData = '';
@@ -199,7 +199,7 @@ export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvide
                 font-src ${webview.cspSource} https://fonts.gstatic.com;
                 connect-src ws://localhost:${serverPort} http://localhost:${serverPort};">
             <title>Ramen Graph Editor</title>
-            <link rel="stylesheet" href="${cssUri}">
+            <link href="${vscodeStyleUri}" rel="stylesheet">
             <style nonce="${nonce}">
                 body {
                     margin: 0;
@@ -221,7 +221,8 @@ export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvide
             
             <script nonce="${nonce}">
                 // VS Code API setup - make it globally available
-                window.vscode = acquireVsCodeApi();
+                const vscode = acquireVsCodeApi();
+                window.vscode = vscode;
                 
                 // Initial configuration for React app
                 window.ramenConfig = {
@@ -230,16 +231,87 @@ export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvide
                     theme: '${theme}',
                     graphData: ${JSON.stringify(graphData)},
                     isVSCode: true,
-                    isCustomEditor: true
+                    isCustomEditor: true,
+                    // Disable problematic features for VSCode webview
+                    disableServiceWorker: true,
+                    healthCheckInterval: 30000, // Less frequent health checks (30s instead of default)
+                    offlineMode: false
                 };
                 
                 // Save state
-                window.vscode.setState({
+                vscode.setState({
                     graphPath: '${graphPath.replace(/\\/g, '\\\\')}',
                     graphData: window.ramenConfig.graphData
                 });
                 
-                console.log('Ramen VSCode webview initialized', window.ramenConfig);
+                // Disable service worker registration for VSCode webview
+                if ('serviceWorker' in navigator) {
+                    // Override navigator.serviceWorker to prevent registration
+                    Object.defineProperty(navigator, 'serviceWorker', {
+                        value: undefined,
+                        writable: false
+                    });
+                }
+                
+                // Throttle health check requests
+                let lastHealthCheck = 0;
+                const HEALTH_CHECK_THROTTLE = 10000; // 10 seconds
+                
+                // Intercept fetch for debugging and throttling
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                    const url = args[0];
+                    
+                    // Throttle health check requests
+                    if (typeof url === 'string' && url.includes('/health')) {
+                        const now = Date.now();
+                        if (now - lastHealthCheck < HEALTH_CHECK_THROTTLE) {
+                            console.log('🍜 Health check throttled, using cached result');
+                            return Promise.resolve(new Response('{"status": "healthy"}', {
+                                status: 200,
+                                statusText: 'OK',
+                                headers: { 'Content-Type': 'application/json' }
+                            }));
+                        }
+                        lastHealthCheck = now;
+                    }
+                    
+                    console.log('🍜 Fetch request:', args[0]);
+                    return originalFetch.apply(this, args)
+                        .then(response => {
+                            console.log('🍜 Fetch response:', response.status, response.url);
+                            return response;
+                        })
+                        .catch(error => {
+                            console.error('🍜 Fetch error:', error, 'for URL:', args[0]);
+                            throw error;
+                        });
+                };
+                
+                console.log('🍜 Ramen Custom Editor initialized');
+                console.log('🍜 Config:', window.ramenConfig);
+                console.log('🍜 VSCode API:', vscode);
+                console.log('🍜 Root element:', document.getElementById('root'));
+                console.log('🍜 Service Worker disabled:', !('serviceWorker' in navigator));
+                
+                // Debug: Check if script will load
+                window.addEventListener('load', () => {
+                    console.log('🍜 Window loaded');
+                    setTimeout(() => {
+                        console.log('🍜 Checking React mount after 2s...');
+                        const root = document.getElementById('root');
+                        console.log('🍜 Root content:', root?.innerHTML);
+                    }, 2000);
+                });
+                
+                // Listen for any errors
+                window.addEventListener('error', (e) => {
+                    console.error('🍜 Window error:', e.error);
+                });
+                
+                window.addEventListener('unhandledrejection', (e) => {
+                    console.error('🍜 Unhandled promise rejection:', e.reason);
+                });
             </script>
             <script nonce="${nonce}" src="${scriptUri}"></script>
         </body>
