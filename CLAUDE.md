@@ -2,24 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Overview
+
+Ramen is a **VSCode Extension** for visual programming with Python. It provides a node-based graph editor integrated directly into VSCode, allowing users to visually design and execute Python workflows.
+
 ## Common Development Commands
 
-### Python Backend
-- **Development**: Use `uv` as the Python package manager
-- **Environment**: `uv venv` to create virtual environments
-- **Run scripts**: `uv run <script>` to execute Python scripts in the uv project
-- **Install dependencies**: `uv add <package>` or `uv pip install <package>`
-- **Main entry**: `uv run ramen` or `python -m ramen.entrypoint`
-- **GUI mode**: `ramen-cli` (launches local web interface)
-- **Server mode**: `ramen-cli server` for remote deployment
-- **Execute graphs**: `ramen-cli run <graph_name> <kwargs>` for command-line execution
-
-### VSCode Extension
+### VSCode Extension (Primary Focus)
 - **Location**: `vscode-extension/` directory
 - **Webview Build**: `cd vscode-extension/webview-build && bun run build`
 - **Extension Build**: `cd vscode-extension && npm run compile`
 - **Package Extension**: `cd vscode-extension && npm run package`
 - **Development**: Edit extension TypeScript files and webview React app separately
+- **Testing Extension**: Press F5 in VSCode to launch Extension Development Host
+
+### Python Backend (Supporting Service)
+- **Development**: Use `uv` as the Python package manager
+- **Environment**: `uv venv` to create virtual environments
+- **Run scripts**: `uv run <script>` to execute Python scripts in the uv project
+- **Install dependencies**: `uv add <package>` or `uv pip install <package>`
+- **Main entry**: `uv run ramen` or `python -m ramen.entrypoint`
+- **CLI mode**: `ramen-cli` (launches backend service)
+- **Server mode**: `ramen-cli server` for remote deployment
+- **Execute graphs**: `ramen-cli run <graph_name> <kwargs>` for command-line execution
 
 ### Testing and Quality
 - **TDD Approach**: Use Test-Driven Development (TDD) on this project
@@ -29,44 +34,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-Ramen is a visual programming environment for Python with the following key components:
+Ramen is a **VSCode Extension** that provides visual programming capabilities for Python directly within the IDE.
 
-### Backend (`src/ramen/`)
-- **Core**: Graph execution engine, compilation/JIT, module system
-- **API**: REST API and WebSocket communication
-- **CLI**: Command-line interface and server management
+### VSCode Extension (`vscode-extension/`) - Main Component
+- **Extension Host**: TypeScript extension providing custom editor for `.ramen` files
+- **Webview Graph Editor**: React + TypeScript visual editor (in `webview-build/`)
+  - Visual node-based editor using @xyflow/react
+  - Node library panel for adding components
+  - Real-time graph execution and visualization
+- **State Management**: Zustand stores for application state
+- **UI Components**: Radix UI + VSCode theme integration
+- **Communication**: VSCode webview API for extension ↔ webview messaging
+
+### Python Backend (`src/ramen/`) - Supporting Service
+- **Execution Engine**: Graph compilation and runtime
+- **API Server**: REST API and WebSocket for real-time updates
+- **CLI Interface**: Command-line tools for headless execution
 - **Toppings**: Plugin system for extending functionality (numpy, pandas, torch, plots)
-- **UV Wrapper**: Integration with uv for environment management
-
-### VSCode Extension (`vscode-extension/`)
-- **Extension Backend**: TypeScript extension host, custom editor providers
-- **Webview Frontend**: React + TypeScript graph editor (in `webview-build/`)
-- **Graph Editor**: Visual node-based editor using @xyflow/react
-- **Components**: Node system, bottom node library, graph management
-- **State Management**: Zustand stores for app state
-- **Styling**: Radix UI components with VSCode theming
-- **Communication**: VSCode webview API + REST API to backend
+- **Environment Management**: UV integration for dependency isolation
 
 ### Project Structure
-- **Main Python package**: `src/ramen/` - core backend functionality
-- **VSCode Extension**: `vscode-extension/` - VSCode extension with embedded graph editor
-- **Toppings**: `toppings/` - plugin packages (numpy, pandas, torch, plots)
-- **Documentation**: `docs/technical-design/` - detailed architecture specs
-- **Build script**: `build.py` - custom build automation
+- **VSCode Extension**: `vscode-extension/` - Main deliverable, VSCode extension with graph editor
+- **Python Backend**: `src/ramen/` - Supporting service for graph execution
+- **Toppings**: `toppings/` - Plugin packages (numpy, pandas, torch, plots)
+- **Documentation**: `docs/technical-design/` - Architecture and design specifications
+- **Build script**: `build.py` - Build automation for both extension and backend
 
 ## Key Technical Details
 
+### VSCode Integration
+- Custom editor provider for `.ramen` files
+- Webview-based graph editor embedded in VSCode
+- Automatic backend service lifecycle management
+- Native VSCode theming and command palette integration
+- File system integration for graph persistence
+
 ### Session Management
-- Single session per graph - prevents conflicting edits
-- Session conflicts prompt user to terminate existing or cancel
-- WebSocket communication for real-time updates
+- Single session per graph to prevent conflicting edits
+- Automatic session handling when opening `.ramen` files
+- WebSocket communication for real-time execution updates
 
 ### Execution Model
-- Graphs compiled/JIT to Python bytecode for performance
-- Isolated execution in uv-managed environments per project
-- Support for both local and remote (server) deployment
-- Command-line execution: graphs can be run headlessly with `ramen-cli run`
-- File extension optional: `ramen-cli run my_graph` auto-resolves to `my_graph.ramen`
+- Python backend service started automatically by extension
+- Graphs compiled to Python bytecode for performance
+- Isolated execution in uv-managed environments
+- Support for both interactive (in VSCode) and headless execution
+- Command-line execution: `ramen-cli run my_graph` for automation
 
 ### Plugin System ("Toppings")
 - Extensible via workspace packages in `toppings/`
@@ -81,14 +94,14 @@ Ramen is a visual programming environment for Python with the following key comp
 ## Development Guidelines
 
 ### Core Principles
+- **VSCode Extension First**: Primary focus on VSCode extension development and UX
 - **TDD + KANBAN**: Follow Test-Driven Development with KANBAN workflow management
-- Use uv for all Python package management
-- Use bun for Node.js package management (frontend)
-- Write PoC code before production implementation
-- Always lint code before committing
-- Follow existing patterns in component structure and naming
-- Check `docs/technical-design/` for detailed architectural guidance
-- Always ask questions for implementation details
+- Use npm for VSCode extension dependencies
+- Use bun for webview React app development
+- Use uv for Python backend package management
+- Always lint and test before committing
+- Follow VSCode extension best practices and guidelines
+- Check `docs/technical-design/` for architectural details
 
 ### TDD + KANBAN Workflow
 1. **Before starting any feature**:
@@ -116,40 +129,48 @@ Ramen is a visual programming environment for Python with the following key comp
 ### Testing Strategy
 - Write tests before implementation (TDD)
 - Use appropriate testing frameworks for each component:
+  - VSCode Extension: Mocha test framework (VSCode standard)
+  - React Webview: Vitest + React Testing Library
   - Python backend: pytest or unittest
-  - React frontend: Jest + React Testing Library
-  - Integration tests for API endpoints
+  - End-to-end: Extension Development Host testing
 - Maintain test coverage and update tests when refactoring
 
-## CLI Graph Execution Examples
+## Usage Scenarios
 
-Execute graphs from command line with parameters:
+### VSCode Extension (Primary Use)
+1. **Open VSCode** and install Ramen extension
+2. **Create/Open** `.ramen` files to launch visual editor
+3. **Design graphs** using drag-and-drop node interface
+4. **Execute graphs** directly within VSCode
+5. **View results** in integrated output panels
+
+### CLI Execution (Automation & CI/CD)
+Execute saved graphs from command line:
 
 ```bash
-# Basic execution (auto-resolves my_pipeline.ramen)
+# Basic execution
 ramen-cli run my_pipeline input=data.csv output=results.json
 
-# ML training with hyperparameters
-ramen-cli run train_model dataset=mnist.pkl learning_rate=0.01 epochs=100
+# ML training with parameters
+ramen-cli run train_model dataset=mnist.pkl learning_rate=0.01
 
 # Data processing pipeline
-ramen-cli run process_data source=raw.csv target=clean.csv batch_size=1000
-
-# Analysis with date parameter
-ramen-cli run daily_report date=$(date +%Y-%m-%d) email=team@company.com
+ramen-cli run process_data source=raw.csv target=clean.csv
 ```
 
 Benefits:
-- Design graphs visually, execute programmatically
-- Production deployment without GUI dependencies
-- CI/CD integration and automation
+- Design visually in VSCode, execute anywhere
+- Headless execution for automation and CI/CD
 - Batch processing and scheduled execution
+- Production deployment without VSCode dependency
 
 ## Project Purpose
 
-- This project is mainly for Machine Learning usage, but not limited to.
-- Supports both visual development (GUI) and programmatic execution (CLI)
-- Planned VSCode extension for IDE integration
+- **VSCode Extension** for visual programming with Python
+- Enables visual workflow design directly within VSCode IDE
+- Supports data processing, machine learning, and general Python automation
+- Interactive development in VSCode with optional headless execution via CLI
+- Seamless integration with VSCode's development environment
 
 ## Feature Request and Development Guidelines
 

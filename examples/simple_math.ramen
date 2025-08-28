@@ -1,0 +1,132 @@
+{
+  "header": {
+    "format": "ramen-graph",
+    "version": "1.0.0",
+    "created_at": "2025-08-28T12:00:00"
+  },
+  "graph": {
+    "id": "simple-math-example",
+    "metadata": {
+      "name": "Simple Math Example",
+      "description": "A simple example that adds two numbers and multiplies the result",
+      "created_at": "2025-08-28T12:00:00",
+      "last_modified": "2025-08-28T12:00:00",
+      "version": "1.0.0"
+    },
+    "nodes": [
+      {
+        "id": "const1",
+        "metadata": {
+          "type": "constant",
+          "name": "Constant 10",
+          "namespace": "builtin"
+        },
+        "position": {"x": 0, "y": 0},
+        "inputs": [
+          {"id": "value", "name": "Value", "type_id": "int", "is_input": true, "default_value": 10}
+        ],
+        "outputs": [
+          {"id": "output", "name": "Output", "type_id": "int", "is_input": false}
+        ],
+        "data": {"value": 10}
+      },
+      {
+        "id": "const2",
+        "metadata": {
+          "type": "constant",
+          "name": "Constant 20",
+          "namespace": "builtin"
+        },
+        "position": {"x": 0, "y": 100},
+        "inputs": [
+          {"id": "value", "name": "Value", "type_id": "int", "is_input": true, "default_value": 20}
+        ],
+        "outputs": [
+          {"id": "output", "name": "Output", "type_id": "int", "is_input": false}
+        ],
+        "data": {"value": 20}
+      },
+      {
+        "id": "add",
+        "metadata": {
+          "type": "add",
+          "name": "Add",
+          "namespace": "builtin"
+        },
+        "position": {"x": 200, "y": 50},
+        "inputs": [
+          {"id": "a", "name": "A", "type_id": "int", "is_input": true},
+          {"id": "b", "name": "B", "type_id": "int", "is_input": true}
+        ],
+        "outputs": [
+          {"id": "result", "name": "Result", "type_id": "int", "is_input": false}
+        ]
+      },
+      {
+        "id": "mult",
+        "metadata": {
+          "type": "multiply",
+          "name": "Multiply by 2",
+          "namespace": "builtin"
+        },
+        "position": {"x": 400, "y": 50},
+        "inputs": [
+          {"id": "a", "name": "A", "type_id": "int", "is_input": true},
+          {"id": "b", "name": "B", "type_id": "int", "is_input": true, "default_value": 2}
+        ],
+        "outputs": [
+          {"id": "result", "name": "Result", "type_id": "int", "is_input": false}
+        ],
+        "data": {"b": 2}
+      },
+      {
+        "id": "print",
+        "metadata": {
+          "type": "print",
+          "name": "Print Result",
+          "namespace": "builtin"
+        },
+        "position": {"x": 600, "y": 50},
+        "inputs": [
+          {"id": "value", "name": "Value", "type_id": "int", "is_input": true},
+          {"id": "label", "name": "Label", "type_id": "str", "is_input": true, "default_value": "Final Result"}
+        ],
+        "outputs": [
+          {"id": "output", "name": "Output", "type_id": "int", "is_input": false}
+        ],
+        "data": {"label": "Final Result"}
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge1",
+        "source_node_id": "const1",
+        "source_port_id": "output",
+        "target_node_id": "add",
+        "target_port_id": "a"
+      },
+      {
+        "id": "edge2",
+        "source_node_id": "const2",
+        "source_port_id": "output",
+        "target_node_id": "add",
+        "target_port_id": "b"
+      },
+      {
+        "id": "edge3",
+        "source_node_id": "add",
+        "source_port_id": "result",
+        "target_node_id": "mult",
+        "target_port_id": "a"
+      },
+      {
+        "id": "edge4",
+        "source_node_id": "mult",
+        "source_port_id": "result",
+        "target_node_id": "print",
+        "target_port_id": "value"
+      }
+    ],
+    "variables": []
+  }
+}

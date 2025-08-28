@@ -1,0 +1,110 @@
+{
+  "header": {
+    "format": "ramen-graph",
+    "version": "1.0.0",
+    "created_at": "2025-08-28T12:00:00"
+  },
+  "graph": {
+    "id": "variable-example",
+    "metadata": {
+      "name": "Variable Example",
+      "description": "Example using variables as inputs",
+      "created_at": "2025-08-28T12:00:00",
+      "last_modified": "2025-08-28T12:00:00",
+      "version": "1.0.0"
+    },
+    "nodes": [
+      {
+        "id": "var_x",
+        "metadata": {
+          "type": "variable",
+          "name": "Variable X",
+          "namespace": "builtin"
+        },
+        "position": {"x": 0, "y": 0},
+        "inputs": [
+          {"id": "name", "name": "Name", "type_id": "str", "is_input": true, "default_value": "x"},
+          {"id": "value", "name": "Value", "type_id": "float", "is_input": true}
+        ],
+        "outputs": [
+          {"id": "output", "name": "Output", "type_id": "float", "is_input": false}
+        ],
+        "data": {"name": "x"}
+      },
+      {
+        "id": "var_y",
+        "metadata": {
+          "type": "variable",
+          "name": "Variable Y",
+          "namespace": "builtin"
+        },
+        "position": {"x": 0, "y": 100},
+        "inputs": [
+          {"id": "name", "name": "Name", "type_id": "str", "is_input": true, "default_value": "y"},
+          {"id": "value", "name": "Value", "type_id": "float", "is_input": true}
+        ],
+        "outputs": [
+          {"id": "output", "name": "Output", "type_id": "float", "is_input": false}
+        ],
+        "data": {"name": "y"}
+      },
+      {
+        "id": "divide",
+        "metadata": {
+          "type": "divide",
+          "name": "X / Y",
+          "namespace": "builtin"
+        },
+        "position": {"x": 200, "y": 50},
+        "inputs": [
+          {"id": "a", "name": "A", "type_id": "float", "is_input": true},
+          {"id": "b", "name": "B", "type_id": "float", "is_input": true}
+        ],
+        "outputs": [
+          {"id": "result", "name": "Result", "type_id": "float", "is_input": false}
+        ]
+      },
+      {
+        "id": "print_result",
+        "metadata": {
+          "type": "print",
+          "name": "Print Division Result",
+          "namespace": "builtin"
+        },
+        "position": {"x": 400, "y": 50},
+        "inputs": [
+          {"id": "value", "name": "Value", "type_id": "float", "is_input": true},
+          {"id": "label", "name": "Label", "type_id": "str", "is_input": true, "default_value": "X / Y ="}
+        ],
+        "outputs": [
+          {"id": "output", "name": "Output", "type_id": "float", "is_input": false}
+        ],
+        "data": {"label": "X / Y ="}
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge1",
+        "source_node_id": "var_x",
+        "source_port_id": "output",
+        "target_node_id": "divide",
+        "target_port_id": "a"
+      },
+      {
+        "id": "edge2",
+        "source_node_id": "var_y",
+        "source_port_id": "output",
+        "target_node_id": "divide",
+        "target_port_id": "b"
+      },
+      {
+        "id": "edge3",
+        "source_node_id": "divide",
+        "source_port_id": "result",
+        "target_node_id": "print_result",
+        "target_port_id": "value"
+      }
+    ],
+    "variables": []
+  }
+}

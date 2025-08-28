@@ -5,7 +5,9 @@ Main FastAPI application for Ramen visual programming environment
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.project import router as project_router
+from .api.execution import router as execution_router
+from .api.graph import router as graph_router
+from .api.nodes import router as nodes_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -29,7 +31,9 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(project_router)
+app.include_router(execution_router)
+app.include_router(graph_router)
+app.include_router(nodes_router)
 
 # Root endpoint
 @app.get("/")

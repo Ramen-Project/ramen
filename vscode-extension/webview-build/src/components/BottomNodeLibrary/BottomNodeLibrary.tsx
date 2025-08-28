@@ -59,8 +59,16 @@ export default function BottomNodeLibrary() {
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentHeight, setCurrentHeight] = useState(() => getResponsiveHeight());
-  const { getAllCategories, getNodeDefinition } = useNodeDefinitionStore();
+  const { getAllCategories, fetchNodes, isLoading, error } = useNodeDefinitionStore();
   const allCategories = getAllCategories();
+
+  // Fetch nodes on mount if not already loaded
+  useEffect(() => {
+    if (allCategories.length === 0 && !isLoading) {
+      console.log('🍜 Node Library - Fetching nodes from API');
+      fetchNodes();
+    }
+  }, []);
 
   // Update height on window resize and container changes
   useEffect(() => {
@@ -134,20 +142,18 @@ export default function BottomNodeLibrary() {
   // Search nodes helper function
   const searchNodes = useCallback((query: string) => {
     const lowerQuery = query.toLowerCase();
-    const matchingNodes: Array<{ name: string }> = [];
+    const matchingNodes: any[] = [];
 
     allCategories.forEach(category => {
       category.nodes.forEach(node => {
-        const nodeDefinition = getNodeDefinition(node.name);
-        if (!nodeDefinition) return;
-
-        // Search in name, description, namespace, inputs, outputs
+        // Search in displayName, description, namespace, type, inputs, outputs
         const searchableText = [
-          nodeDefinition.name,
-          nodeDefinition.description,
-          nodeDefinition.namespace,
-          ...nodeDefinition.inputs.map(i => `${i.name} ${i.typeId}`),
-          ...nodeDefinition.outputs.map(o => `${o.name} ${o.typeId}`)
+          node.displayName,
+          node.description,
+          node.namespace,
+          node.type,
+          ...node.inputs.map(i => `${i.name} ${i.type}`),
+          ...node.outputs.map(o => `${o.name} ${o.type}`)
         ].join(' ').toLowerCase();
 
         if (searchableText.includes(lowerQuery)) {
@@ -157,7 +163,7 @@ export default function BottomNodeLibrary() {
     });
 
     return matchingNodes;
-  }, [allCategories, getNodeDefinition]);
+  }, [allCategories]);
 
   // Filter results based on search query
   const filteredResults = useMemo(() => {
@@ -238,7 +244,6 @@ export default function BottomNodeLibrary() {
         {isExpanded && activeCategory && (
           <HorizontalNodeList
             nodes={activeCategory.nodes}
-            getNodeDefinition={getNodeDefinition}
           />
         )}
       </ContentArea>

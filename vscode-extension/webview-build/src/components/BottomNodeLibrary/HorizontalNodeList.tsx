@@ -38,27 +38,13 @@ const Container = styled.div`
   }
 `;
 
-export interface NodeItem {
-  name: string;
-}
-
-export interface NodeDefinition {
-  name: string;
-  namespace: string;
-  description: string;
-  inputs: Array<{ name: string; typeId: string }>;
-  outputs: Array<{ name: string; typeId: string }>;
-}
-
 export interface HorizontalNodeListProps {
-  nodes: NodeItem[];
-  getNodeDefinition: (name: string) => NodeDefinition | null;
+  nodes: any[];  // Array of node definitions from the store
   onNodeDragStart?: (event: React.DragEvent, nodeType: string) => void;
 }
 
 export default function HorizontalNodeList({ 
   nodes, 
-  getNodeDefinition, 
   onNodeDragStart 
 }: HorizontalNodeListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,12 +83,12 @@ export default function HorizontalNodeList({
   }, [onNodeDragStart]);
 
   // Transform node definition to preview data format
-  const transformToPreviewData = useCallback((nodeDefinition: NodeDefinition) => ({
-    name: nodeDefinition.name,
-    namespace: nodeDefinition.namespace,
-    brief: nodeDefinition.description,
-    inputs: nodeDefinition.inputs,
-    outputs: nodeDefinition.outputs
+  const transformToPreviewData = useCallback((node: any) => ({
+    name: node.displayName || node.name,
+    namespace: node.namespace,
+    brief: node.description,
+    inputs: node.inputs || [],
+    outputs: node.outputs || []
   }), []);
 
   return (
@@ -112,18 +98,15 @@ export default function HorizontalNodeList({
       onWheel={handleWheel}
     >
       {nodes.map((node) => {
-        const nodeDefinition = getNodeDefinition(node.name);
-        if (!nodeDefinition) return null;
-        
-        const previewData = transformToPreviewData(nodeDefinition);
+        const previewData = transformToPreviewData(node);
         
         return (
           <StandaloneNodePreview
-            key={node.name}
+            key={node.type || node.displayName || node.name}
             nodeData={previewData} 
             scale={scale * 0.85} 
             draggable={true}
-            onDragStart={(e) => handleDragStart(e, node.name)}
+            onDragStart={(e) => handleDragStart(e, node.type || node.displayName || node.name)}
           />
         );
       })}

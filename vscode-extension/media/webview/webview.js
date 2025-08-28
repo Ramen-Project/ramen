@@ -40115,22 +40115,22 @@ template {
   const Provider$1$1 = StoreContext.Provider;
   const zustandErrorMessage = errorMessages["error001"]();
   function useStore$1(selector2, equalityFn) {
-    const store = reactExports.useContext(StoreContext);
-    if (store === null) {
+    const store2 = reactExports.useContext(StoreContext);
+    if (store2 === null) {
       throw new Error(zustandErrorMessage);
     }
-    return useStoreWithEqualityFn(store, selector2, equalityFn);
+    return useStoreWithEqualityFn(store2, selector2, equalityFn);
   }
   function useStoreApi() {
-    const store = reactExports.useContext(StoreContext);
-    if (store === null) {
+    const store2 = reactExports.useContext(StoreContext);
+    if (store2 === null) {
       throw new Error(zustandErrorMessage);
     }
     return reactExports.useMemo(() => ({
-      getState: store.getState,
-      setState: store.setState,
-      subscribe: store.subscribe
-    }), [store]);
+      getState: store2.getState,
+      setState: store2.setState,
+      subscribe: store2.subscribe
+    }), [store2]);
   }
   const style = { display: "none" };
   const ariaLiveStyle = {
@@ -40188,12 +40188,12 @@ template {
     return shallow$1(a2.selectedNodes.map(selectId), b.selectedNodes.map(selectId)) && shallow$1(a2.selectedEdges.map(selectId), b.selectedEdges.map(selectId));
   }
   function SelectionListenerInner({ onSelectionChange }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const { selectedNodes, selectedEdges } = useStore$1(selector$m, areEqual);
     reactExports.useEffect(() => {
       const params = { nodes: selectedNodes, edges: selectedEdges };
       onSelectionChange?.(params);
-      store.getState().onSelectionChangeHandlers.forEach((fn) => fn(params));
+      store2.getState().onSelectionChangeHandlers.forEach((fn) => fn(params));
     }, [selectedNodes, selectedEdges, onSelectionChange]);
     return null;
   }
@@ -40296,7 +40296,7 @@ template {
   };
   function StoreUpdater(props) {
     const { setNodes, setEdges, setMinZoom, setMaxZoom, setTranslateExtent, setNodeExtent, reset, setDefaultNodesAndEdges, setPaneClickDistance } = useStore$1(selector$l, shallow$1);
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     reactExports.useEffect(() => {
       setDefaultNodesAndEdges(props.defaultNodes, props.defaultEdges);
       return () => {
@@ -40329,13 +40329,13 @@ template {
           else if (fieldName === "paneClickDistance")
             setPaneClickDistance(fieldValue);
           else if (fieldName === "ariaLabelConfig")
-            store.setState({ ariaLabelConfig: mergeAriaLabelConfig(fieldValue) });
+            store2.setState({ ariaLabelConfig: mergeAriaLabelConfig(fieldValue) });
           else if (fieldName === "fitView")
-            store.setState({ fitViewQueued: fieldValue });
+            store2.setState({ fitViewQueued: fieldValue });
           else if (fieldName === "fitViewOptions")
-            store.setState({ fitViewOptions: fieldValue });
+            store2.setState({ fitViewOptions: fieldValue });
           else
-            store.setState({ [fieldName]: fieldValue });
+            store2.setState({ [fieldName]: fieldValue });
         }
         previousFields.current = props;
       },
@@ -40440,24 +40440,24 @@ template {
     return keysToWatch.includes(eventCode) ? "code" : "key";
   }
   const useViewportHelper = () => {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     return reactExports.useMemo(() => {
       return {
         zoomIn: (options) => {
-          const { panZoom } = store.getState();
+          const { panZoom } = store2.getState();
           return panZoom ? panZoom.scaleBy(1.2, { duration: options?.duration }) : Promise.resolve(false);
         },
         zoomOut: (options) => {
-          const { panZoom } = store.getState();
+          const { panZoom } = store2.getState();
           return panZoom ? panZoom.scaleBy(1 / 1.2, { duration: options?.duration }) : Promise.resolve(false);
         },
         zoomTo: (zoomLevel, options) => {
-          const { panZoom } = store.getState();
+          const { panZoom } = store2.getState();
           return panZoom ? panZoom.scaleTo(zoomLevel, { duration: options?.duration }) : Promise.resolve(false);
         },
-        getZoom: () => store.getState().transform[2],
+        getZoom: () => store2.getState().transform[2],
         setViewport: async (viewport, options) => {
-          const { transform: [tX, tY, tZoom], panZoom } = store.getState();
+          const { transform: [tX, tY, tZoom], panZoom } = store2.getState();
           if (!panZoom) {
             return Promise.resolve(false);
           }
@@ -40469,14 +40469,14 @@ template {
           return Promise.resolve(true);
         },
         getViewport: () => {
-          const [x2, y2, zoom2] = store.getState().transform;
+          const [x2, y2, zoom2] = store2.getState().transform;
           return { x: x2, y: y2, zoom: zoom2 };
         },
         setCenter: async (x2, y2, options) => {
-          return store.getState().setCenter(x2, y2, options);
+          return store2.getState().setCenter(x2, y2, options);
         },
         fitBounds: async (bounds, options) => {
-          const { width, height, minZoom, maxZoom, panZoom } = store.getState();
+          const { width, height, minZoom, maxZoom, panZoom } = store2.getState();
           const viewport = getViewportForBounds(bounds, width, height, minZoom, maxZoom, options?.padding ?? 0.1);
           if (!panZoom) {
             return Promise.resolve(false);
@@ -40489,7 +40489,7 @@ template {
           return Promise.resolve(true);
         },
         screenToFlowPosition: (clientPosition, options = {}) => {
-          const { transform: transform2, snapGrid, snapToGrid, domNode } = store.getState();
+          const { transform: transform2, snapGrid, snapToGrid, domNode } = store2.getState();
           if (!domNode) {
             return clientPosition;
           }
@@ -40503,7 +40503,7 @@ template {
           return pointToRendererPoint(correctedPosition, transform2, _snapToGrid, _snapGrid);
         },
         flowToScreenPosition: (flowPosition) => {
-          const { transform: transform2, domNode } = store.getState();
+          const { transform: transform2, domNode } = store2.getState();
           if (!domNode) {
             return flowPosition;
           }
@@ -40688,9 +40688,9 @@ template {
   }
   const BatchContext = reactExports.createContext(null);
   function BatchProvider({ children: children2 }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const nodeQueueHandler = reactExports.useCallback((queueItems) => {
-      const { nodes = [], setNodes, hasDefaultNodes, onNodesChange, nodeLookup, fitViewQueued } = store.getState();
+      const { nodes = [], setNodes, hasDefaultNodes, onNodesChange, nodeLookup, fitViewQueued } = store2.getState();
       let next2 = nodes;
       for (const payload of queueItems) {
         next2 = typeof payload === "function" ? payload(next2) : payload;
@@ -40706,7 +40706,7 @@ template {
         onNodesChange?.(changes);
       } else if (fitViewQueued) {
         window.requestAnimationFrame(() => {
-          const { fitViewQueued: fitViewQueued2, nodes: nodes2, setNodes: setNodes2 } = store.getState();
+          const { fitViewQueued: fitViewQueued2, nodes: nodes2, setNodes: setNodes2 } = store2.getState();
           if (fitViewQueued2) {
             setNodes2(nodes2);
           }
@@ -40715,7 +40715,7 @@ template {
     }, []);
     const nodeQueue = useQueue(nodeQueueHandler);
     const edgeQueueHandler = reactExports.useCallback((queueItems) => {
-      const { edges = [], setEdges, hasDefaultEdges, onEdgesChange, edgeLookup } = store.getState();
+      const { edges = [], setEdges, hasDefaultEdges, onEdgesChange, edgeLookup } = store2.getState();
       let next2 = edges;
       for (const payload of queueItems) {
         next2 = typeof payload === "function" ? payload(next2) : payload;
@@ -40743,11 +40743,11 @@ template {
   const selector$k = (s2) => !!s2.panZoom;
   function useReactFlow() {
     const viewportHelper = useViewportHelper();
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const batchContext = useBatchContext();
     const viewportInitialized = useStore$1(selector$k);
     const generalHelper = reactExports.useMemo(() => {
-      const getInternalNode = (id2) => store.getState().nodeLookup.get(id2);
+      const getInternalNode = (id2) => store2.getState().nodeLookup.get(id2);
       const setNodes = (payload) => {
         batchContext.nodeQueue.push(payload);
       };
@@ -40755,7 +40755,7 @@ template {
         batchContext.edgeQueue.push(payload);
       };
       const getNodeRect = (node2) => {
-        const { nodeLookup, nodeOrigin } = store.getState();
+        const { nodeLookup, nodeOrigin } = store2.getState();
         const nodeToUse = isNode$1(node2) ? node2 : nodeLookup.get(node2.id);
         const position2 = nodeToUse.parentId ? evaluateAbsolutePosition(nodeToUse.position, nodeToUse.measured, nodeToUse.parentId, nodeLookup, nodeOrigin) : nodeToUse.position;
         const nodeWithPosition = {
@@ -40785,14 +40785,14 @@ template {
         }));
       };
       return {
-        getNodes: () => store.getState().nodes.map((n2) => ({ ...n2 })),
+        getNodes: () => store2.getState().nodes.map((n2) => ({ ...n2 })),
         getNode: (id2) => getInternalNode(id2)?.internals.userNode,
         getInternalNode,
         getEdges: () => {
-          const { edges = [] } = store.getState();
+          const { edges = [] } = store2.getState();
           return edges.map((e2) => ({ ...e2 }));
         },
-        getEdge: (id2) => store.getState().edgeLookup.get(id2),
+        getEdge: (id2) => store2.getState().edgeLookup.get(id2),
         setNodes,
         setEdges,
         addNodes: (payload) => {
@@ -40804,7 +40804,7 @@ template {
           batchContext.edgeQueue.push((edges) => [...edges, ...newEdges]);
         },
         toObject: () => {
-          const { nodes = [], edges = [], transform: transform2 } = store.getState();
+          const { nodes = [], edges = [], transform: transform2 } = store2.getState();
           const [x2, y2, zoom2] = transform2;
           return {
             nodes: nodes.map((n2) => ({ ...n2 })),
@@ -40817,7 +40817,7 @@ template {
           };
         },
         deleteElements: async ({ nodes: nodesToRemove = [], edges: edgesToRemove = [] }) => {
-          const { nodes, edges, onNodesDelete, onEdgesDelete, triggerNodeChanges, triggerEdgeChanges, onDelete, onBeforeDelete } = store.getState();
+          const { nodes, edges, onNodesDelete, onEdgesDelete, triggerNodeChanges, triggerEdgeChanges, onDelete, onBeforeDelete } = store2.getState();
           const { nodes: matchingNodes, edges: matchingEdges } = await getElementsToRemove({
             nodesToRemove,
             edgesToRemove,
@@ -40849,8 +40849,8 @@ template {
           if (!nodeRect) {
             return [];
           }
-          return (nodes || store.getState().nodes).filter((n2) => {
-            const internalNode = store.getState().nodeLookup.get(n2.id);
+          return (nodes || store2.getState().nodes).filter((n2) => {
+            const internalNode = store2.getState().nodeLookup.get(n2.id);
             if (internalNode && !isRect && (n2.id === nodeOrRect.id || !internalNode.internals.positionAbsolute)) {
               return false;
             }
@@ -40885,14 +40885,14 @@ template {
           }, options);
         },
         getNodesBounds: (nodes) => {
-          const { nodeLookup, nodeOrigin } = store.getState();
+          const { nodeLookup, nodeOrigin } = store2.getState();
           return getNodesBounds(nodes, { nodeLookup, nodeOrigin });
         },
-        getHandleConnections: ({ type: type2, id: id2, nodeId }) => Array.from(store.getState().connectionLookup.get(`${nodeId}-${type2}${id2 ? `-${id2}` : ""}`)?.values() ?? []),
-        getNodeConnections: ({ type: type2, handleId, nodeId }) => Array.from(store.getState().connectionLookup.get(`${nodeId}${type2 ? handleId ? `-${type2}-${handleId}` : `-${type2}` : ""}`)?.values() ?? []),
+        getHandleConnections: ({ type: type2, id: id2, nodeId }) => Array.from(store2.getState().connectionLookup.get(`${nodeId}-${type2}${id2 ? `-${id2}` : ""}`)?.values() ?? []),
+        getNodeConnections: ({ type: type2, handleId, nodeId }) => Array.from(store2.getState().connectionLookup.get(`${nodeId}${type2 ? handleId ? `-${type2}-${handleId}` : `-${type2}` : ""}`)?.values() ?? []),
         fitView: async (options) => {
-          const fitViewResolver = store.getState().fitViewResolver ?? withResolvers();
-          store.setState({ fitViewQueued: true, fitViewOptions: options, fitViewResolver });
+          const fitViewResolver = store2.getState().fitViewResolver ?? withResolvers();
+          store2.setState({ fitViewQueued: true, fitViewOptions: options, fitViewResolver });
           batchContext.nodeQueue.push((nodes) => [...nodes]);
           return fitViewResolver.promise;
         }
@@ -40909,23 +40909,23 @@ template {
   const selected = (item) => item.selected;
   const win$1 = typeof window !== "undefined" ? window : void 0;
   function useGlobalKeyHandler({ deleteKeyCode, multiSelectionKeyCode }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const { deleteElements } = useReactFlow();
     const deleteKeyPressed = useKeyPress(deleteKeyCode, { actInsideInputWithModifier: false });
     const multiSelectionKeyPressed = useKeyPress(multiSelectionKeyCode, { target: win$1 });
     reactExports.useEffect(() => {
       if (deleteKeyPressed) {
-        const { edges, nodes } = store.getState();
+        const { edges, nodes } = store2.getState();
         deleteElements({ nodes: nodes.filter(selected), edges: edges.filter(selected) });
-        store.setState({ nodesSelectionActive: false });
+        store2.setState({ nodesSelectionActive: false });
       }
     }, [deleteKeyPressed]);
     reactExports.useEffect(() => {
-      store.setState({ multiSelectionActive: multiSelectionKeyPressed });
+      store2.setState({ multiSelectionActive: multiSelectionKeyPressed });
     }, [multiSelectionKeyPressed]);
   }
   function useResizeHandler(domNode) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     reactExports.useEffect(() => {
       const updateDimensions = () => {
         if (!domNode.current) {
@@ -40933,9 +40933,9 @@ template {
         }
         const size2 = getDimensions$1(domNode.current);
         if (size2.height === 0 || size2.width === 0) {
-          store.getState().onError?.("004", errorMessages["error004"]());
+          store2.getState().onError?.("004", errorMessages["error004"]());
         }
-        store.setState({ width: size2.width || 500, height: size2.height || 500 });
+        store2.setState({ width: size2.width || 500, height: size2.height || 500 });
       };
       if (domNode.current) {
         updateDimensions();
@@ -40963,7 +40963,7 @@ template {
     lib: s2.lib
   });
   function ZoomPane({ onPaneContextMenu, zoomOnScroll = true, zoomOnPinch = true, panOnScroll = false, panOnScrollSpeed = 0.5, panOnScrollMode = PanOnScrollMode.Free, zoomOnDoubleClick = true, panOnDrag = true, defaultViewport: defaultViewport2, translateExtent, minZoom, maxZoom, zoomActivationKeyCode, preventScrolling = true, children: children2, noWheelClassName, noPanClassName, onViewportChange, isControlledViewport, paneClickDistance }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const zoomPane = reactExports.useRef(null);
     const { userSelectionActive, lib } = useStore$1(selector$j, shallow$1);
     const zoomActivationKeyPressed = useKeyPress(zoomActivationKeyCode);
@@ -40972,7 +40972,7 @@ template {
     const onTransformChange = reactExports.useCallback((transform2) => {
       onViewportChange?.({ x: transform2[0], y: transform2[1], zoom: transform2[2] });
       if (!isControlledViewport) {
-        store.setState({ transform: transform2 });
+        store2.setState({ transform: transform2 });
       }
     }, [onViewportChange, isControlledViewport]);
     reactExports.useEffect(() => {
@@ -40984,25 +40984,25 @@ template {
           translateExtent,
           viewport: defaultViewport2,
           paneClickDistance,
-          onDraggingChange: (paneDragging) => store.setState({ paneDragging }),
+          onDraggingChange: (paneDragging) => store2.setState({ paneDragging }),
           onPanZoomStart: (event, vp) => {
-            const { onViewportChangeStart, onMoveStart } = store.getState();
+            const { onViewportChangeStart, onMoveStart } = store2.getState();
             onMoveStart?.(event, vp);
             onViewportChangeStart?.(vp);
           },
           onPanZoom: (event, vp) => {
-            const { onViewportChange: onViewportChange2, onMove } = store.getState();
+            const { onViewportChange: onViewportChange2, onMove } = store2.getState();
             onMove?.(event, vp);
             onViewportChange2?.(vp);
           },
           onPanZoomEnd: (event, vp) => {
-            const { onViewportChangeEnd, onMoveEnd } = store.getState();
+            const { onViewportChangeEnd, onMoveEnd } = store2.getState();
             onMoveEnd?.(event, vp);
             onViewportChangeEnd?.(vp);
           }
         });
         const { x: x2, y: y2, zoom: zoom2 } = panZoom.current.getViewport();
-        store.setState({
+        store2.setState({
           panZoom: panZoom.current,
           transform: [x2, y2, zoom2],
           domNode: zoomPane.current.closest(".react-flow")
@@ -41080,7 +41080,7 @@ template {
     dragging: s2.paneDragging
   });
   function Pane({ isSelecting, selectionKeyPressed, selectionMode = SelectionMode.Full, panOnDrag, selectionOnDrag, onSelectionStart, onSelectionEnd, onPaneClick, onPaneContextMenu, onPaneScroll, onPaneMouseEnter, onPaneMouseMove, onPaneMouseLeave, children: children2 }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const { userSelectionActive, elementsSelectable, dragging, connectionInProgress } = useStore$1(selector$h, shallow$1);
     const hasActiveSelection = elementsSelectable && (isSelecting || userSelectionActive);
     const container = reactExports.useRef(null);
@@ -41095,8 +41095,8 @@ template {
         return;
       }
       onPaneClick?.(event);
-      store.getState().resetSelectedElements();
-      store.setState({ nodesSelectionActive: false });
+      store2.getState().resetSelectedElements();
+      store2.setState({ nodesSelectionActive: false });
     };
     const onContextMenu = (event) => {
       if (Array.isArray(panOnDrag) && panOnDrag?.includes(2)) {
@@ -41107,7 +41107,7 @@ template {
     };
     const onWheel = onPaneScroll ? (event) => onPaneScroll(event) : void 0;
     const onPointerDown2 = (event) => {
-      const { resetSelectedElements, domNode } = store.getState();
+      const { resetSelectedElements, domNode } = store2.getState();
       containerBounds.current = domNode?.getBoundingClientRect();
       if (!elementsSelectable || !isSelecting || event.button !== 0 || event.target !== container.current || !containerBounds.current) {
         return;
@@ -41117,7 +41117,7 @@ template {
       selectionInProgress.current = false;
       const { x: x2, y: y2 } = getEventPosition(event.nativeEvent, containerBounds.current);
       resetSelectedElements();
-      store.setState({
+      store2.setState({
         userSelectionRect: {
           width: 0,
           height: 0,
@@ -41130,7 +41130,7 @@ template {
       onSelectionStart?.(event);
     };
     const onPointerMove = (event) => {
-      const { userSelectionRect, transform: transform2, nodeLookup, edgeLookup, connectionLookup, triggerNodeChanges, triggerEdgeChanges, defaultEdgeOptions } = store.getState();
+      const { userSelectionRect, transform: transform2, nodeLookup, edgeLookup, connectionLookup, triggerNodeChanges, triggerEdgeChanges, defaultEdgeOptions } = store2.getState();
       if (!containerBounds.current || !userSelectionRect) {
         return;
       }
@@ -41169,7 +41169,7 @@ template {
         const changes = getSelectionChanges(edgeLookup, selectedEdgeIds.current);
         triggerEdgeChanges(changes);
       }
-      store.setState({
+      store2.setState({
         userSelectionRect: nextUserSelectRect,
         userSelectionActive: true,
         nodesSelectionActive: false
@@ -41180,11 +41180,11 @@ template {
         return;
       }
       event.target?.releasePointerCapture?.(event.pointerId);
-      const { userSelectionRect } = store.getState();
+      const { userSelectionRect } = store2.getState();
       if (!userSelectionActive && userSelectionRect && event.target === container.current) {
         onClick?.(event);
       }
-      store.setState({
+      store2.setState({
         userSelectionActive: false,
         userSelectionRect: null,
         nodesSelectionActive: selectedNodeIds.current.size > 0
@@ -41198,14 +41198,14 @@ template {
     const draggable = panOnDrag === true || Array.isArray(panOnDrag) && panOnDrag.includes(0);
     return jsxRuntimeExports.jsxs("div", { className: cc(["react-flow__pane", { draggable, dragging, selection: isSelecting }]), onClick: hasActiveSelection ? void 0 : wrapHandler(onClick, container), onContextMenu: wrapHandler(onContextMenu, container), onWheel: wrapHandler(onWheel, container), onPointerEnter: hasActiveSelection ? void 0 : onPaneMouseEnter, onPointerDown: hasActiveSelection ? onPointerDown2 : onPaneMouseMove, onPointerMove: hasActiveSelection ? onPointerMove : onPaneMouseMove, onPointerUp: hasActiveSelection ? onPointerUp : void 0, onPointerLeave: onPaneMouseLeave, ref: container, style: containerStyle, children: [children2, jsxRuntimeExports.jsx(UserSelection, {})] });
   }
-  function handleNodeClick({ id: id2, store, unselect = false, nodeRef }) {
-    const { addSelectedNodes, unselectNodesAndEdges, multiSelectionActive, nodeLookup, onError } = store.getState();
+  function handleNodeClick({ id: id2, store: store2, unselect = false, nodeRef }) {
+    const { addSelectedNodes, unselectNodesAndEdges, multiSelectionActive, nodeLookup, onError } = store2.getState();
     const node2 = nodeLookup.get(id2);
     if (!node2) {
       onError?.("012", errorMessages["error012"](id2));
       return;
     }
-    store.setState({ nodesSelectionActive: false });
+    store2.setState({ nodesSelectionActive: false });
     if (!node2.selected) {
       addSelectedNodes([id2]);
     } else if (unselect || node2.selected && multiSelectionActive) {
@@ -41214,16 +41214,16 @@ template {
     }
   }
   function useDrag({ nodeRef, disabled = false, noDragClassName, handleSelector, nodeId, isSelectable, nodeClickDistance }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const [dragging, setDragging] = reactExports.useState(false);
     const xyDrag = reactExports.useRef();
     reactExports.useEffect(() => {
       xyDrag.current = XYDrag({
-        getStoreItems: () => store.getState(),
+        getStoreItems: () => store2.getState(),
         onNodeMouseDown: (id2) => {
           handleNodeClick({
             id: id2,
-            store,
+            store: store2,
             nodeRef
           });
         },
@@ -41256,9 +41256,9 @@ template {
   }
   const selectedAndDraggable = (nodesDraggable) => (n2) => n2.selected && (n2.draggable || nodesDraggable && typeof n2.draggable === "undefined");
   function useMoveSelectedNodes() {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const moveSelectedNodes = reactExports.useCallback((params) => {
-      const { nodeExtent, snapToGrid, snapGrid, nodesDraggable, onError, updateNodePositions, nodeLookup, nodeOrigin } = store.getState();
+      const { nodeExtent, snapToGrid, snapGrid, nodesDraggable, onError, updateNodePositions, nodeLookup, nodeOrigin } = store2.getState();
       const nodeUpdates = /* @__PURE__ */ new Map();
       const isSelected = selectedAndDraggable(nodesDraggable);
       const xVelo = snapToGrid ? snapGrid[0] : 5;
@@ -41321,21 +41321,21 @@ template {
   function HandleComponent({ type: type2 = "source", position: position2 = Position.Top, isValidConnection, isConnectable = true, isConnectableStart = true, isConnectableEnd = true, id: id2, onConnect, children: children2, className, onMouseDown, onTouchStart, ...rest }, ref) {
     const handleId = id2 || null;
     const isTarget = type2 === "target";
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const nodeId = useNodeId();
     const { connectOnClick, noPanClassName, rfId } = useStore$1(selector$g, shallow$1);
     const { connectingFrom, connectingTo, clickConnecting, isPossibleEndHandle, connectionInProcess, clickConnectionInProcess, valid: valid2 } = useStore$1(connectingSelector(nodeId, handleId, type2), shallow$1);
     if (!nodeId) {
-      store.getState().onError?.("010", errorMessages["error010"]());
+      store2.getState().onError?.("010", errorMessages["error010"]());
     }
     const onConnectExtended = (params) => {
-      const { defaultEdgeOptions, onConnect: onConnectAction, hasDefaultEdges } = store.getState();
+      const { defaultEdgeOptions, onConnect: onConnectAction, hasDefaultEdges } = store2.getState();
       const edgeParams = {
         ...defaultEdgeOptions,
         ...params
       };
       if (hasDefaultEdges) {
-        const { edges, setEdges } = store.getState();
+        const { edges, setEdges } = store2.getState();
         setEdges(addEdge(edgeParams, edges));
       }
       onConnectAction?.(edgeParams);
@@ -41347,7 +41347,7 @@ template {
       }
       const isMouseTriggered = isMouseEvent(event.nativeEvent);
       if (isConnectableStart && (isMouseTriggered && event.button === 0 || !isMouseTriggered)) {
-        const currentStore = store.getState();
+        const currentStore = store2.getState();
         XYHandle.onPointerDown(event.nativeEvent, {
           handleDomNode: event.currentTarget,
           autoPanOnConnect: currentStore.autoPanOnConnect,
@@ -41367,8 +41367,8 @@ template {
           updateConnection: currentStore.updateConnection,
           onConnect: onConnectExtended,
           isValidConnection: isValidConnection || currentStore.isValidConnection,
-          getTransform: () => store.getState().transform,
-          getFromHandle: () => store.getState().connection.fromHandle,
+          getTransform: () => store2.getState().transform,
+          getFromHandle: () => store2.getState().connection.fromHandle,
           autoPanSpeed: currentStore.autoPanSpeed,
           dragThreshold: currentStore.connectionDragThreshold
         });
@@ -41380,13 +41380,13 @@ template {
       }
     };
     const onClick = (event) => {
-      const { onClickConnectStart, onClickConnectEnd, connectionClickStartHandle, connectionMode, isValidConnection: isValidConnectionStore, lib, rfId: flowId, nodeLookup, connection: connectionState } = store.getState();
+      const { onClickConnectStart, onClickConnectEnd, connectionClickStartHandle, connectionMode, isValidConnection: isValidConnectionStore, lib, rfId: flowId, nodeLookup, connection: connectionState } = store2.getState();
       if (!nodeId || !connectionClickStartHandle && !isConnectableStart) {
         return;
       }
       if (!connectionClickStartHandle) {
         onClickConnectStart?.(event.nativeEvent, { nodeId, handleId, handleType: type2 });
-        store.setState({ connectionClickStartHandle: { nodeId, type: type2, id: handleId } });
+        store2.setState({ connectionClickStartHandle: { nodeId, type: type2, id: handleId } });
         return;
       }
       const doc = getHostForElement(event.target);
@@ -41414,7 +41414,7 @@ template {
       delete connectionClone.inProgress;
       connectionClone.toPosition = connectionClone.toHandle ? connectionClone.toHandle.position : null;
       onClickConnectEnd?.(event, connectionClone);
-      store.setState({ connectionClickStartHandle: null });
+      store2.setState({ connectionClickStartHandle: null });
     };
     return jsxRuntimeExports.jsx("div", { "data-handleid": handleId, "data-nodeid": nodeId, "data-handlepos": position2, "data-id": `${rfId}-${nodeId}-${handleId}-${type2}`, className: cc([
       "react-flow__handle",
@@ -41489,7 +41489,7 @@ template {
     };
   };
   function NodesSelection({ onSelectionContextMenu, noPanClassName, disableKeyboardA11y }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const { width, height, transformString, userSelectionActive } = useStore$1(selector$f, shallow$1);
     const moveSelectedNodes = useMoveSelectedNodes();
     const nodeRef = reactExports.useRef(null);
@@ -41507,7 +41507,7 @@ template {
       return null;
     }
     const onContextMenu = onSelectionContextMenu ? (event) => {
-      const selectedNodes = store.getState().nodes.filter((n2) => n2.selected);
+      const selectedNodes = store2.getState().nodes.filter((n2) => n2.selected);
       onSelectionContextMenu(event, selectedNodes);
     } : void 0;
     const onKeyDown = (event) => {
@@ -41578,7 +41578,7 @@ template {
     return resizeObserver;
   }
   function useNodeObserver({ node: node2, nodeType, hasDimensions, resizeObserver }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const nodeRef = reactExports.useRef(null);
     const observedNode = reactExports.useRef(null);
     const prevSourcePosition = reactExports.useRef(node2.sourcePosition);
@@ -41611,7 +41611,7 @@ template {
           prevType.current = nodeType;
           prevSourcePosition.current = node2.sourcePosition;
           prevTargetPosition.current = node2.targetPosition;
-          store.getState().updateNodeInternals(/* @__PURE__ */ new Map([[node2.id, { id: node2.id, nodeElement: nodeRef.current, force: true }]]));
+          store2.getState().updateNodeInternals(/* @__PURE__ */ new Map([[node2.id, { id: node2.id, nodeElement: nodeRef.current, force: true }]]));
         }
       }
     }, [node2.id, nodeType, node2.sourcePosition, node2.targetPosition]);
@@ -41638,7 +41638,7 @@ template {
     const isSelectable = !!(node2.selectable || elementsSelectable && typeof node2.selectable === "undefined");
     const isConnectable = !!(node2.connectable || nodesConnectable && typeof node2.connectable === "undefined");
     const isFocusable = !!(node2.focusable || nodesFocusable && typeof node2.focusable === "undefined");
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const hasDimensions = nodeHasDimensions(node2);
     const nodeRef = useNodeObserver({ node: node2, nodeType, hasDimensions, resizeObserver });
     const dragging = useDrag({
@@ -41663,11 +41663,11 @@ template {
     const onContextMenuHandler = onContextMenu ? (event) => onContextMenu(event, { ...internals.userNode }) : void 0;
     const onDoubleClickHandler = onDoubleClick ? (event) => onDoubleClick(event, { ...internals.userNode }) : void 0;
     const onSelectNodeHandler = (event) => {
-      const { selectNodesOnDrag, nodeDragThreshold } = store.getState();
+      const { selectNodesOnDrag, nodeDragThreshold } = store2.getState();
       if (isSelectable && (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0)) {
         handleNodeClick({
           id: id2,
-          store,
+          store: store2,
           nodeRef
         });
       }
@@ -41683,14 +41683,14 @@ template {
         const unselect = event.key === "Escape";
         handleNodeClick({
           id: id2,
-          store,
+          store: store2,
           unselect,
           nodeRef
         });
       } else if (isDraggable && node2.selected && Object.prototype.hasOwnProperty.call(arrowKeyDiffs, event.key)) {
         event.preventDefault();
-        const { ariaLabelConfig } = store.getState();
-        store.setState({
+        const { ariaLabelConfig } = store2.getState();
+        store2.setState({
           ariaLiveMessage: ariaLabelConfig["node.a11yDescription.ariaLiveMessage"]({
             direction: event.key.replace("Arrow", "").toLowerCase(),
             x: ~~internals.positionAbsolute.x,
@@ -41707,7 +41707,7 @@ template {
       if (disableKeyboardA11y || !nodeRef.current?.matches(":focus-visible")) {
         return;
       }
-      const { transform: transform2, width, height, autoPanOnNodeFocus, setCenter } = store.getState();
+      const { transform: transform2, width, height, autoPanOnNodeFocus, setCenter } = store2.getState();
       if (!autoPanOnNodeFocus) {
         return;
       }
@@ -41830,11 +41830,11 @@ template {
     [MarkerType.ArrowClosed]: ArrowClosedSymbol
   };
   function useMarkerSymbol(type2) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const symbol = reactExports.useMemo(() => {
       const symbolExists = Object.prototype.hasOwnProperty.call(MarkerSymbols, type2);
       if (!symbolExists) {
-        store.getState().onError?.("009", errorMessages["error009"](type2));
+        store2.getState().onError?.("009", errorMessages["error009"](type2));
         return null;
       }
       return MarkerSymbols[type2];
@@ -42044,12 +42044,12 @@ template {
     return jsxRuntimeExports.jsx("circle", { onMouseDown, onMouseEnter, onMouseOut, className: cc([EdgeUpdaterClassName, `${EdgeUpdaterClassName}-${type2}`]), cx: shiftX(centerX, radius, position2), cy: shiftY(centerY, radius, position2), r: radius, stroke: "transparent", fill: "transparent" });
   }
   function EdgeUpdateAnchors({ isReconnectable, reconnectRadius, edge, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, onReconnect, onReconnectStart, onReconnectEnd, setReconnecting, setUpdateHover }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const handleEdgeUpdater = (event, oppositeHandle) => {
       if (event.button !== 0) {
         return;
       }
-      const { autoPanOnConnect, domNode, isValidConnection, connectionMode, connectionRadius, lib, onConnectStart, onConnectEnd, cancelConnection, nodeLookup, rfId: flowId, panBy: panBy2, updateConnection } = store.getState();
+      const { autoPanOnConnect, domNode, isValidConnection, connectionMode, connectionRadius, lib, onConnectStart, onConnectEnd, cancelConnection, nodeLookup, rfId: flowId, panBy: panBy2, updateConnection } = store2.getState();
       const isTarget = oppositeHandle.type === "target";
       const _onReconnectEnd = (evt, connectionState) => {
         setReconnecting(false);
@@ -42081,9 +42081,9 @@ template {
         onConnectEnd,
         onReconnectEnd: _onReconnectEnd,
         updateConnection,
-        getTransform: () => store.getState().transform,
-        getFromHandle: () => store.getState().connection.fromHandle,
-        dragThreshold: store.getState().connectionDragThreshold,
+        getTransform: () => store2.getState().transform,
+        getFromHandle: () => store2.getState().connection.fromHandle,
+        dragThreshold: store2.getState().connectionDragThreshold,
         handleDomNode: event.currentTarget
       });
     };
@@ -42110,10 +42110,10 @@ template {
     const edgeRef = reactExports.useRef(null);
     const [updateHover, setUpdateHover] = reactExports.useState(false);
     const [reconnecting, setReconnecting] = reactExports.useState(false);
-    const store = useStoreApi();
-    const { zIndex, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } = useStore$1(reactExports.useCallback((store2) => {
-      const sourceNode = store2.nodeLookup.get(edge.source);
-      const targetNode = store2.nodeLookup.get(edge.target);
+    const store2 = useStoreApi();
+    const { zIndex, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } = useStore$1(reactExports.useCallback((store22) => {
+      const sourceNode = store22.nodeLookup.get(edge.source);
+      const targetNode = store22.nodeLookup.get(edge.target);
       if (!sourceNode || !targetNode) {
         return {
           zIndex: edge.zIndex,
@@ -42126,7 +42126,7 @@ template {
         targetNode,
         sourceHandle: edge.sourceHandle || null,
         targetHandle: edge.targetHandle || null,
-        connectionMode: store2.connectionMode,
+        connectionMode: store22.connectionMode,
         onError
       });
       const zIndex2 = getElevatedEdgeZIndex({
@@ -42134,7 +42134,7 @@ template {
         zIndex: edge.zIndex,
         sourceNode,
         targetNode,
-        elevateOnSelect: store2.elevateEdgesOnSelect
+        elevateOnSelect: store22.elevateEdgesOnSelect
       });
       return {
         zIndex: zIndex2,
@@ -42147,9 +42147,9 @@ template {
       return null;
     }
     const onEdgeClick = (event) => {
-      const { addSelectedEdges, unselectNodesAndEdges, multiSelectionActive } = store.getState();
+      const { addSelectedEdges, unselectNodesAndEdges, multiSelectionActive } = store2.getState();
       if (isSelectable) {
-        store.setState({ nodesSelectionActive: false });
+        store2.setState({ nodesSelectionActive: false });
         if (edge.selected && multiSelectionActive) {
           unselectNodesAndEdges({ nodes: [], edges: [edge] });
           edgeRef.current?.blur();
@@ -42178,7 +42178,7 @@ template {
     } : void 0;
     const onKeyDown = (event) => {
       if (!disableKeyboardA11y && elementSelectionKeys.includes(event.key) && isSelectable) {
-        const { unselectNodesAndEdges, addSelectedEdges } = store.getState();
+        const { unselectNodesAndEdges, addSelectedEdges } = store2.getState();
         const unselect = event.key === "Escape";
         if (unselect) {
           edgeRef.current?.blur();
@@ -42236,11 +42236,11 @@ template {
   const selector$8 = (state) => state.panZoom?.syncViewport;
   function useViewportSync(viewport) {
     const syncViewport = useStore$1(selector$8);
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     reactExports.useEffect(() => {
       if (viewport) {
         syncViewport?.(viewport);
-        store.setState({ transform: [viewport.x, viewport.y, viewport.zoom] });
+        store2.setState({ transform: [viewport.x, viewport.y, viewport.zoom] });
       }
     }, [viewport, syncViewport]);
     return null;
@@ -42673,7 +42673,7 @@ template {
     };
   }, Object.is);
   function ReactFlowProvider({ initialNodes: nodes, initialEdges: edges, defaultNodes, defaultEdges, initialWidth: width, initialHeight: height, initialMinZoom: minZoom, initialMaxZoom: maxZoom, initialFitViewOptions: fitViewOptions, fitView, nodeOrigin, nodeExtent, children: children2 }) {
-    const [store] = reactExports.useState(() => createStore$2({
+    const [store2] = reactExports.useState(() => createStore$2({
       nodes,
       edges,
       defaultNodes,
@@ -42687,7 +42687,7 @@ template {
       nodeOrigin,
       nodeExtent
     }));
-    return jsxRuntimeExports.jsx(Provider$1$1, { value: store, children: jsxRuntimeExports.jsx(BatchProvider, { children: children2 }) });
+    return jsxRuntimeExports.jsx(Provider$1$1, { value: store2, children: jsxRuntimeExports.jsx(BatchProvider, { children: children2 }) });
   }
   function Wrapper({ children: children2, nodes, edges, defaultNodes, defaultEdges, width, height, fitView, fitViewOptions, minZoom, maxZoom, nodeOrigin, nodeExtent }) {
     const isWrapped = reactExports.useContext(StoreContext);
@@ -42741,13 +42741,13 @@ template {
     return [edges, setEdges, onEdgesChange];
   }
   function useOnSelectionChange({ onChange }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     reactExports.useEffect(() => {
-      const nextOnSelectionChangeHandlers = [...store.getState().onSelectionChangeHandlers, onChange];
-      store.setState({ onSelectionChangeHandlers: nextOnSelectionChangeHandlers });
+      const nextOnSelectionChangeHandlers = [...store2.getState().onSelectionChangeHandlers, onChange];
+      store2.setState({ onSelectionChangeHandlers: nextOnSelectionChangeHandlers });
       return () => {
-        const nextHandlers = store.getState().onSelectionChangeHandlers.filter((fn) => fn !== onChange);
-        store.setState({ onSelectionChangeHandlers: nextHandlers });
+        const nextHandlers = store2.getState().onSelectionChangeHandlers.filter((fn) => fn !== onChange);
+        store2.setState({ onSelectionChangeHandlers: nextHandlers });
       };
     }, [onChange]);
   }
@@ -42833,7 +42833,7 @@ template {
     ariaLabelConfig: s2.ariaLabelConfig
   });
   function ControlsComponent({ style: style2, showZoom = true, showFitView = true, showInteractive = true, fitViewOptions, onZoomIn, onZoomOut, onFitView, onInteractiveChange, className, children: children2, position: position2 = "bottom-left", orientation = "vertical", "aria-label": ariaLabel }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const { isInteractive, minZoomReached, maxZoomReached, ariaLabelConfig } = useStore$1(selector$2, shallow$1);
     const { zoomIn, zoomOut, fitView } = useReactFlow();
     const onZoomInHandler = () => {
@@ -42849,7 +42849,7 @@ template {
       onFitView?.();
     };
     const onToggleInteractivity = () => {
-      store.setState({
+      store2.setState({
         nodesDraggable: !isInteractive,
         nodesConnectable: !isInteractive,
         elementsSelectable: !isInteractive
@@ -42972,7 +42972,7 @@ template {
     zoomStep = 1,
     offsetScale = 5
   }) {
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const svg = reactExports.useRef(null);
     const { boundingRect, viewBB, rfId, panZoom, translateExtent, flowWidth, flowHeight, ariaLabelConfig } = useStore$1(selector$1, shallow$1);
     const elementWidth = style2?.width ?? defaultWidth;
@@ -42996,7 +42996,7 @@ template {
         minimapInstance.current = XYMinimap({
           domNode: svg.current,
           panZoom,
-          getTransform: () => store.getState().transform,
+          getTransform: () => store2.getState().transform,
           getViewScale: () => viewScaleRef.current
         });
         return () => {
@@ -43020,7 +43020,7 @@ template {
       onClick(event, { x: x22, y: y22 });
     } : void 0;
     const onSvgNodeClick = onNodeClick ? reactExports.useCallback((event, nodeId) => {
-      const node2 = store.getState().nodeLookup.get(nodeId).internals.userNode;
+      const node2 = store2.getState().nodeLookup.get(nodeId).internals.userNode;
       onNodeClick(event, node2);
     }, []) : void 0;
     const _ariaLabel = ariaLabel ?? ariaLabelConfig["minimap.ariaLabel"];
@@ -43038,7 +43038,7 @@ template {
   }
   MiniMapComponent.displayName = "MiniMap";
   reactExports.memo(MiniMapComponent);
-  const scaleSelector = (calculateScale) => (store) => calculateScale ? `${Math.max(1 / store.transform[2], 1)}` : void 0;
+  const scaleSelector = (calculateScale) => (store2) => calculateScale ? `${Math.max(1 / store2.transform[2], 1)}` : void 0;
   const defaultPositions = {
     [ResizeControlVariant.Line]: "right",
     [ResizeControlVariant.Handle]: "bottom-right"
@@ -43046,7 +43046,7 @@ template {
   function ResizeControl({ nodeId, position: position2, variant = ResizeControlVariant.Handle, className, style: style2 = void 0, children: children2, color: color2, minWidth = 10, minHeight = 10, maxWidth = Number.MAX_VALUE, maxHeight = Number.MAX_VALUE, keepAspectRatio = false, resizeDirection, autoScale = true, shouldResize, onResizeStart, onResize, onResizeEnd }) {
     const contextNodeId = useNodeId();
     const id2 = typeof nodeId === "string" ? nodeId : contextNodeId;
-    const store = useStoreApi();
+    const store2 = useStoreApi();
     const resizeControlRef = reactExports.useRef(null);
     const isHandleControl = variant === ResizeControlVariant.Handle;
     const scale2 = useStore$1(reactExports.useCallback(scaleSelector(isHandleControl && autoScale), [isHandleControl, autoScale]), shallow$1);
@@ -43061,7 +43061,7 @@ template {
           domNode: resizeControlRef.current,
           nodeId: id2,
           getStoreItems: () => {
-            const { nodeLookup, transform: transform2, snapGrid, snapToGrid, nodeOrigin, domNode } = store.getState();
+            const { nodeLookup, transform: transform2, snapGrid, snapToGrid, nodeOrigin, domNode } = store2.getState();
             return {
               nodeLookup,
               transform: transform2,
@@ -43072,7 +43072,7 @@ template {
             };
           },
           onChange: (change, childChanges) => {
-            const { triggerNodeChanges, nodeLookup, parentLookup, nodeOrigin } = store.getState();
+            const { triggerNodeChanges, nodeLookup, parentLookup, nodeOrigin } = store2.getState();
             const changes = [];
             const nextPosition = { x: change.x, y: change.y };
             const node2 = nodeLookup.get(id2);
@@ -43138,7 +43138,7 @@ template {
                 height
               }
             };
-            store.getState().triggerNodeChanges([dimensionChange]);
+            store2.getState().triggerNodeChanges([dimensionChange]);
           }
         });
       }
@@ -44560,6 +44560,24 @@ template {
       clipRule: "evenodd"
     }));
   });
+  var _excluded$1w = ["color"];
+  var CubeIcon = /* @__PURE__ */ reactExports.forwardRef(function(_ref, forwardedRef) {
+    var _ref$color = _ref.color, color2 = _ref$color === void 0 ? "currentColor" : _ref$color, props = _objectWithoutPropertiesLoose$2(_ref, _excluded$1w);
+    return reactExports.createElement("svg", Object.assign({
+      width: "15",
+      height: "15",
+      viewBox: "0 0 15 15",
+      fill: "none",
+      xmlns: "http://www.w3.org/2000/svg"
+    }, props, {
+      ref: forwardedRef
+    }), reactExports.createElement("path", {
+      d: "M7.28856 0.796908C7.42258 0.734364 7.57742 0.734364 7.71144 0.796908L13.7114 3.59691C13.8875 3.67906 14 3.85574 14 4.05V10.95C14 11.1443 13.8875 11.3209 13.7114 11.4031L7.71144 14.2031C7.57742 14.2656 7.42258 14.2656 7.28856 14.2031L1.28856 11.4031C1.11252 11.3209 1 11.1443 1 10.95V4.05C1 3.85574 1.11252 3.67906 1.28856 3.59691L7.28856 0.796908ZM2 4.80578L7 6.93078V12.9649L2 10.6316V4.80578ZM8 12.9649L13 10.6316V4.80578L8 6.93078V12.9649ZM7.5 6.05672L12.2719 4.02866L7.5 1.80176L2.72809 4.02866L7.5 6.05672Z",
+      fill: color2,
+      fillRule: "evenodd",
+      clipRule: "evenodd"
+    }));
+  });
   var _excluded$2c = ["color"];
   var FileTextIcon = /* @__PURE__ */ reactExports.forwardRef(function(_ref, forwardedRef) {
     var _ref$color = _ref.color, color2 = _ref$color === void 0 ? "currentColor" : _ref$color, props = _objectWithoutPropertiesLoose$2(_ref, _excluded$2c);
@@ -44755,507 +44773,295 @@ template {
       clipRule: "evenodd"
     }));
   });
-  const CATEGORY_TO_NAMESPACE = {
-    "File I/O": "FileIO",
-    "Data Operations": "DataOps",
-    "Math & Statistics": "Math",
-    "Machine Learning": "MachineLearning",
-    "Data Visualization": "DataOps",
-    "Text Processing": "TextProcessing",
-    "Web & API": "WebAPI",
-    "Image Processing": "ImageProcessing",
-    "Time Series": "TimeSeries",
-    "Database": "Database",
-    "Automation": "Automation",
-    "Data Quality": "DataQuality",
-    "Utilities": "Utilities"
+  const CATEGORY_ICONS = {
+    "File I/O": FileTextIcon,
+    "Input/Output": FileTextIcon,
+    "Data Operations": MixIcon,
+    "Math & Statistics": PlusIcon,
+    "Math": PlusIcon,
+    "Machine Learning": BarChartIcon,
+    "Data Visualization": BarChartIcon,
+    "Text Processing": CodeIcon,
+    "Web & API": GlobeIcon,
+    "Network": GlobeIcon,
+    "Image Processing": ImageIcon,
+    "Time Series": TimerIcon,
+    "Database": LayersIcon,
+    "Automation": LightningBoltIcon,
+    "Data Quality": MagnifyingGlassIcon,
+    "Utilities": GearIcon,
+    "Basic": CubeIcon,
+    "Logic": LightningBoltIcon,
+    "NumPy": PlusIcon,
+    "Pandas": LayersIcon,
+    "Torch": BarChartIcon,
+    "Custom": GearIcon
   };
-  const generateSamplePorts = (nodeName, category) => {
-    switch (category) {
-      case "File I/O":
-        if (nodeName.startsWith("Read")) {
-          return {
-            inputs: [{ name: "filePath", typeId: "str" }],
-            outputs: [
-              { name: "data", typeId: "list" },
-              { name: "success", typeId: "bool" }
-            ]
-          };
-        } else if (nodeName.startsWith("Write")) {
-          return {
-            inputs: [
-              { name: "data", typeId: "list" },
-              { name: "filePath", typeId: "str" }
-            ],
-            outputs: [
-              { name: "success", typeId: "bool" },
-              { name: "fileSize", typeId: "int" }
-            ]
-          };
-        }
-        break;
-      case "Data Operations":
-        return {
-          inputs: [
-            { name: "data", typeId: "list" },
-            { name: "config", typeId: "dict" }
-          ],
-          outputs: [
-            { name: "result", typeId: "list" },
-            { name: "count", typeId: "int" }
-          ]
-        };
-      case "Math & Statistics":
-        return {
-          inputs: [
-            { name: "values", typeId: "list" },
-            { name: "axis", typeId: "int" }
-          ],
-          outputs: [
-            { name: "result", typeId: "float" },
-            { name: "stats", typeId: "dict" }
-          ]
-        };
-      case "Machine Learning":
-        if (nodeName.includes("Train")) {
-          return {
-            inputs: [
-              { name: "X_train", typeId: "list" },
-              { name: "y_train", typeId: "list" },
-              { name: "params", typeId: "dict" }
-            ],
-            outputs: [
-              { name: "model", typeId: "dict" },
-              { name: "accuracy", typeId: "float" }
-            ]
-          };
-        } else if (nodeName.includes("Predict")) {
-          return {
-            inputs: [
-              { name: "model", typeId: "dict" },
-              { name: "X_test", typeId: "list" }
-            ],
-            outputs: [
-              { name: "predictions", typeId: "list" },
-              { name: "confidence", typeId: "list" }
-            ]
-          };
-        }
-        break;
-      case "Data Visualization":
-        return {
-          inputs: [
-            { name: "data", typeId: "list" },
-            { name: "x_col", typeId: "str" },
-            { name: "y_col", typeId: "str" }
-          ],
-          outputs: [
-            { name: "chart", typeId: "dict" },
-            { name: "saved", typeId: "bool" }
-          ]
-        };
-      case "Text Processing":
-        return {
-          inputs: [
-            { name: "text", typeId: "str" },
-            { name: "options", typeId: "dict" }
-          ],
-          outputs: [
-            { name: "processed", typeId: "str" },
-            { name: "tokens", typeId: "list" }
-          ]
-        };
-      case "Web & API":
-        return {
-          inputs: [
-            { name: "url", typeId: "str" },
-            { name: "headers", typeId: "dict" }
-          ],
-          outputs: [
-            { name: "response", typeId: "dict" },
-            { name: "status", typeId: "int" }
-          ]
-        };
-      case "Image Processing":
-        return {
-          inputs: [
-            { name: "image", typeId: "str" },
-            { name: "params", typeId: "dict" }
-          ],
-          outputs: [
-            { name: "result", typeId: "str" },
-            { name: "metadata", typeId: "dict" }
-          ]
-        };
-      case "Time Series":
-        return {
-          inputs: [
-            { name: "timeseries", typeId: "list" },
-            { name: "window", typeId: "int" }
-          ],
-          outputs: [
-            { name: "forecast", typeId: "list" },
-            { name: "metrics", typeId: "dict" }
-          ]
-        };
-      case "Database":
-        return {
-          inputs: [
-            { name: "query", typeId: "str" },
-            { name: "connection", typeId: "str" }
-          ],
-          outputs: [
-            { name: "result", typeId: "list" },
-            { name: "rowCount", typeId: "int" }
-          ]
-        };
-      case "Automation":
-        return {
-          inputs: [
-            { name: "trigger", typeId: "dict" },
-            { name: "config", typeId: "dict" }
-          ],
-          outputs: [
-            { name: "success", typeId: "bool" },
-            { name: "log", typeId: "str" }
-          ]
-        };
-      case "Data Quality":
-        return {
-          inputs: [
-            { name: "data", typeId: "list" },
-            { name: "rules", typeId: "dict" }
-          ],
-          outputs: [
-            { name: "report", typeId: "dict" },
-            { name: "score", typeId: "float" }
-          ]
-        };
-      default:
-        return {
-          inputs: [
-            { name: "input", typeId: "str" }
-          ],
-          outputs: [
-            { name: "output", typeId: "str" }
-          ]
-        };
+  const CATEGORY_COLORS = {
+    "File I/O": "#3b82f6",
+    "Input/Output": "#4CAF50",
+    "Data Operations": "#f59e42",
+    "Math & Statistics": "#a259e6",
+    "Math": "#2196F3",
+    "Machine Learning": "#ef4444",
+    "Data Visualization": "#8b5cf6",
+    "Text Processing": "#06b6d4",
+    "Web & API": "#10b981",
+    "Network": "#FF9800",
+    "Image Processing": "#f97316",
+    "Time Series": "#84cc16",
+    "Database": "#6366f1",
+    "Automation": "#f59e0b",
+    "Data Quality": "#ec4899",
+    "Utilities": "#6b7280",
+    "Basic": "#607D8B",
+    "Logic": "#FFC107",
+    "NumPy": "#013243",
+    "Pandas": "#150954",
+    "Torch": "#EE4C2C",
+    "Custom": "#9C27B0"
+  };
+  function convertApiNodesToCategories(apiNodes) {
+    const categories = [];
+    for (const [categoryName, nodes] of Object.entries(apiNodes)) {
+      const category = {
+        name: categoryName,
+        icon: CATEGORY_ICONS[categoryName] || GearIcon,
+        color: CATEGORY_COLORS[categoryName] || "#6b7280",
+        nodes: nodes.map((node2) => ({
+          type: node2.type,
+          namespace: node2.namespace,
+          nodeType: node2.nodeType,
+          displayName: node2.displayName,
+          description: node2.description,
+          icon: node2.icon,
+          color: node2.color,
+          category: categoryName,
+          inputs: node2.inputs || [],
+          outputs: node2.outputs || [],
+          properties: node2.properties || {}
+        }))
+      };
+      categories.push(category);
     }
+    return categories;
+  }
+  async function fetchNodesFromAPI() {
+    try {
+      let apiUrl = "http://localhost:8000";
+      if (typeof window !== "undefined" && window.vscode) {
+        apiUrl = "http://localhost:8000";
+      }
+      const response = await fetch(`${apiUrl}/api/nodes`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch nodes: ${response.statusText}`);
+      }
+      const data = await response.json();
+      if (data.success && data.nodes) {
+        return data.nodes;
+      } else {
+        throw new Error(data.error || "Failed to fetch nodes");
+      }
+    } catch (error) {
+      console.error("Error fetching nodes from API:", error);
+      return getFallbackNodes();
+    }
+  }
+  function getFallbackNodes() {
     return {
-      inputs: [{ name: "input", typeId: "str" }],
-      outputs: [{ name: "output", typeId: "str" }]
+      "Input/Output": [
+        {
+          type: "builtin.input",
+          namespace: "builtin",
+          nodeType: "input",
+          displayName: "Input",
+          description: "Graph input node",
+          icon: "📥",
+          color: "#4CAF50",
+          inputs: [],
+          outputs: [
+            { name: "value", type: "any", required: true, description: "Input value" }
+          ]
+        },
+        {
+          type: "builtin.output",
+          namespace: "builtin",
+          nodeType: "output",
+          displayName: "Output",
+          description: "Graph output node",
+          icon: "📤",
+          color: "#FF5722",
+          inputs: [
+            { name: "value", type: "any", required: true, description: "Output value" }
+          ],
+          outputs: []
+        }
+      ],
+      "Basic": [
+        {
+          type: "builtin.constant",
+          namespace: "builtin",
+          nodeType: "constant",
+          displayName: "Constant",
+          description: "Constant value",
+          icon: "🔢",
+          color: "#607D8B",
+          inputs: [],
+          outputs: [
+            { name: "value", type: "any", required: true, description: "Constant value" }
+          ],
+          properties: { value: null, type: "number" }
+        },
+        {
+          type: "builtin.print",
+          namespace: "builtin",
+          nodeType: "print",
+          displayName: "Print",
+          description: "Print value to console",
+          icon: "🖨️",
+          color: "#795548",
+          inputs: [
+            { name: "value", type: "any", required: true, description: "Value to print" }
+          ],
+          outputs: [
+            { name: "value", type: "any", required: true, description: "Pass-through value" }
+          ]
+        }
+      ],
+      "Math": [
+        {
+          type: "builtin.add",
+          namespace: "builtin",
+          nodeType: "add",
+          displayName: "Add",
+          description: "Add two numbers",
+          icon: "➕",
+          color: "#2196F3",
+          inputs: [
+            { name: "a", type: "number", required: true, description: "First number" },
+            { name: "b", type: "number", required: true, description: "Second number" }
+          ],
+          outputs: [
+            { name: "result", type: "number", required: true, description: "Sum of a and b" }
+          ]
+        },
+        {
+          type: "builtin.multiply",
+          namespace: "builtin",
+          nodeType: "multiply",
+          displayName: "Multiply",
+          description: "Multiply two numbers",
+          icon: "✖️",
+          color: "#9C27B0",
+          inputs: [
+            { name: "a", type: "number", required: true, description: "First number" },
+            { name: "b", type: "number", required: true, description: "Second number" }
+          ],
+          outputs: [
+            { name: "result", type: "number", required: true, description: "Product of a and b" }
+          ]
+        }
+      ],
+      "Logic": [
+        {
+          type: "builtin.if",
+          namespace: "builtin",
+          nodeType: "if",
+          displayName: "If/Else",
+          description: "Conditional branching",
+          icon: "🔀",
+          color: "#FFC107",
+          inputs: [
+            { name: "condition", type: "boolean", required: true, description: "Condition to evaluate" },
+            { name: "true_value", type: "any", required: true, description: "Value if true" },
+            { name: "false_value", type: "any", required: true, description: "Value if false" }
+          ],
+          outputs: [
+            { name: "result", type: "any", required: true, description: "Selected value" }
+          ]
+        },
+        {
+          type: "builtin.compare",
+          namespace: "builtin",
+          nodeType: "compare",
+          displayName: "Compare",
+          description: "Compare two values",
+          icon: "⚖️",
+          color: "#00BCD4",
+          inputs: [
+            { name: "a", type: "any", required: true, description: "First value" },
+            { name: "b", type: "any", required: true, description: "Second value" },
+            { name: "operator", type: "string", required: false, default: "==", description: "Comparison operator" }
+          ],
+          outputs: [
+            { name: "result", type: "boolean", required: true, description: "Comparison result" }
+          ],
+          properties: { operators: ["==", "!=", ">", "<", ">=", "<="] }
+        }
+      ]
     };
-  };
-  const nodeCategories = [
-    {
-      name: "File I/O",
-      icon: FileTextIcon,
-      color: "#3b82f6",
-      nodes: [
-        { name: "Read Excel", description: "Read data from Excel files" },
-        { name: "Read CSV", description: "Read data from CSV files" },
-        { name: "Read JSON", description: "Read data from JSON files" },
-        { name: "Read Parquet", description: "Read data from Parquet files" },
-        { name: "Write JSON", description: "Write data to JSON files" },
-        { name: "Write CSV", description: "Write data to CSV files" },
-        { name: "Write Excel", description: "Write data to Excel files" },
-        { name: "Write Parquet", description: "Write data to Parquet files" },
-        { name: "Read Image", description: "Read image files (PNG, JPG, etc.)" },
-        { name: "Save Image", description: "Save images to files" },
-        { name: "Read PDF", description: "Extract text from PDF files" },
-        { name: "Read XML", description: "Parse XML files" },
-        { name: "Read YAML", description: "Parse YAML configuration files" },
-        { name: "Write YAML", description: "Write data to YAML files" }
-      ]
-    },
-    {
-      name: "Data Operations",
-      icon: MixIcon,
-      color: "#f59e42",
-      nodes: [
-        { name: "Join Tables", description: "Join two tables on a key" },
-        { name: "Group By", description: "Group and aggregate data" },
-        { name: "Filter", description: "Filter rows by condition" },
-        { name: "Sort", description: "Sort data by columns" },
-        { name: "Pivot Table", description: "Create pivot tables" },
-        { name: "Merge Data", description: "Merge multiple datasets" },
-        { name: "Split Data", description: "Split dataset into train/test" },
-        { name: "Reshape Data", description: "Reshape data structure" },
-        { name: "Drop Columns", description: "Remove columns from dataset" },
-        { name: "Rename Columns", description: "Rename column headers" },
-        { name: "Add Column", description: "Add calculated columns" },
-        { name: "Replace Values", description: "Replace values in columns" },
-        { name: "Handle Missing", description: "Handle missing values" },
-        { name: "Remove Duplicates", description: "Remove duplicate rows" },
-        { name: "Sample Data", description: "Take random sample of data" },
-        { name: "Concatenate", description: "Combine datasets vertically" }
-      ]
-    },
-    {
-      name: "Math & Statistics",
-      icon: PlusIcon,
-      color: "#a259e6",
-      nodes: [
-        { name: "Calculate Mean", description: "Calculate mean of columns" },
-        { name: "Calculate Sum", description: "Calculate sum of columns" },
-        { name: "Calculate Median", description: "Calculate median of columns" },
-        { name: "Calculate Std", description: "Calculate standard deviation" },
-        { name: "Calculate Variance", description: "Calculate variance" },
-        { name: "Correlation", description: "Calculate correlation matrix" },
-        { name: "Regression", description: "Perform linear regression" },
-        { name: "T-Test", description: "Perform t-test analysis" },
-        { name: "Chi-Square Test", description: "Perform chi-square test" },
-        { name: "ANOVA", description: "Perform ANOVA analysis" },
-        { name: "Z-Score", description: "Calculate z-scores" },
-        { name: "Percentile", description: "Calculate percentiles" },
-        { name: "Moving Average", description: "Calculate moving averages" },
-        { name: "Rolling Statistics", description: "Calculate rolling statistics" },
-        { name: "Normalize Data", description: "Normalize data to 0-1 range" },
-        { name: "Standardize Data", description: "Standardize data (z-score)" },
-        { name: "Min-Max Scale", description: "Scale data to min-max range" }
-      ]
-    },
-    {
-      name: "Machine Learning",
-      icon: BarChartIcon,
-      color: "#ef4444",
-      nodes: [
-        { name: "Train Model", description: "Train machine learning model" },
-        { name: "Predict", description: "Make predictions with model" },
-        { name: "Cross Validation", description: "Perform cross-validation" },
-        { name: "Grid Search", description: "Hyperparameter tuning" },
-        { name: "Random Forest", description: "Train random forest model" },
-        { name: "Linear Regression", description: "Train linear regression" },
-        { name: "Logistic Regression", description: "Train logistic regression" },
-        { name: "SVM Classifier", description: "Train SVM classifier" },
-        { name: "K-Means Clustering", description: "Perform k-means clustering" },
-        { name: "DBSCAN", description: "Perform DBSCAN clustering" },
-        { name: "PCA", description: "Principal Component Analysis" },
-        { name: "Feature Selection", description: "Select important features" },
-        { name: "Model Evaluation", description: "Evaluate model performance" },
-        { name: "Confusion Matrix", description: "Generate confusion matrix" },
-        { name: "ROC Curve", description: "Generate ROC curve" },
-        { name: "Feature Importance", description: "Get feature importance" }
-      ]
-    },
-    {
-      name: "Data Visualization",
-      icon: BarChartIcon,
-      color: "#8b5cf6",
-      nodes: [
-        { name: "Line Plot", description: "Create line charts" },
-        { name: "Bar Chart", description: "Create bar charts" },
-        { name: "Scatter Plot", description: "Create scatter plots" },
-        { name: "Histogram", description: "Create histograms" },
-        { name: "Box Plot", description: "Create box plots" },
-        { name: "Heatmap", description: "Create heatmaps" },
-        { name: "Pie Chart", description: "Create pie charts" },
-        { name: "Violin Plot", description: "Create violin plots" },
-        { name: "3D Scatter", description: "Create 3D scatter plots" },
-        { name: "Time Series Plot", description: "Create time series plots" },
-        { name: "Correlation Plot", description: "Create correlation plots" },
-        { name: "Distribution Plot", description: "Create distribution plots" },
-        { name: "Pair Plot", description: "Create pair plots" },
-        { name: "Save Plot", description: "Save plots to files" },
-        { name: "Interactive Plot", description: "Create interactive plots" }
-      ]
-    },
-    {
-      name: "Text Processing",
-      icon: CodeIcon,
-      color: "#06b6d4",
-      nodes: [
-        { name: "Text Preprocessing", description: "Clean and normalize text" },
-        { name: "Tokenize", description: "Split text into tokens" },
-        { name: "Remove Stopwords", description: "Remove common stopwords" },
-        { name: "Stemming", description: "Apply stemming to words" },
-        { name: "Lemmatization", description: "Apply lemmatization" },
-        { name: "TF-IDF", description: "Calculate TF-IDF vectors" },
-        { name: "Word Embeddings", description: "Generate word embeddings" },
-        { name: "Sentiment Analysis", description: "Analyze text sentiment" },
-        { name: "Named Entity Recognition", description: "Extract named entities" },
-        { name: "Text Classification", description: "Classify text documents" },
-        { name: "Text Summarization", description: "Summarize text documents" },
-        { name: "Language Detection", description: "Detect text language" },
-        { name: "Text Similarity", description: "Calculate text similarity" },
-        { name: "Keyword Extraction", description: "Extract keywords from text" }
-      ]
-    },
-    {
-      name: "Web & API",
-      icon: GlobeIcon,
-      color: "#10b981",
-      nodes: [
-        { name: "HTTP Request", description: "Make HTTP requests" },
-        { name: "API Call", description: "Call REST API endpoints" },
-        { name: "Web Scraping", description: "Scrape data from websites" },
-        { name: "JSON Parser", description: "Parse JSON responses" },
-        { name: "XML Parser", description: "Parse XML responses" },
-        { name: "HTML Parser", description: "Parse HTML content" },
-        { name: "Download File", description: "Download files from URLs" },
-        { name: "Upload File", description: "Upload files to server" },
-        { name: "WebSocket", description: "Connect to WebSocket" },
-        { name: "OAuth Authentication", description: "Handle OAuth flow" },
-        { name: "Rate Limiting", description: "Implement rate limiting" },
-        { name: "Retry Logic", description: "Add retry logic to requests" }
-      ]
-    },
-    {
-      name: "Image Processing",
-      icon: ImageIcon,
-      color: "#f97316",
-      nodes: [
-        { name: "Resize Image", description: "Resize images" },
-        { name: "Crop Image", description: "Crop images" },
-        { name: "Rotate Image", description: "Rotate images" },
-        { name: "Filter Image", description: "Apply image filters" },
-        { name: "Convert Format", description: "Convert image formats" },
-        { name: "Image Enhancement", description: "Enhance image quality" },
-        { name: "Edge Detection", description: "Detect edges in images" },
-        { name: "Object Detection", description: "Detect objects in images" },
-        { name: "Face Recognition", description: "Recognize faces in images" },
-        { name: "Image Segmentation", description: "Segment images" },
-        { name: "Color Analysis", description: "Analyze image colors" },
-        { name: "Image Classification", description: "Classify images" }
-      ]
-    },
-    {
-      name: "Time Series",
-      icon: TimerIcon,
-      color: "#84cc16",
-      nodes: [
-        { name: "Time Series Analysis", description: "Analyze time series data" },
-        { name: "Seasonal Decomposition", description: "Decompose seasonal patterns" },
-        { name: "Moving Average", description: "Calculate moving averages" },
-        { name: "Exponential Smoothing", description: "Apply exponential smoothing" },
-        { name: "ARIMA Model", description: "Fit ARIMA model" },
-        { name: "Forecasting", description: "Forecast future values" },
-        { name: "Trend Analysis", description: "Analyze trends" },
-        { name: "Seasonality Detection", description: "Detect seasonality" },
-        { name: "Time Series Plot", description: "Create time series plots" },
-        { name: "Resample", description: "Resample time series data" },
-        { name: "Rolling Statistics", description: "Calculate rolling statistics" }
-      ]
-    },
-    {
-      name: "Database",
-      icon: LayersIcon,
-      color: "#6366f1",
-      nodes: [
-        { name: "SQL Query", description: "Execute SQL queries" },
-        { name: "Read Database", description: "Read from database" },
-        { name: "Write Database", description: "Write to database" },
-        { name: "Create Table", description: "Create database tables" },
-        { name: "Drop Table", description: "Drop database tables" },
-        { name: "Database Connection", description: "Connect to database" },
-        { name: "MongoDB Query", description: "Query MongoDB" },
-        { name: "Redis Operations", description: "Perform Redis operations" },
-        { name: "Database Migration", description: "Run database migrations" },
-        { name: "Backup Database", description: "Backup database" },
-        { name: "Restore Database", description: "Restore database" }
-      ]
-    },
-    {
-      name: "Automation",
-      icon: LightningBoltIcon,
-      color: "#f59e0b",
-      nodes: [
-        { name: "Schedule Task", description: "Schedule recurring tasks" },
-        { name: "Email Sender", description: "Send emails" },
-        { name: "File Watcher", description: "Monitor file changes" },
-        { name: "System Command", description: "Execute system commands" },
-        { name: "Process Monitor", description: "Monitor system processes" },
-        { name: "Log Parser", description: "Parse log files" },
-        { name: "Backup Files", description: "Backup files automatically" },
-        { name: "Data Sync", description: "Synchronize data" },
-        { name: "Error Handler", description: "Handle errors gracefully" },
-        { name: "Notification", description: "Send notifications" },
-        { name: "Conditional Logic", description: "Apply conditional logic" },
-        { name: "Loop Control", description: "Control loop execution" }
-      ]
-    },
-    {
-      name: "Data Quality",
-      icon: MagnifyingGlassIcon,
-      color: "#ec4899",
-      nodes: [
-        { name: "Data Validation", description: "Validate data integrity" },
-        { name: "Data Cleaning", description: "Clean and normalize data" },
-        { name: "Outlier Detection", description: "Detect outliers" },
-        { name: "Data Profiling", description: "Profile data characteristics" },
-        { name: "Quality Report", description: "Generate quality reports" },
-        { name: "Duplicate Detection", description: "Detect duplicate records" },
-        { name: "Data Consistency", description: "Check data consistency" },
-        { name: "Schema Validation", description: "Validate data schema" },
-        { name: "Data Completeness", description: "Check data completeness" },
-        { name: "Data Accuracy", description: "Assess data accuracy" },
-        { name: "Data Timeliness", description: "Check data timeliness" },
-        { name: "Data Lineage", description: "Track data lineage" }
-      ]
-    },
-    {
-      name: "Utilities",
-      icon: GearIcon,
-      color: "#6b7280",
-      nodes: [
-        { name: "Data Export", description: "Export to various formats" },
-        { name: "Data Import", description: "Import from various sources" },
-        { name: "Format Converter", description: "Convert between formats" },
-        { name: "Data Compression", description: "Compress data" },
-        { name: "Encryption", description: "Encrypt sensitive data" },
-        { name: "Decryption", description: "Decrypt data" },
-        { name: "Hash Generator", description: "Generate data hashes" },
-        { name: "Random Generator", description: "Generate random data" },
-        { name: "UUID Generator", description: "Generate UUIDs" },
-        { name: "Date/Time Utils", description: "Date and time utilities" },
-        { name: "String Utils", description: "String manipulation utilities" },
-        { name: "Math Utils", description: "Mathematical utilities" },
-        { name: "File Utils", description: "File system utilities" },
-        { name: "Network Utils", description: "Network utilities" },
-        { name: "System Utils", description: "System information utilities" }
-      ]
-    }
-  ];
+  }
   const useNodeDefinitionStore = create()((set2, get2) => ({
-    categories: nodeCategories,
-    getNodeDefinition: (nodeName) => {
+    categories: [],
+    isLoading: false,
+    error: null,
+    fetchNodes: async () => {
+      set2({ isLoading: true, error: null });
+      try {
+        const apiNodes = await fetchNodesFromAPI();
+        const categories = convertApiNodesToCategories(apiNodes);
+        set2({ categories, isLoading: false });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to fetch nodes";
+        console.error("Error loading nodes:", errorMessage);
+        const fallbackNodes = getFallbackNodes();
+        const categories = convertApiNodesToCategories(fallbackNodes);
+        set2({
+          categories,
+          isLoading: false,
+          error: errorMessage
+        });
+      }
+    },
+    getNodeDefinition: (nodeType) => {
       const { categories } = get2();
       for (const category of categories) {
-        const node2 = category.nodes.find((n2) => n2.name === nodeName);
+        const node2 = category.nodes.find((n2) => n2.type === nodeType || n2.displayName === nodeType);
         if (node2) {
-          const namespace2 = CATEGORY_TO_NAMESPACE[category.name] || "Utilities";
-          const ports = generateSamplePorts(nodeName, category.name);
-          return {
-            name: nodeName,
-            description: node2.description,
-            category: category.name,
-            namespace: namespace2,
-            inputs: ports.inputs,
-            outputs: ports.outputs
-          };
+          return node2;
         }
       }
       return null;
     },
     getNodesByCategory: (categoryName) => {
-      const { categories, getNodeDefinition } = get2();
+      const { categories } = get2();
       const category = categories.find((c2) => c2.name === categoryName);
       if (!category) return [];
-      return category.nodes.map((node2) => getNodeDefinition(node2.name)).filter((def) => def !== null);
+      return category.nodes;
     },
     getAllCategories: () => {
       return get2().categories;
     },
-    getCategoryForNode: (nodeName) => {
+    getCategoryForNode: (nodeType) => {
       const { categories } = get2();
       for (const category of categories) {
-        if (category.nodes.some((n2) => n2.name === nodeName)) {
+        if (category.nodes.some((n2) => n2.type === nodeType || n2.displayName === nodeType)) {
           return category.name;
         }
       }
       return null;
+    },
+    clearError: () => {
+      set2({ error: null });
     }
   }));
+  const store = useNodeDefinitionStore.getState();
+  store.fetchNodes();
   const { min: min$5, max: max$5 } = Math;
   const limit = (x2, low = 0, high = 1) => {
     return min$5(max$5(low, x2), high);
@@ -52783,8 +52589,8 @@ template {
       Object.entries(api.stores).map(([key, api2]) => [key, api2.getState()])
     );
   };
-  const extractConnectionInformation = (store, extensionConnector, options) => {
-    if (store === void 0) {
+  const extractConnectionInformation = (store2, extensionConnector, options) => {
+    if (store2 === void 0) {
       return {
         type: "untracked",
         connection: extensionConnector.connect(options)
@@ -52792,20 +52598,20 @@ template {
     }
     const existingConnection = trackedConnections.get(options.name);
     if (existingConnection) {
-      return { type: "tracked", store, ...existingConnection };
+      return { type: "tracked", store: store2, ...existingConnection };
     }
     const newConnection = {
       connection: extensionConnector.connect(options),
       stores: {}
     };
     trackedConnections.set(options.name, newConnection);
-    return { type: "tracked", store, ...newConnection };
+    return { type: "tracked", store: store2, ...newConnection };
   };
-  const removeStoreFromTrackedConnections = (name, store) => {
-    if (store === void 0) return;
+  const removeStoreFromTrackedConnections = (name, store2) => {
+    if (store2 === void 0) return;
     const connectionInfo = trackedConnections.get(name);
     if (!connectionInfo) return;
-    delete connectionInfo.stores[store];
+    delete connectionInfo.stores[store2];
     if (Object.keys(connectionInfo.stores).length === 0) {
       trackedConnections.delete(name);
     }
@@ -52822,7 +52628,7 @@ template {
     return (_b = /.+ (.+) .+/.exec(callerLine)) == null ? void 0 : _b[1];
   };
   const devtoolsImpl = (fn, devtoolsOptions = {}) => (set2, get2, api) => {
-    const { enabled, anonymousActionType, store, ...options } = devtoolsOptions;
+    const { enabled, anonymousActionType, store: store2, ...options } = devtoolsOptions;
     let extensionConnector;
     try {
       extensionConnector = (enabled != null ? enabled : (__vite_import_meta_env__ ? "production" : void 0) !== "production") && window.__REDUX_DEVTOOLS_EXTENSION__;
@@ -52831,7 +52637,7 @@ template {
     if (!extensionConnector) {
       return fn(set2, get2, api);
     }
-    const { connection, ...connectionInformation } = extractConnectionInformation(store, extensionConnector, options);
+    const { connection, ...connectionInformation } = extractConnectionInformation(store2, extensionConnector, options);
     let isRecording = true;
     api.setState = (state, replace2, nameOrAction) => {
       const r2 = set2(state, replace2);
@@ -52839,18 +52645,18 @@ template {
       const action = nameOrAction === void 0 ? {
         type: anonymousActionType || findCallerName(new Error().stack) || "anonymous"
       } : typeof nameOrAction === "string" ? { type: nameOrAction } : nameOrAction;
-      if (store === void 0) {
+      if (store2 === void 0) {
         connection == null ? void 0 : connection.send(action, get2());
         return r2;
       }
       connection == null ? void 0 : connection.send(
         {
           ...action,
-          type: `${store}/${action.type}`
+          type: `${store2}/${action.type}`
         },
         {
           ...getTrackedConnectionState(options.name),
-          [store]: api.getState()
+          [store2]: api.getState()
         }
       );
       return r2;
@@ -52860,7 +52666,7 @@ template {
         if (connection && typeof connection.unsubscribe === "function") {
           connection.unsubscribe();
         }
-        removeStoreFromTrackedConnections(options.name, store);
+        removeStoreFromTrackedConnections(options.name, store2);
       }
     };
     const setStateFromDevtools = (...a2) => {
@@ -52876,9 +52682,9 @@ template {
       connectionInformation.stores[connectionInformation.store] = api;
       connection == null ? void 0 : connection.init(
         Object.fromEntries(
-          Object.entries(connectionInformation.stores).map(([key, store2]) => [
+          Object.entries(connectionInformation.stores).map(([key, store22]) => [
             key,
-            key === connectionInformation.store ? initialState2 : store2.getState()
+            key === connectionInformation.store ? initialState2 : store22.getState()
           ])
         )
       );
@@ -52910,7 +52716,7 @@ template {
             message.payload,
             (action) => {
               if (action.type === "__setState") {
-                if (store === void 0) {
+                if (store2 === void 0) {
                   setStateFromDevtools(action.state);
                   return;
                 }
@@ -52923,7 +52729,7 @@ template {
                     `
                   );
                 }
-                const stateFromDevtools = action.state[store];
+                const stateFromDevtools = action.state[store2];
                 if (stateFromDevtools === void 0 || stateFromDevtools === null) {
                   return;
                 }
@@ -52941,45 +52747,45 @@ template {
           switch (message.payload.type) {
             case "RESET":
               setStateFromDevtools(initialState2);
-              if (store === void 0) {
+              if (store2 === void 0) {
                 return connection == null ? void 0 : connection.init(api.getState());
               }
               return connection == null ? void 0 : connection.init(getTrackedConnectionState(options.name));
             case "COMMIT":
-              if (store === void 0) {
+              if (store2 === void 0) {
                 connection == null ? void 0 : connection.init(api.getState());
                 return;
               }
               return connection == null ? void 0 : connection.init(getTrackedConnectionState(options.name));
             case "ROLLBACK":
               return parseJsonThen(message.state, (state) => {
-                if (store === void 0) {
+                if (store2 === void 0) {
                   setStateFromDevtools(state);
                   connection == null ? void 0 : connection.init(api.getState());
                   return;
                 }
-                setStateFromDevtools(state[store]);
+                setStateFromDevtools(state[store2]);
                 connection == null ? void 0 : connection.init(getTrackedConnectionState(options.name));
               });
             case "JUMP_TO_STATE":
             case "JUMP_TO_ACTION":
               return parseJsonThen(message.state, (state) => {
-                if (store === void 0) {
+                if (store2 === void 0) {
                   setStateFromDevtools(state);
                   return;
                 }
-                if (JSON.stringify(api.getState()) !== JSON.stringify(state[store])) {
-                  setStateFromDevtools(state[store]);
+                if (JSON.stringify(api.getState()) !== JSON.stringify(state[store2])) {
+                  setStateFromDevtools(state[store2]);
                 }
               });
             case "IMPORT_STATE": {
               const { nextLiftedState } = message.payload;
               const lastComputedState = (_a = nextLiftedState.computedStates.slice(-1)[0]) == null ? void 0 : _a.state;
               if (!lastComputedState) return;
-              if (store === void 0) {
+              if (store2 === void 0) {
                 setStateFromDevtools(lastComputedState);
               } else {
-                setStateFromDevtools(lastComputedState[store]);
+                setStateFromDevtools(lastComputedState[store2]);
               }
               connection == null ? void 0 : connection.send(
                 null,
@@ -54554,7 +54360,6 @@ template {
 `;
   function HorizontalNodeList({
     nodes,
-    getNodeDefinition,
     onNodeDragStart
   }) {
     const containerRef = reactExports.useRef(null);
@@ -54587,12 +54392,12 @@ template {
         }
       }
     }, [onNodeDragStart]);
-    const transformToPreviewData = reactExports.useCallback((nodeDefinition) => ({
-      name: nodeDefinition.name,
-      namespace: nodeDefinition.namespace,
-      brief: nodeDefinition.description,
-      inputs: nodeDefinition.inputs,
-      outputs: nodeDefinition.outputs
+    const transformToPreviewData = reactExports.useCallback((node2) => ({
+      name: node2.displayName || node2.name,
+      namespace: node2.namespace,
+      brief: node2.description,
+      inputs: node2.inputs || [],
+      outputs: node2.outputs || []
     }), []);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       Container$1,
@@ -54601,18 +54406,16 @@ template {
         ref: containerRef,
         onWheel: handleWheel,
         children: nodes.map((node2) => {
-          const nodeDefinition = getNodeDefinition(node2.name);
-          if (!nodeDefinition) return null;
-          const previewData = transformToPreviewData(nodeDefinition);
+          const previewData = transformToPreviewData(node2);
           return /* @__PURE__ */ jsxRuntimeExports.jsx(
             StandaloneNodePreview,
             {
               nodeData: previewData,
               scale: scale2 * 0.85,
               draggable: true,
-              onDragStart: (e2) => handleDragStart(e2, node2.name)
+              onDragStart: (e2) => handleDragStart(e2, node2.type || node2.displayName || node2.name)
             },
-            node2.name
+            node2.type || node2.displayName || node2.name
           );
         })
       }
@@ -54661,8 +54464,14 @@ template {
     const [activeTab, setActiveTab] = reactExports.useState(0);
     const [searchQuery, setSearchQuery] = reactExports.useState("");
     const [currentHeight, setCurrentHeight] = reactExports.useState(() => getResponsiveHeight());
-    const { getAllCategories, getNodeDefinition } = useNodeDefinitionStore();
+    const { getAllCategories, fetchNodes, isLoading, error } = useNodeDefinitionStore();
     const allCategories = getAllCategories();
+    reactExports.useEffect(() => {
+      if (allCategories.length === 0 && !isLoading) {
+        console.log("🍜 Node Library - Fetching nodes from API");
+        fetchNodes();
+      }
+    }, []);
     reactExports.useEffect(() => {
       const updateHeight = () => {
         console.log("🍜 Node Library - Resize event triggered");
@@ -54716,14 +54525,13 @@ template {
       const matchingNodes = [];
       allCategories.forEach((category) => {
         category.nodes.forEach((node2) => {
-          const nodeDefinition = getNodeDefinition(node2.name);
-          if (!nodeDefinition) return;
           const searchableText = [
-            nodeDefinition.name,
-            nodeDefinition.description,
-            nodeDefinition.namespace,
-            ...nodeDefinition.inputs.map((i2) => `${i2.name} ${i2.typeId}`),
-            ...nodeDefinition.outputs.map((o2) => `${o2.name} ${o2.typeId}`)
+            node2.displayName,
+            node2.description,
+            node2.namespace,
+            node2.type,
+            ...node2.inputs.map((i2) => `${i2.name} ${i2.type}`),
+            ...node2.outputs.map((o2) => `${o2.name} ${o2.type}`)
           ].join(" ").toLowerCase();
           if (searchableText.includes(lowerQuery)) {
             matchingNodes.push(node2);
@@ -54731,7 +54539,7 @@ template {
         });
       });
       return matchingNodes;
-    }, [allCategories, getNodeDefinition]);
+    }, [allCategories]);
     const filteredResults = reactExports.useMemo(() => {
       if (!searchQuery.trim()) {
         return { categories: allCategories, isSearching: false };
@@ -54794,8 +54602,7 @@ template {
       /* @__PURE__ */ jsxRuntimeExports.jsx(ContentArea, { $isExpanded: isExpanded, $height: currentHeight, children: isExpanded && activeCategory && /* @__PURE__ */ jsxRuntimeExports.jsx(
         HorizontalNodeList,
         {
-          nodes: activeCategory.nodes,
-          getNodeDefinition
+          nodes: activeCategory.nodes
         }
       ) })
     ] });
@@ -55296,7 +55103,7 @@ template {
     dispatch(action) {
       this.store.dispatch(action);
     }
-    constructor(store, monitor) {
+    constructor(store2, monitor) {
       this.isSetUp = false;
       this.handleRefCountChange = () => {
         const shouldSetUp = this.store.getState().refCount > 0;
@@ -55310,9 +55117,9 @@ template {
           }
         }
       };
-      this.store = store;
+      this.store = store2;
       this.monitor = monitor;
-      store.subscribe(this.handleRefCountChange);
+      store2.subscribe(this.handleRefCountChange);
     }
   }
   function add(a2, b) {
@@ -55493,8 +55300,8 @@ template {
     getDifferenceFromInitialOffset() {
       return getDifferenceFromInitialOffset(this.store.getState().dragOffset);
     }
-    constructor(store, registry) {
-      this.store = store;
+    constructor(store2, registry) {
+      this.store = store2;
       this.registry = registry;
     }
   }
@@ -55830,13 +55637,13 @@ template {
       }
       return id2;
     }
-    constructor(store) {
+    constructor(store2) {
       this.types = /* @__PURE__ */ new Map();
       this.dragSources = /* @__PURE__ */ new Map();
       this.dropTargets = /* @__PURE__ */ new Map();
       this.pinnedSourceId = null;
       this.pinnedSource = null;
-      this.store = store;
+      this.store = store2;
     }
   }
   const strictEquality = (a2, b) => a2 === b;
@@ -56093,9 +55900,9 @@ template {
     };
   }
   function createDragDropManager(backendFactory, globalContext = void 0, backendOptions = {}, debugMode = false) {
-    const store = makeStoreInstance(debugMode);
-    const monitor = new DragDropMonitorImpl(store, new HandlerRegistryImpl(store));
-    const manager = new DragDropManagerImpl(store, monitor);
+    const store2 = makeStoreInstance(debugMode);
+    const monitor = new DragDropMonitorImpl(store2, new HandlerRegistryImpl(store2));
+    const manager = new DragDropManagerImpl(store2, monitor);
     const backend = backendFactory(manager, globalContext, backendOptions);
     manager.receiveBackend(backend);
     return manager;

@@ -1,0 +1,87 @@
+{
+  "header": {
+    "format": "ramen-graph",
+    "version": "1.0.0",
+    "created_at": "2025-08-28T12:00:00"
+  },
+  "graph": {
+    "id": "fibonacci-example",
+    "metadata": {
+      "name": "Fibonacci Calculator",
+      "description": "Calculate Fibonacci number at position N",
+      "created_at": "2025-08-28T12:00:00",
+      "last_modified": "2025-08-28T12:00:00",
+      "version": "1.0.0"
+    },
+    "nodes": [
+      {
+        "id": "n",
+        "metadata": {
+          "type": "variable",
+          "name": "Position N",
+          "namespace": "builtin"
+        },
+        "position": {"x": 0, "y": 0},
+        "inputs": [
+          {"id": "name", "name": "Name", "type_id": "str", "is_input": true},
+          {"id": "value", "name": "Value", "type_id": "int", "is_input": true}
+        ],
+        "outputs": [
+          {"id": "output", "name": "Output", "type_id": "int", "is_input": false}
+        ],
+        "data": {"name": "n"}
+      },
+      {
+        "id": "format_output",
+        "metadata": {
+          "type": "format",
+          "name": "Format Output",
+          "namespace": "builtin"
+        },
+        "position": {"x": 200, "y": 0},
+        "inputs": [
+          {"id": "template", "name": "Template", "type_id": "str", "is_input": true},
+          {"id": "value", "name": "Value", "type_id": "int", "is_input": true}
+        ],
+        "outputs": [
+          {"id": "result", "name": "Result", "type_id": "str", "is_input": false}
+        ],
+        "data": {"template": "Fibonacci at position {} = (calculated in Python node)"}
+      },
+      {
+        "id": "print_result",
+        "metadata": {
+          "type": "print",
+          "name": "Print Result",
+          "namespace": "builtin"
+        },
+        "position": {"x": 400, "y": 0},
+        "inputs": [
+          {"id": "value", "name": "Value", "type_id": "str", "is_input": true},
+          {"id": "label", "name": "Label", "type_id": "str", "is_input": true}
+        ],
+        "outputs": [
+          {"id": "output", "name": "Output", "type_id": "str", "is_input": false}
+        ],
+        "data": {"label": "Result"}
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge1",
+        "source_node_id": "n",
+        "source_port_id": "output",
+        "target_node_id": "format_output",
+        "target_port_id": "value"
+      },
+      {
+        "id": "edge2",
+        "source_node_id": "format_output",
+        "source_port_id": "result",
+        "target_node_id": "print_result",
+        "target_port_id": "value"
+      }
+    ],
+    "variables": []
+  }
+}
