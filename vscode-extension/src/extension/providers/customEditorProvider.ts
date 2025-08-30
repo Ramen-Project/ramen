@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { RamenWebviewManager } from '../webview/webviewManager';
 import { RamenServerManager } from '../server/serverManager';
+import { WebSocketManager } from '../websocket/websocketManager';
 
 /**
  * Custom editor provider for .ramen files
@@ -11,7 +12,8 @@ export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvide
     constructor(
         private context: vscode.ExtensionContext,
         private webviewManager: RamenWebviewManager,
-        private serverManager: RamenServerManager
+        private serverManager: RamenServerManager,
+        private websocketManager?: WebSocketManager
     ) {}
 
     /**
@@ -22,7 +24,18 @@ export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvide
         webviewPanel: vscode.WebviewPanel,
         token: vscode.CancellationToken
     ): Promise<void> {
-        console.log('🍜 Resolving custom text editor for:', document.uri.fsPath);
+        console.log('Resolving custom text editor for:', document.uri.fsPath);
+        
+        // Ensure server is running
+        const serverReady = await this.serverManager.ensureServerRunning();
+        if (!serverReady) {
+            vscode.window.showWarningMessage('Ramen server is not running. Some features may be unavailable.');
+        }
+        
+        // Ensure WebSocket connection if available
+        if (this.websocketManager && serverReady) {
+            await this.websocketManager.connect();
+        }
         
         // Configure the webview
         webviewPanel.webview.options = {
@@ -36,9 +49,9 @@ export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvide
         };
 
         // Set the webview content to our graph editor
-        console.log('🍜 Setting webview HTML content...');
+        console.log('Setting webview HTML content...');
         const htmlContent = await this.getWebviewContent(webviewPanel.webview, document.uri.fsPath);
-        console.log('🍜 HTML content length:', htmlContent.length);
+        console.log('HTML content length:', htmlContent.length);
         webviewPanel.webview.html = htmlContent;
 
         // Update webview when document changes
@@ -101,6 +114,51 @@ export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvide
                 
             case 'executeGraph':
                 await this.executeGraph(document.uri);
+                break;
+                
+            case 'websocket-send':
+                // Forward WebSocket messages from webview to server
+                if (this.websocketManager) {
+                    this.websocketManager.sendMessage(
+                        message.wsType,
+                        message.data,
+                        message.id
+                    );
+                }
+                break;
+                
+            case 'websocket-request':
+                // Handle WebSocket request/response pattern
+                if (this.websocketManager) {
+                    try {
+                        const response = await this.websocketManager.sendRequest(
+                            message.wsType,
+                            message.data
+                        );
+                        webviewPanel.webview.postMessage({
+                            type: 'websocket-response',
+                            id: message.id,
+                            data: response
+                        });
+                    } catch (error) {
+                        webviewPanel.webview.postMessage({
+                            type: 'websocket-error',
+                            id: message.id,
+                            error: String(error)
+                        });
+                    }
+                }
+                break;
+                
+            case 'websocket-connect':
+                // Ensure WebSocket connection
+                if (this.websocketManager) {
+                    await this.websocketManager.connect();
+                    webviewPanel.webview.postMessage({
+                        type: 'websocket-status',
+                        connected: this.websocketManager.isConnected()
+                    });
+                }
                 break;
                 
             default:

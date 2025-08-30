@@ -1,14 +1,40 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { RamenServerManager } from '../server/serverManager';
+import { WebSocketManager } from '../websocket/websocketManager';
 
 export class RamenWebviewManager {
     private panels: Map<string, vscode.WebviewPanel> = new Map();
+    private graphStates: Map<string, any> = new Map();
     
     constructor(
         private context: vscode.ExtensionContext,
-        private serverManager: RamenServerManager
-    ) {}
+        private serverManager: RamenServerManager,
+        private websocketManager?: WebSocketManager
+    ) {
+        // Subscribe to WebSocket messages if available
+        if (this.websocketManager) {
+            this.websocketManager.onMessage((message) => {
+                // Forward relevant messages to all active webviews
+                this.panels.forEach((panel, graphPath) => {
+                    panel.webview.postMessage({
+                        type: 'websocket',
+                        data: message
+                    });
+                });
+            });
+            
+            this.websocketManager.onConnectionChange((connected) => {
+                // Notify all webviews of connection status change
+                this.panels.forEach((panel) => {
+                    panel.webview.postMessage({
+                        type: 'websocket-status',
+                        connected: connected
+                    });
+                });
+            });
+        }
+    }
 
     async openGraph(uri: vscode.Uri) {
         const graphPath = uri.fsPath;
@@ -211,6 +237,51 @@ export class RamenWebviewManager {
             case 'log':
                 console.log('[Webview]', message.message);
                 break;
+                
+            case 'websocket-send':
+                // Forward WebSocket messages from webview to server
+                if (this.websocketManager) {
+                    this.websocketManager.sendMessage(
+                        message.type as string,
+                        message.data,
+                        message.id as string
+                    );
+                }
+                break;
+                
+            case 'websocket-request':
+                // Handle WebSocket request/response pattern
+                if (this.websocketManager) {
+                    try {
+                        const response = await this.websocketManager.sendRequest(
+                            message.type as string,
+                            message.data
+                        );
+                        panel.webview.postMessage({
+                            type: 'websocket-response',
+                            id: message.id,
+                            data: response
+                        });
+                    } catch (error) {
+                        panel.webview.postMessage({
+                            type: 'websocket-error',
+                            id: message.id,
+                            error: String(error)
+                        });
+                    }
+                }
+                break;
+                
+            case 'websocket-connect':
+                // Ensure WebSocket connection
+                if (this.websocketManager) {
+                    await this.websocketManager.connect();
+                    panel.webview.postMessage({
+                        type: 'websocket-status',
+                        connected: this.websocketManager.isConnected()
+                    });
+                }
+                break;
         }
     }
 
@@ -255,6 +326,42 @@ export class RamenWebviewManager {
             panel.dispose();
         });
         this.panels.clear();
+        this.graphStates.clear();
+    }
+    
+    hasOpenGraph(uri: vscode.Uri): boolean {
+        return this.panels.has(uri.fsPath);
+    }
+    
+    closeGraph(uri: vscode.Uri) {
+        const panel = this.panels.get(uri.fsPath);
+        if (panel) {
+            panel.dispose();
+            this.panels.delete(uri.fsPath);
+            this.graphStates.delete(uri.fsPath);
+        }
+    }
+    
+    async reloadGraph(uri: vscode.Uri) {
+        const panel = this.panels.get(uri.fsPath);
+        if (panel) {
+            // Save current state
+            const currentState = this.graphStates.get(uri.fsPath);
+            
+            // Reload the content
+            const graphContent = await vscode.workspace.fs.readFile(uri);
+            const graphData = graphContent.toString();
+            
+            panel.webview.postMessage({
+                command: 'reloadGraph',
+                data: graphData,
+                previousState: currentState
+            });
+        }
+    }
+    
+    saveGraphState(uri: vscode.Uri, state: any) {
+        this.graphStates.set(uri.fsPath, state);
     }
 
     private getNonce() {

@@ -311,10 +311,32 @@ async def list_sessions(
         active_only=active_only
     )
 
-# WebSocket 端點
+# WebSocket 端點 (通用版本)
+@router.websocket("/ws")
+async def websocket_endpoint_general(websocket: WebSocket):
+    """WebSocket 連接，通用端點"""
+    # 檢查 Origin 以支持 VSCode webview
+    origin = websocket.headers.get("origin")
+    if origin and (origin.startswith("vscode-webview://") or 
+                   origin in ["http://localhost:5173", "http://127.0.0.1:5173"]):
+        # 為沒有特定 session 的連接生成一個默認 session ID
+        import uuid
+        session_id = f"default-{str(uuid.uuid4())[:8]}"
+        await websocket_endpoint(websocket, session_id)
+    else:
+        # 接受所有連接（開發階段）
+        import uuid
+        session_id = f"default-{str(uuid.uuid4())[:8]}"
+        await websocket_endpoint(websocket, session_id)
+
+# WebSocket 端點 (帶 session ID)
 @router.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """WebSocket 連接，用於即時執行更新"""
+    # 檢查 Origin 以支持 VSCode webview（開發階段接受所有連接）
+    origin = websocket.headers.get("origin")
+    print(f"WebSocket connection from origin: {origin}")  # 調試訊息
+    
     await manager.connect(websocket, session_id)
     
     try:

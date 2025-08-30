@@ -6,25 +6,45 @@ import { RamenServerProvider } from './providers/serverProvider';
 import { RamenDependenciesProvider } from './providers/dependenciesProvider';
 import { RamenWebviewManager } from './webview/webviewManager';
 import { RamenServerManager } from './server/serverManager';
+import { WebSocketManager } from './websocket/websocketManager';
 import { RamenLanguageClient } from './language/languageClient';
 import { RamenCommands } from './commands';
+import { RamenFileSystemProvider } from './filesystem/fileSystemProvider';
+import { RamenFileWatcher } from './filesystem/fileWatcher';
+import { CommandRegistry } from './commands/commandRegistry';
+import { allCommands } from './commands/ramenCommands';
+import { StateManager } from './core/stateManager';
+import { ErrorHandler } from './core/errorHandler';
 
 let serverManager: RamenServerManager;
 let webviewManager: RamenWebviewManager;
+let websocketManager: WebSocketManager;
 let languageClient: RamenLanguageClient;
+let fileSystemProvider: RamenFileSystemProvider;
+let fileWatcher: RamenFileWatcher;
 let graphProvider: RamenGraphProvider;
 let variablesProvider: RamenVariablesProvider;
 let serverProvider: RamenServerProvider;
 let dependenciesProvider: RamenDependenciesProvider;
+let commandRegistry: CommandRegistry;
+let stateManager: StateManager;
+let errorHandler: ErrorHandler;
 
 export async function activate(context: vscode.ExtensionContext) {
     console.log('Ramen extension is activating...');
 
+    // Initialize core services
+    stateManager = StateManager.getInstance(context);
+    errorHandler = ErrorHandler.getInstance();
+    
     // Initialize server manager
     serverManager = new RamenServerManager(context);
     
-    // Initialize webview manager
-    webviewManager = new RamenWebviewManager(context, serverManager);
+    // Initialize WebSocket manager
+    websocketManager = new WebSocketManager(serverManager, context);
+    
+    // Initialize webview manager with WebSocket support
+    webviewManager = new RamenWebviewManager(context, serverManager, websocketManager);
     
     // Initialize language client
     const config = vscode.workspace.getConfiguration('ramen');
@@ -35,6 +55,19 @@ export async function activate(context: vscode.ExtensionContext) {
     
     // Initialize tree view providers
     graphProvider = new RamenGraphProvider(context);
+    
+    // Initialize file system provider
+    fileSystemProvider = new RamenFileSystemProvider(context);
+    context.subscriptions.push(
+        vscode.workspace.registerFileSystemProvider('ramen', fileSystemProvider, { 
+            isCaseSensitive: true,
+            isReadonly: false 
+        })
+    );
+    
+    // Initialize file watcher (after graphProvider is created)
+    fileWatcher = new RamenFileWatcher(context, webviewManager, graphProvider);
+    context.subscriptions.push(fileWatcher);
     variablesProvider = new RamenVariablesProvider(context);
     serverProvider = new RamenServerProvider(context, serverManager);
     dependenciesProvider = new RamenDependenciesProvider(context);
@@ -61,13 +94,19 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     // Register custom editor provider for .ramen files
-    const customEditorProvider = new RamenCustomEditorProvider(context, webviewManager, serverManager);
+    const customEditorProvider = new RamenCustomEditorProvider(context, webviewManager, serverManager, websocketManager);
     context.subscriptions.push(
         vscode.window.registerCustomEditorProvider('ramen.graphEditor', customEditorProvider)
     );
 
-    // Register commands
-    const commands = new RamenCommands(serverManager, webviewManager, graphProvider, variablesProvider, serverProvider, dependenciesProvider);
+    // Initialize command registry
+    commandRegistry = new CommandRegistry(context, stateManager, errorHandler);
+    
+    // Register all commands using the new registry
+    commandRegistry.registerBatch(allCommands);
+    
+    // Register legacy commands for backward compatibility (only those not in new command registry)
+    const commands = new RamenCommands(serverManager, webviewManager, websocketManager, graphProvider, variablesProvider, serverProvider, dependenciesProvider);
     
     context.subscriptions.push(
         vscode.commands.registerCommand('ramen.openGraphEditor', (uri?: vscode.Uri) => {
@@ -78,26 +117,8 @@ export async function activate(context: vscode.ExtensionContext) {
             await commands.createNewGraph(uri);
         }),
         
-        vscode.commands.registerCommand('ramen.executeGraph', async (uri?: vscode.Uri) => {
-            await commands.executeGraph(uri);
-        }),
-        
         vscode.commands.registerCommand('ramen.manageProjectDependencies', async () => {
             await commands.manageProjectDependencies();
-        }),
-        
-        vscode.commands.registerCommand('ramen.stopServer', async () => {
-            await serverManager.stop();
-            vscode.window.showInformationMessage('Ramen server stopped');
-        }),
-        
-        vscode.commands.registerCommand('ramen.restartServer', async () => {
-            await serverManager.restart();
-            vscode.window.showInformationMessage('Ramen server restarted');
-        }),
-        
-        vscode.commands.registerCommand('ramen.startServer', async () => {
-            await commands.startServer();
         }),
         
         vscode.commands.registerCommand('ramen.refreshGraphs', async () => {
@@ -106,6 +127,11 @@ export async function activate(context: vscode.ExtensionContext) {
         
         vscode.commands.registerCommand('ramen.refreshDependencies', async () => {
             await commands.refreshDependencies();
+        }),
+        
+        // Register command palette command
+        vscode.commands.registerCommand('ramen.showCommandPalette', async () => {
+            await commandRegistry.showCommandPalette();
         })
     );
 
@@ -118,25 +144,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     }
 
-    // Watch for .ramen file changes
-    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.ramen');
-    
-    fileWatcher.onDidCreate((uri) => {
-        graphProvider.refresh();
-        console.log(`New .ramen file created: ${uri.fsPath}`);
-    });
-    
-    fileWatcher.onDidDelete((uri) => {
-        graphProvider.refresh();
-        console.log(`Ramen file deleted: ${uri.fsPath}`);
-    });
-    
-    fileWatcher.onDidChange((uri) => {
-        console.log(`Ramen file changed: ${uri.fsPath}`);
-        webviewManager.notifyFileChange(uri);
-    });
-    
-    context.subscriptions.push(fileWatcher);
+    // File watching is now handled by RamenFileWatcher
 
     // Handle configuration changes
     context.subscriptions.push(
@@ -173,6 +181,10 @@ export async function deactivate() {
     
     if (languageClient) {
         await languageClient.stop();
+    }
+    
+    if (websocketManager) {
+        websocketManager.dispose();
     }
     
     if (serverManager) {

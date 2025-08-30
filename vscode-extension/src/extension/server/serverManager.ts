@@ -124,11 +124,19 @@ export class RamenServerManager {
                 this.outputChannel.append(message);
                 
                 // Check if server started successfully
-                if (message.includes('Server started') || message.includes('Uvicorn running')) {
+                if (message.includes('Server started') || 
+                    message.includes('Uvicorn running') ||
+                    message.includes('Application startup complete')) {
                     this.isServerRunning = true;
                     this.startTime = Date.now();
                     this._onDidChangeStatus.fire();
                     vscode.window.showInformationMessage('Ramen server started successfully');
+                }
+                
+                // Check for import errors or other startup issues
+                if (message.includes('ModuleNotFoundError') || 
+                    message.includes('ImportError')) {
+                    vscode.window.showErrorMessage('Ramen server failed to start: Missing dependencies. Run "uv sync" in the project directory.');
                 }
             });
             
@@ -188,16 +196,20 @@ export class RamenServerManager {
     
     async executeGraph(graphPath: string): Promise<{success: boolean, output?: string, error?: string}> {
         if (!this.isServerRunning) {
-            return {
-                success: false,
-                error: 'Server is not running'
-            };
+            // Try to start the server first
+            const started = await this.start();
+            if (!started) {
+                return {
+                    success: false,
+                    error: 'Failed to start server'
+                };
+            }
         }
         
         // Send execution request to server
         try {
-            const response = await this.sendRequest('POST', '/api/execute', {
-                graphPath: graphPath
+            const response = await this.sendRequest('POST', '/api/execution/execute', {
+                graph_path: graphPath
             }) as { success: boolean; output?: string; error?: string };
             
             return response;
@@ -329,6 +341,7 @@ export class RamenServerManager {
     
     private async waitForServer(timeout: number = 10000): Promise<void> {
         const startTime = Date.now();
+        let lastError: string = '';
         
         while (Date.now() - startTime < timeout) {
             if (this.isServerRunning) {
@@ -337,35 +350,54 @@ export class RamenServerManager {
             
             // Try to connect to server
             try {
-                await this.sendRequest('GET', '/health');
-                this.isServerRunning = true;
-                return;
-            } catch {
+                const response = await this.sendRequest('GET', '/api/health');
+                if (response && typeof response === 'object' && 'status' in response) {
+                    this.isServerRunning = true;
+                    this.startTime = Date.now();
+                    this._onDidChangeStatus.fire();
+                    return;
+                }
+            } catch (error) {
+                lastError = String(error);
                 // Server not ready yet
             }
             
             await new Promise(resolve => setTimeout(resolve, 500));
         }
         
-        throw new Error('Server startup timeout');
+        throw new Error(`Server startup timeout. Last error: ${lastError}`);
     }
     
     private async sendRequest(method: string, path: string, body?: unknown): Promise<unknown> {
         const url = `http://localhost:${this.port}${path}`;
         
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: body ? JSON.stringify(body) : undefined
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Server request failed: ${response.status} ${response.statusText}`);
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: body ? JSON.stringify(body) : undefined,
+                signal: AbortSignal.timeout(5000) // 5 second timeout
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => response.statusText);
+                throw new Error(`Server request failed: ${response.status} ${errorText}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (contentType?.includes('application/json')) {
+                return response.json();
+            } else {
+                return response.text();
+            }
+        } catch (error) {
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                throw new Error(`Cannot connect to server at ${url}: ${error.message}`);
+            }
+            throw error;
         }
-        
-        return response.json();
     }
     
     getProcessId(): number | null {
@@ -381,5 +413,50 @@ export class RamenServerManager {
     
     getPythonPath(): string | null {
         return this.pythonPath;
+    }
+    
+    async checkHealth(): Promise<{healthy: boolean, details?: any}> {
+        if (!this.isServerRunning) {
+            return { healthy: false, details: { reason: 'Server not running' } };
+        }
+        
+        try {
+            const response = await this.sendRequest('GET', '/api/health') as any;
+            return {
+                healthy: response?.status === 'healthy',
+                details: response
+            };
+        } catch (error) {
+            return {
+                healthy: false,
+                details: { error: String(error) }
+            };
+        }
+    }
+    
+    async ensureServerRunning(): Promise<boolean> {
+        if (this.isServerRunning) {
+            // Verify server is actually responding
+            const health = await this.checkHealth();
+            if (health.healthy) {
+                return true;
+            }
+            
+            // Server process exists but not responding, restart it
+            this.outputChannel.appendLine('Server not responding, attempting restart...');
+            await this.restart();
+            return this.isServerRunning;
+        }
+        
+        // Server not running, start it
+        return await this.start();
+    }
+    
+    async getServerInfo(): Promise<any> {
+        try {
+            return await this.sendRequest('GET', '/api/info');
+        } catch (error) {
+            return null;
+        }
     }
 }

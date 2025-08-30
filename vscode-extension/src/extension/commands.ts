@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { RamenServerManager } from './server/serverManager';
 import { RamenWebviewManager } from './webview/webviewManager';
+import { WebSocketManager } from './websocket/websocketManager';
 import { RamenGraphProvider } from './providers/graphProvider';
 import { RamenVariablesProvider } from './providers/variablesProvider';
 import { RamenServerProvider } from './providers/serverProvider';
@@ -11,7 +12,8 @@ export class RamenCommands {
     constructor(
         private serverManager: RamenServerManager,
         private webviewManager: RamenWebviewManager,
-        private graphProvider: RamenGraphProvider,
+        private websocketManager?: WebSocketManager,
+        private graphProvider?: RamenGraphProvider,
         private variablesProvider?: RamenVariablesProvider,
         private serverProvider?: RamenServerProvider,
         private dependenciesProvider?: RamenDependenciesProvider
@@ -44,12 +46,15 @@ export class RamenCommands {
         }
         
         // Ensure server is running
-        if (!this.serverManager.isRunning()) {
-            const started = await this.serverManager.start();
-            if (!started) {
-                vscode.window.showErrorMessage('Failed to start Ramen server');
-                return;
-            }
+        const serverReady = await this.serverManager.ensureServerRunning();
+        if (!serverReady) {
+            vscode.window.showErrorMessage('Failed to start Ramen server');
+            return;
+        }
+        
+        // Ensure WebSocket connection
+        if (this.websocketManager && !this.websocketManager.isConnected()) {
+            await this.websocketManager.connect();
         }
         
         // Open webview panel
@@ -190,7 +195,9 @@ export class RamenCommands {
         await vscode.workspace.fs.writeFile(graphPath, Buffer.from(content, 'utf8'));
         
         // Refresh graph provider
-        this.graphProvider.refresh();
+        if (this.graphProvider) {
+            this.graphProvider.refresh();
+        }
         
         // Open the new graph
         await this.openGraphEditor(graphPath);
@@ -306,7 +313,9 @@ export class RamenCommands {
     }
 
     async refreshGraphs() {
-        this.graphProvider.refresh();
+        if (this.graphProvider) {
+            this.graphProvider.refresh();
+        }
         vscode.window.showInformationMessage('Refreshed graphs view');
     }
 
