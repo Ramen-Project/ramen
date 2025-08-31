@@ -13,6 +13,15 @@ import {
   MagnifyingGlassIcon,
   TimerIcon,
   CubeIcon,
+  SquareIcon,
+  Link1Icon,
+  ArrowDownIcon,
+  ActivityLogIcon,
+  DotIcon,
+  LoopIcon,
+  EyeOpenIcon,
+  BookmarkIcon,
+  StackIcon,
 } from '@radix-ui/react-icons';
 import { OpNodeProps, NodeIOProps } from '../components/Node/OperationNode';
 
@@ -61,7 +70,6 @@ interface NodeDefinitionState {
 // Icon mapping for categories
 const CATEGORY_ICONS: Record<string, React.ComponentType> = {
   'File I/O': FileTextIcon,
-  'Input/Output': FileTextIcon,
   'Data Operations': MixIcon,
   'Math & Statistics': PlusIcon,
   'Math': PlusIcon,
@@ -83,12 +91,22 @@ const CATEGORY_ICONS: Record<string, React.ComponentType> = {
   'Torch': BarChartIcon,
   'Custom': GearIcon,
   'Context Manager': GearIcon,
+  // Neural Network Categories
+  'Convolutional': SquareIcon,
+  'Linear': Link1Icon,
+  'Pooling': ArrowDownIcon,
+  'Normalization': BarChartIcon,
+  'Activation': ActivityLogIcon,
+  'Regularization': DotIcon,
+  'Recurrent': LoopIcon,
+  'Transformer': EyeOpenIcon,
+  'Embedding': BookmarkIcon,
+  'Container': StackIcon,
 };
 
 // Color mapping for categories
 const CATEGORY_COLORS: Record<string, string> = {
   'File I/O': '#3b82f6',
-  'Input/Output': '#4CAF50',
   'Data Operations': '#f59e42',
   'Math & Statistics': '#a259e6',
   'Math': '#2196F3',
@@ -110,6 +128,17 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Torch': '#EE4C2C',
   'Custom': '#9C27B0',
   'Context Manager': '#00BCD4',
+  // Neural Network Categories
+  'Convolutional': '#FF6B6B',     // Red for conv layers
+  'Linear': '#4ECDC4',            // Teal for linear layers
+  'Pooling': '#96CEB4',           // Green for pooling
+  'Normalization': '#F39C12',     // Orange for normalization
+  'Activation': '#E74C3C',        // Red for activations
+  'Regularization': '#9B59B6',    // Purple for regularization
+  'Recurrent': '#3498DB',         // Blue for RNNs
+  'Transformer': '#FF6B6B',       // Red for transformers
+  'Embedding': '#16A085',         // Teal for embeddings
+  'Container': '#7F8C8D',         // Gray for containers
 };
 
 // Convert API response to internal format
@@ -144,176 +173,79 @@ function convertApiNodesToCategories(apiNodes: Record<string, any[]>): NodeCateg
 // Fetch nodes from API
 async function fetchNodesFromAPI(): Promise<Record<string, any[]>> {
   try {
-    // Try to get the API URL from various sources
-    let apiUrl = 'http://localhost:8000';
-    
-    // Check if we're in VSCode webview
+    // Check if we're in VSCode webview environment
     if (typeof window !== 'undefined' && (window as any).vscode) {
-      // In VSCode extension, the backend should be running on localhost
-      apiUrl = 'http://localhost:8000';
-    }
-    
-    const response = await fetch(`${apiUrl}/api/nodes`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch nodes: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.success && data.nodes) {
-      return data.nodes;
+      console.log('🍜 [NodeStore] VSCode webview detected, using message proxy');
+      
+      // Use VSCode message passing instead of direct fetch
+      return new Promise((resolve, reject) => {
+        let timeoutId: number;
+        
+        // Listen for response
+        const handleMessage = (event: MessageEvent) => {
+          const message = event.data;
+          console.log('🍜 [NodeStore] Received message:', message);
+          
+          if (message.command === 'nodesResponse') {
+            window.removeEventListener('message', handleMessage);
+            clearTimeout(timeoutId);
+            
+            if (message.success && message.data && message.data.nodes) {
+              console.log('🍜 [NodeStore] Successfully received nodes:', 
+                Object.keys(message.data.nodes).length, 'categories');
+              resolve(message.data.nodes);
+            } else {
+              console.error('🍜 [NodeStore] Failed response:', message);
+              reject(new Error(message.error || 'Failed to fetch nodes'));
+            }
+          }
+        };
+        
+        window.addEventListener('message', handleMessage);
+        
+        console.log('🍜 [NodeStore] Sending fetchNodes command to extension...');
+        // Request nodes from extension
+        (window as any).vscode.postMessage({
+          command: 'fetchNodes'
+        });
+        
+        // Timeout after 20 seconds (increased for debugging)
+        timeoutId = window.setTimeout(() => {
+          console.error('🍜 [NodeStore] Request timeout after 20 seconds');
+          window.removeEventListener('message', handleMessage);
+          reject(new Error('Request timeout after 20 seconds'));
+        }, 20000);
+      });
     } else {
-      throw new Error(data.error || 'Failed to fetch nodes');
+      // Fallback to direct fetch for non-VSCode environments
+      console.log('🍜 [NodeStore] Non-VSCode environment, using direct fetch');
+      const apiUrl = 'http://localhost:8000';
+      
+      const response = await fetch(`${apiUrl}/api/nodes`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch nodes: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.nodes) {
+        return data.nodes;
+      } else {
+        throw new Error(data.error || 'Failed to fetch nodes');
+      }
     }
   } catch (error) {
     console.error('Error fetching nodes from API:', error);
-    
-    // Return fallback nodes if API is not available
-    return getFallbackNodes();
+    throw error;
   }
 }
 
-// Fallback nodes when API is not available
-function getFallbackNodes(): Record<string, any[]> {
-  return {
-    'Input/Output': [
-      {
-        type: 'builtin.input',
-        namespace: 'builtin',
-        nodeType: 'input',
-        displayName: 'Input',
-        description: 'Graph input node',
-        icon: '📥',
-        color: '#4CAF50',
-        inputs: [],
-        outputs: [
-          { name: 'value', type: 'any', required: true, description: 'Input value' }
-        ]
-      },
-      {
-        type: 'builtin.output',
-        namespace: 'builtin',
-        nodeType: 'output',
-        displayName: 'Output',
-        description: 'Graph output node',
-        icon: '📤',
-        color: '#FF5722',
-        inputs: [
-          { name: 'value', type: 'any', required: true, description: 'Output value' }
-        ],
-        outputs: []
-      }
-    ],
-    'Basic': [
-      {
-        type: 'builtin.constant',
-        namespace: 'builtin',
-        nodeType: 'constant',
-        displayName: 'Constant',
-        description: 'Constant value',
-        icon: '🔢',
-        color: '#607D8B',
-        inputs: [],
-        outputs: [
-          { name: 'value', type: 'any', required: true, description: 'Constant value' }
-        ],
-        properties: { value: null, type: 'number' }
-      },
-      {
-        type: 'builtin.print',
-        namespace: 'builtin',
-        nodeType: 'print',
-        displayName: 'Print',
-        description: 'Print value to console',
-        icon: '🖨️',
-        color: '#795548',
-        inputs: [
-          { name: 'value', type: 'any', required: true, description: 'Value to print' }
-        ],
-        outputs: [
-          { name: 'value', type: 'any', required: true, description: 'Pass-through value' }
-        ]
-      }
-    ],
-    'Math': [
-      {
-        type: 'builtin.add',
-        namespace: 'builtin',
-        nodeType: 'add',
-        displayName: 'Add',
-        description: 'Add two numbers',
-        icon: '➕',
-        color: '#2196F3',
-        inputs: [
-          { name: 'a', type: 'number', required: true, description: 'First number' },
-          { name: 'b', type: 'number', required: true, description: 'Second number' }
-        ],
-        outputs: [
-          { name: 'result', type: 'number', required: true, description: 'Sum of a and b' }
-        ]
-      },
-      {
-        type: 'builtin.multiply',
-        namespace: 'builtin',
-        nodeType: 'multiply',
-        displayName: 'Multiply',
-        description: 'Multiply two numbers',
-        icon: '✖️',
-        color: '#9C27B0',
-        inputs: [
-          { name: 'a', type: 'number', required: true, description: 'First number' },
-          { name: 'b', type: 'number', required: true, description: 'Second number' }
-        ],
-        outputs: [
-          { name: 'result', type: 'number', required: true, description: 'Product of a and b' }
-        ]
-      }
-    ],
-    'Logic': [
-      {
-        type: 'builtin.if',
-        namespace: 'builtin',
-        nodeType: 'if',
-        displayName: 'If/Else',
-        description: 'Conditional branching',
-        icon: '🔀',
-        color: '#FFC107',
-        inputs: [
-          { name: 'condition', type: 'boolean', required: true, description: 'Condition to evaluate' },
-          { name: 'true_value', type: 'any', required: true, description: 'Value if true' },
-          { name: 'false_value', type: 'any', required: true, description: 'Value if false' }
-        ],
-        outputs: [
-          { name: 'result', type: 'any', required: true, description: 'Selected value' }
-        ]
-      },
-      {
-        type: 'builtin.compare',
-        namespace: 'builtin',
-        nodeType: 'compare',
-        displayName: 'Compare',
-        description: 'Compare two values',
-        icon: '⚖️',
-        color: '#00BCD4',
-        inputs: [
-          { name: 'a', type: 'any', required: true, description: 'First value' },
-          { name: 'b', type: 'any', required: true, description: 'Second value' },
-          { name: 'operator', type: 'string', required: false, default: '==', description: 'Comparison operator' }
-        ],
-        outputs: [
-          { name: 'result', type: 'boolean', required: true, description: 'Comparison result' }
-        ],
-        properties: { operators: ['==', '!=', '>', '<', '>=', '<='] }
-      }
-    ]
-  };
-}
 
 export const useNodeDefinitionStore = create<NodeDefinitionState>()((set, get) => ({
   categories: [],
@@ -324,21 +256,21 @@ export const useNodeDefinitionStore = create<NodeDefinitionState>()((set, get) =
     set({ isLoading: true, error: null });
     
     try {
+      console.log('🍜 Starting to fetch nodes from API...');
       const apiNodes = await fetchNodesFromAPI();
+      console.log('🍜 Successfully fetched nodes:', Object.keys(apiNodes));
       const categories = convertApiNodesToCategories(apiNodes);
+      console.log('🍜 Converted to categories:', categories.map(c => `${c.name} (${c.nodes.length})`));
       set({ categories, isLoading: false });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch nodes';
-      console.error('Error loading nodes:', errorMessage);
+      console.error('🍜 Error loading nodes:', errorMessage);
       
-      // Use fallback nodes
-      const fallbackNodes = getFallbackNodes();
-      const categories = convertApiNodesToCategories(fallbackNodes);
-      
+      // No fallback - set empty categories and show error
       set({ 
-        categories, 
+        categories: [], 
         isLoading: false, 
-        error: errorMessage 
+        error: `Server unavailable: ${errorMessage}. Please ensure the Ramen server is running.`
       });
     }
   },
@@ -386,6 +318,32 @@ export const useNodeDefinitionStore = create<NodeDefinitionState>()((set, get) =
   }
 }));
 
-// Auto-fetch nodes when store is created
-const store = useNodeDefinitionStore.getState();
-store.fetchNodes();
+// Initialize nodes after a delay to allow VSCode webview to setup
+// Also retry if the first attempt fails
+let retryCount = 0;
+const maxRetries = 3;
+
+const tryFetchNodes = () => {
+  const store = useNodeDefinitionStore.getState();
+  
+  // Check if we already have nodes
+  if (store.categories.length > 0) {
+    console.log('🍜 Nodes already loaded');
+    return;
+  }
+  
+  console.log(`🍜 Attempting to fetch nodes (attempt ${retryCount + 1}/${maxRetries})`);
+  
+  store.fetchNodes().catch((error) => {
+    console.error('🍜 Failed to fetch nodes:', error);
+    retryCount++;
+    
+    if (retryCount < maxRetries) {
+      console.log(`🍜 Retrying in ${retryCount * 2} seconds...`);
+      setTimeout(tryFetchNodes, retryCount * 2000);
+    }
+  });
+};
+
+// Start after a longer initial delay
+setTimeout(tryFetchNodes, 500);

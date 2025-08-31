@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as http from 'http';
 import { RamenServerManager } from '../server/serverManager';
 import { WebSocketManager } from '../websocket/websocketManager';
 
@@ -40,6 +41,13 @@ export class RamenWebviewManager {
         const graphPath = uri.fsPath;
         const graphName = path.basename(graphPath, '.ramen');
         
+        // Ensure server is running before opening webview
+        console.log('Ensuring server is running before opening webview...');
+        const serverStarted = await this.serverManager.ensureServerRunning();
+        if (!serverStarted) {
+            vscode.window.showErrorMessage('Failed to start Ramen server. The graph editor may not function properly.');
+        }
+        
         // Check if panel already exists for this graph
         let panel = this.panels.get(graphPath);
         
@@ -64,6 +72,42 @@ export class RamenWebviewManager {
             }
         );
         
+        // Setup the panel with common functionality
+        await this.setupPanel(panel, uri);
+    }
+
+    async setupCustomEditor(uri: vscode.Uri, panel: vscode.WebviewPanel, document?: vscode.TextDocument) {
+        const graphPath = uri.fsPath;
+        
+        // Ensure server is running before opening webview
+        console.log('Setting up custom editor for:', graphPath);
+        const serverStarted = await this.serverManager.ensureServerRunning();
+        if (!serverStarted) {
+            vscode.window.showWarningMessage('Ramen server is not running. Some features may be unavailable.');
+        }
+        
+        // Ensure WebSocket connection if available
+        if (this.websocketManager && serverStarted) {
+            await this.websocketManager.connect();
+        }
+        
+        // Configure the webview
+        panel.webview.options = {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.joinPath(this.context.extensionUri, 'media'),
+                vscode.Uri.joinPath(this.context.extensionUri, 'resources'),
+                uri
+            ]
+        };
+        
+        // Setup the panel with common functionality
+        await this.setupPanel(panel, uri, document);
+    }
+
+    private async setupPanel(panel: vscode.WebviewPanel, uri: vscode.Uri, document?: vscode.TextDocument) {
+        const graphPath = uri.fsPath;
+        
         // Store panel reference
         this.panels.set(graphPath, panel);
         
@@ -81,11 +125,28 @@ export class RamenWebviewManager {
         // Handle messages from webview
         panel.webview.onDidReceiveMessage(
             async (message) => {
-                await this.handleWebviewMessage(message, panel!, graphPath);
+                await this.handleWebviewMessage(message, panel, graphPath, document);
             },
             undefined,
             this.context.subscriptions
         );
+        
+        // If document is provided (custom editor), watch for changes
+        if (document) {
+            const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
+                if (e.document.uri.toString() === document.uri.toString()) {
+                    this.updateWebviewFromDocument(panel, document);
+                }
+            });
+            
+            // Clean up subscription when panel is disposed
+            panel.onDidDispose(() => {
+                changeDocumentSubscription.dispose();
+            });
+            
+            // Initial content update
+            this.updateWebviewFromDocument(panel, document);
+        }
         
         // Set HTML content
         panel.webview.html = await this.getWebviewContent(panel.webview, graphPath);
@@ -198,14 +259,37 @@ export class RamenWebviewManager {
         </html>`;
     }
 
-    private async handleWebviewMessage(message: {command: string, [key: string]: unknown}, panel: vscode.WebviewPanel, graphPath: string) {
+    private updateWebviewFromDocument(panel: vscode.WebviewPanel, document: vscode.TextDocument) {
+        try {
+            // Parse the document content as JSON to validate
+            const graphData = JSON.parse(document.getText());
+            
+            // Send the graph data to the webview
+            panel.webview.postMessage({
+                command: 'graphUpdate',
+                data: graphData
+            });
+        } catch (error) {
+            // If JSON is invalid, show error in webview
+            panel.webview.postMessage({
+                command: 'error',
+                message: `Invalid JSON: ${error}`
+            });
+        }
+    }
+
+    private async handleWebviewMessage(message: {command: string, [key: string]: unknown}, panel: vscode.WebviewPanel, graphPath: string, document?: vscode.TextDocument) {
         switch (message.command) {
             case 'saveGraph':
-                await this.saveGraph(graphPath, message.data as string);
+                await this.saveGraph(graphPath, message.data as string, document);
                 break;
                 
             case 'executeGraph':
                 await this.executeGraph(graphPath);
+                break;
+                
+            case 'fetchNodes':
+                await this.handleFetchNodes(panel);
                 break;
                 
             case 'showMessage':
@@ -285,21 +369,172 @@ export class RamenWebviewManager {
         }
     }
 
-    private async saveGraph(graphPath: string, graphData: string) {
+    private async saveGraph(graphPath: string, graphData: string, document?: vscode.TextDocument) {
         try {
-            await vscode.workspace.fs.writeFile(
-                vscode.Uri.file(graphPath),
-                Buffer.from(graphData, 'utf8')
-            );
+            // Ensure server is running
+            const isServerRunning = await this.serverManager.ensureServerRunning();
+            if (!isServerRunning) {
+                throw new Error('Failed to start Ramen server');
+            }
             
-            vscode.window.showInformationMessage('Graph saved successfully');
+            const serverPort = this.serverManager.getPort();
+            
+            // Parse the graph data to ensure it's valid JSON
+            let parsedGraphData;
+            try {
+                parsedGraphData = JSON.parse(graphData);
+            } catch (parseError) {
+                throw new Error(`Invalid graph data format: ${parseError}`);
+            }
+            
+            // Use backend API to save the graph with proper formatting
+            const saveRequest = {
+                path: graphPath,
+                graph: parsedGraphData,
+                dependencies: null
+            };
+            
+            const response = await this.makeHttpRequest({
+                hostname: 'localhost',
+                port: serverPort,
+                path: '/api/graphs/save',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'VSCode-Extension/1.0.0'
+                }
+            }, JSON.stringify(saveRequest));
+            
+            const result = JSON.parse(response);
+            
+            if (result.success) {
+                // If we have a document (custom editor), reload it to show the formatted content
+                if (document) {
+                    // Read the saved file and update the document
+                    const savedContent = await vscode.workspace.fs.readFile(vscode.Uri.file(graphPath));
+                    const savedText = Buffer.from(savedContent).toString('utf8');
+                    
+                    const edit = new vscode.WorkspaceEdit();
+                    edit.replace(
+                        document.uri,
+                        new vscode.Range(0, 0, document.lineCount, 0),
+                        savedText
+                    );
+                    await vscode.workspace.applyEdit(edit);
+                }
+                
+                vscode.window.showInformationMessage('Graph saved successfully');
+            } else {
+                throw new Error(result.message || 'Failed to save graph');
+            }
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to save graph: ${error}`);
+            console.error('Save graph error:', error);
         }
     }
 
     private async executeGraph(graphPath: string) {
         vscode.commands.executeCommand('ramen.executeGraph', vscode.Uri.file(graphPath));
+    }
+    
+    private async handleFetchNodes(panel: vscode.WebviewPanel) {
+        try {
+            console.log('🍜 [WebviewManager] Starting node fetch process...');
+            
+            // Ensure server is running
+            const isServerRunning = await this.serverManager.ensureServerRunning();
+            if (!isServerRunning) {
+                throw new Error('Failed to start Ramen server');
+            }
+            
+            const serverPort = this.serverManager.getPort();
+            console.log('🍜 [WebviewManager] Fetching nodes from server port:', serverPort);
+            
+            // First, verify server health
+            try {
+                const health = await this.serverManager.checkHealth();
+                console.log('🍜 [WebviewManager] Server health check:', health);
+                if (!health.healthy) {
+                    throw new Error(`Server is not healthy: ${JSON.stringify(health.details)}`);
+                }
+            } catch (healthError) {
+                console.error('🍜 [WebviewManager] Server health check failed:', healthError);
+            }
+            
+            const options = {
+                hostname: 'localhost',
+                port: serverPort,
+                path: '/api/nodes',
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'VSCode-Extension/1.0.0'
+                }
+            };
+            
+            console.log('🍜 [WebviewManager] Making HTTP request with options:', options);
+            
+            const data = await new Promise<string>((resolve, reject) => {
+                const req = http.request(options, (res: any) => {
+                    console.log('🍜 [WebviewManager] Response received - Status:', res.statusCode, 'Headers:', res.headers);
+                    let body = '';
+                    
+                    res.on('data', (chunk: string) => {
+                        body += chunk;
+                        console.log('🍜 [WebviewManager] Received data chunk:', chunk.length, 'bytes');
+                    });
+                    
+                    res.on('end', () => {
+                        console.log('🍜 [WebviewManager] Response complete - Body length:', body.length, 'bytes');
+                        console.log('🍜 [WebviewManager] Response status:', res.statusCode);
+                        if (res.statusCode === 200) {
+                            resolve(body);
+                        } else {
+                            reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage} - ${body}`));
+                        }
+                    });
+                });
+                
+                req.on('error', (error: Error) => {
+                    console.error('🍜 [WebviewManager] Request error:', error);
+                    reject(error);
+                });
+                
+                req.setTimeout(15000, () => {
+                    console.error('🍜 [WebviewManager] Request timeout after 15 seconds');
+                    req.destroy();
+                    reject(new Error('Request timeout after 15 seconds'));
+                });
+                
+                console.log('🍜 [WebviewManager] Sending HTTP request...');
+                req.end();
+            });
+            
+            console.log('🍜 [WebviewManager] Raw response data (first 500 chars):', data.substring(0, 500));
+            const parsedData = JSON.parse(data);
+            console.log('🍜 [WebviewManager] Successfully parsed response - Node count:', 
+                Object.values(parsedData.nodes || {}).reduce((acc: number, nodes: any) => acc + (nodes.length || 0), 0));
+            
+            // Send the result back to webview
+            console.log('🍜 [WebviewManager] Sending nodes response to webview...');
+            panel.webview.postMessage({
+                command: 'nodesResponse',
+                success: true,
+                data: parsedData
+            });
+            console.log('🍜 [WebviewManager] Nodes response sent successfully');
+            
+        } catch (error) {
+            console.error('🍜 [WebviewManager] Failed to fetch nodes:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.error('🍜 [WebviewManager] Sending error response to webview:', errorMessage);
+            
+            panel.webview.postMessage({
+                command: 'nodesResponse',
+                success: false,
+                error: errorMessage
+            });
+        }
     }
 
     notifyFileChange(uri: vscode.Uri) {
@@ -362,6 +597,36 @@ export class RamenWebviewManager {
     
     saveGraphState(uri: vscode.Uri, state: any) {
         this.graphStates.set(uri.fsPath, state);
+    }
+
+    private makeHttpRequest(options: http.RequestOptions, postData?: string): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+            const req = http.request(options, (res: any) => {
+                let body = '';
+                
+                res.on('data', (chunk: string) => {
+                    body += chunk;
+                });
+                
+                res.on('end', () => {
+                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve(body);
+                    } else {
+                        reject(new Error(`HTTP ${res.statusCode}: ${body}`));
+                    }
+                });
+            });
+            
+            req.on('error', (error: Error) => {
+                reject(error);
+            });
+            
+            if (postData) {
+                req.write(postData);
+            }
+            
+            req.end();
+        });
     }
 
     private getNonce() {

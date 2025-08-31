@@ -50,7 +50,7 @@ export class CommandRegistry {
         
         // Wrap handler with error handling
         const wrappedHandler = this.errorHandler.wrap(
-            async (...args: any[]) => {
+            async (...args: unknown[]) => {
                 const context = this.createCommandContext();
                 await handler(context, ...args);
             },
@@ -98,7 +98,7 @@ export class CommandRegistry {
         }
     }
     
-    async execute(commandId: string, ...args: any[]): Promise<void> {
+    async execute(commandId: string, ...args: unknown[]): Promise<void> {
         const fullCommandId = this.getFullCommandId(commandId);
         
         try {

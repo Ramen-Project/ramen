@@ -10,6 +10,7 @@ export class RamenServerManager {
     private isServerRunning: boolean = false;
     private startTime: number | null = null;
     private pythonPath: string | null = null;
+    private isStarting: boolean = false; // Add lock to prevent concurrent starts
     private _onDidChangeStatus = new vscode.EventEmitter<void>();
     readonly onDidChangeStatus = this._onDidChangeStatus.event;
     
@@ -25,19 +26,51 @@ export class RamenServerManager {
             return true;
         }
         
+        if (this.isStarting) {
+            console.log('Ramen server is already starting, waiting...');
+            // Wait for the current start operation to complete
+            while (this.isStarting) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return this.isServerRunning;
+        }
+        
+        this.isStarting = true;
+        
         // Check if port is available
         const portAvailable = await this.isPortAvailable(this.port);
         if (!portAvailable) {
+            // Try to connect to existing server first
+            this.outputChannel.appendLine(`Port ${this.port} is already in use, checking if it's a Ramen server...`);
+            
+            try {
+                const response = await this.sendRequest('GET', '/api/health');
+                if (response && typeof response === 'object' && 'status' in response && 
+                    (response as any).status === 'healthy') {
+                    // Existing server is responsive, use it
+                    this.outputChannel.appendLine('Found existing healthy Ramen server, connecting to it...');
+                    this.isServerRunning = true;
+                    this.startTime = Date.now();
+                    this._onDidChangeStatus.fire();
+                    this.isStarting = false;
+                    vscode.window.showInformationMessage('Connected to existing Ramen server');
+                    return true;
+                }
+            } catch (error) {
+                this.outputChannel.appendLine(`Existing server not responding: ${error}`);
+            }
+            
+            // Existing server not responding or not a Ramen server
             const useAnyway = await vscode.window.showWarningMessage(
-                `Port ${this.port} is already in use. Try to connect anyway?`,
-                'Yes',
-                'No',
-                'Change Port'
+                `Port ${this.port} is already in use by another process. What would you like to do?`,
+                'Use Different Port',
+                'Cancel'
             );
             
-            if (useAnyway === 'No') {
+            if (useAnyway === 'Cancel') {
+                this.isStarting = false;
                 return false;
-            } else if (useAnyway === 'Change Port') {
+            } else if (useAnyway === 'Use Different Port') {
                 const newPort = await vscode.window.showInputBox({
                     prompt: 'Enter new port number',
                     value: String(this.port + 1),
@@ -59,6 +92,7 @@ export class RamenServerManager {
                         vscode.ConfigurationTarget.Global
                     );
                 } else {
+                    this.isStarting = false;
                     return false;
                 }
             }
@@ -68,6 +102,7 @@ export class RamenServerManager {
         const pythonPath = await this.findPythonInterpreter();
         if (!pythonPath) {
             vscode.window.showErrorMessage('Python interpreter not found. Please install Python 3.12 or later.');
+            this.isStarting = false;
             return false;
         }
         
@@ -149,6 +184,7 @@ export class RamenServerManager {
             // Handle process exit
             this.serverProcess.on('exit', (code) => {
                 this.isServerRunning = false;
+                this.isStarting = false; // Reset starting flag on exit
                 this.startTime = null;
                 this._onDidChangeStatus.fire();
                 this.outputChannel.appendLine(`Server process exited with code ${code}`);
@@ -166,17 +202,48 @@ export class RamenServerManager {
             this.outputChannel.appendLine(`Failed to start server: ${error}`);
             vscode.window.showErrorMessage(`Failed to start Ramen server: ${error}`);
             return false;
+        } finally {
+            this.isStarting = false;
         }
     }
     
     async stop(): Promise<void> {
         if (this.serverProcess) {
             this.outputChannel.appendLine('Stopping Ramen server...');
-            this.serverProcess.kill();
+            
+            // First, try graceful shutdown
+            this.serverProcess.kill('SIGTERM');
+            
+            // Wait for process to exit gracefully
+            const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
+            const processExit = new Promise((resolve) => {
+                this.serverProcess?.on('exit', resolve);
+            });
+            
+            try {
+                await Promise.race([processExit, timeout]);
+                
+                // If process is still running after timeout, force kill
+                if (this.serverProcess && !this.serverProcess.killed) {
+                    this.outputChannel.appendLine('Server not responding to SIGTERM, force killing...');
+                    this.serverProcess.kill('SIGKILL');
+                    
+                    // Wait a bit more for force kill
+                    await Promise.race([
+                        new Promise((resolve) => this.serverProcess?.on('exit', resolve)),
+                        new Promise((resolve) => setTimeout(resolve, 2000))
+                    ]);
+                }
+            } catch (error) {
+                this.outputChannel.appendLine(`Error during server shutdown: ${error}`);
+            }
+            
             this.serverProcess = null;
             this.isServerRunning = false;
+            this.isStarting = false; // Reset starting flag when stopping
             this.startTime = null;
             this._onDidChangeStatus.fire();
+            this.outputChannel.appendLine('Ramen server stopped.');
         }
     }
     
@@ -235,11 +302,10 @@ export class RamenServerManager {
             // First, try to find the Ramen project's virtual environment
             const ramenProjectPath = workspaceFolder.uri.fsPath.replace(/vscode-extension.*$/, '');
             
-            // Try both Windows and Unix paths
-            const pythonPaths = [
-                path.join(ramenProjectPath, '.venv', 'Scripts', 'python.exe'), // Windows
-                path.join(ramenProjectPath, '.venv', 'bin', 'python')          // Unix
-            ];
+            // Try platform-specific paths
+            const pythonPaths = process.platform === 'win32' 
+                ? [path.join(ramenProjectPath, '.venv', 'Scripts', 'python.exe')] // Windows
+                : [path.join(ramenProjectPath, '.venv', 'bin', 'python')];        // Unix/Linux/macOS
             
             for (const uvVenvPath of pythonPaths) {
                 try {

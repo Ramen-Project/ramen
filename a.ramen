@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "nodes": [
+    {
+      "id": "constant-1",
+      "type": "builtin.constant",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "label": "Constant",
+        "description": "Start your graph with a constant value",
+        "value": 42
+      }
+    },
+    {
+      "id": "print-1",
+      "type": "builtin.print",
+      "position": {
+        "x": 300,
+        "y": 100
+      },
+      "data": {
+        "label": "Print",
+        "description": "Print the result to console"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "constant-1",
+      "target": "print-1",
+      "sourceHandle": "output",
+      "targetHandle": "value"
+    }
+  ],
+  "metadata": {
+    "name": "a",
+    "created": "2025-08-31T09:50:45.858Z",
+    "description": "A sample Ramen graph - delete these nodes and create your own!",
+    "author": "Ramen VSCode Extension"
+  }
+}

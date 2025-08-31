@@ -24,7 +24,6 @@
   "icon": "resources/ramen-icon.svg",
   "activationEvents": [
     "onLanguage:ramen",
-    "onCommand:ramen.openGraphEditor",
     "onCommand:ramen.createNewGraph",
     "workspaceContains:**/*.ramen"
   ],
@@ -49,11 +48,6 @@
       }
     ],
     "commands": [
-      {
-        "command": "ramen.openGraphEditor",
-        "title": "Ramen: Open Graph Editor",
-        "icon": "$(graph)"
-      },
       {
         "command": "ramen.createNewGraph",
         "title": "Ramen: Create New Graph",
@@ -85,11 +79,6 @@
         "icon": "$(debug-start)"
       },
       {
-        "command": "ramen.refreshGraphs",
-        "title": "Ramen: Refresh Graphs",
-        "icon": "$(refresh)"
-      },
-      {
         "command": "ramen.refreshDependencies",
         "title": "Ramen: Refresh Dependencies",
         "icon": "$(refresh)"
@@ -106,32 +95,13 @@
       "editor/title": [
         {
           "when": "resourceExtname == .ramen",
-          "command": "ramen.openGraphEditor",
-          "group": "navigation"
-        },
-        {
-          "when": "resourceExtname == .ramen",
           "command": "ramen.executeGraph",
           "group": "navigation"
         }
       ],
       "commandPalette": [
-        {
-          "command": "ramen.openGraphEditor",
-          "when": "resourceExtname == .ramen"
-        }
       ],
       "view/title": [
-        {
-          "command": "ramen.createNewGraph",
-          "when": "view == ramenGraphs",
-          "group": "navigation"
-        },
-        {
-          "command": "ramen.refreshGraphs",
-          "when": "view == ramenGraphs",
-          "group": "navigation"
-        },
         {
           "command": "ramen.startServer",
           "when": "view == ramenServer && !ramen:serverRunning",
@@ -155,12 +125,6 @@
       ]
     },
     "keybindings": [
-      {
-        "command": "ramen.openGraphEditor",
-        "key": "ctrl+alt+r",
-        "mac": "cmd+alt+r",
-        "when": "resourceExtname == .ramen"
-      },
       {
         "command": "ramen.executeGraph",
         "key": "f5",
@@ -220,12 +184,6 @@
     "views": {
       "ramen": [
         {
-          "id": "ramenGraphs",
-          "name": "Graphs",
-          "icon": "$(graph)",
-          "contextualTitle": "Ramen Graphs"
-        },
-        {
           "id": "ramenVariables",
           "name": "Variables",
           "icon": "$(symbol-variable)",
@@ -255,12 +213,6 @@
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "ramenGraphs",
-        "contents": "No Ramen graphs found in this workspace.\n[Create New Graph](command:ramen.createNewGraph)"
-      }
-    ],
     "customEditors": [
       {
         "viewType": "ramen.graphEditor",
@@ -275,17 +227,22 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build:webview && npm run compile",
+    "vscode:prepublish": "npm run build:all",
+    "build:all": "npm run build:webview && npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "build:webview": "cd webview-build && bun run build",
+    "test:webview": "cd webview-build && bun run test:run",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
     "test": "./scripts/validate-extension.sh",
     "test:vscode": "node ./out/test/runTest.js",
+    "test:all": "npm run test:webview && npm run test:vscode",
     "validate": "./scripts/validate-extension.sh",
-    "package": "vsce package",
-    "publish": "vsce publish"
+    "clean": "rm -rf out && cd webview-build && rm -rf ../media/webview",
+    "package": "npm run build:all && vsce package",
+    "publish": "npm run build:all && vsce publish"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",

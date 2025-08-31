@@ -146,6 +146,8 @@ interface GraphProps {
   onGraphDataChange?: (nodes: Node[], edges: Edge[]) => void;
   onSelectionChange?: (selection: { node?: Node; edge?: Edge } | null) => void;
   graphId?: string;
+  initialNodes?: Node[];
+  initialEdges?: Edge[];
 }
 
 export default function Graph({ 
@@ -153,14 +155,17 @@ export default function Graph({
   onUndoRedoHandlers, 
   onGraphDataChange, 
   onSelectionChange,
-  graphId
+  graphId,
+  initialNodes,
+  initialEdges
 }: GraphProps) {
   const { setSelection } = useSelectionStore();
   const getGraph = useGraphStore(s => s.getGraph);
   const updateGraphData = useGraphStore(s => s.updateGraphData);
   const graph = graphId ? getGraph(graphId) : null;
-  const [nodes, setNodes, onNodesChangeBase] = useNodesState(graph?.nodes || []);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(graph?.edges || []);
+  // Use initialNodes/initialEdges if provided, otherwise fall back to graph store
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes || graph?.nodes || []);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges || graph?.edges || []);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
@@ -201,10 +206,25 @@ export default function Graph({
   // History management
   const { undo, redo, canUndo, canRedo, addEntry, goToHistory } = useHistoryStore();
   
+  // Sync with initialNodes/initialEdges when they change
+  useEffect(() => {
+    if (initialNodes && initialNodes.length > 0) {
+      console.log('🍜 [Graph] Updating nodes from initialNodes:', initialNodes.length, 'nodes');
+      setNodes(initialNodes);
+    }
+  }, [initialNodes, setNodes]);
+
+  useEffect(() => {
+    if (initialEdges && initialEdges.length > 0) {
+      console.log('🍜 [Graph] Updating edges from initialEdges:', initialEdges.length, 'edges');
+      setEdges(initialEdges);
+    }
+  }, [initialEdges, setEdges]);
+
   // When graphId changes, update local state to match the store
   useEffect(() => {
-    if (graph) {
-      // Only update if different (shallow check)
+    if (graph && !initialNodes && !initialEdges) {
+      // Only use graph store data if not using initialNodes/initialEdges
       const nodesChanged = nodes.length !== graph.nodes.length || nodes.some((n, i) => n.id !== graph.nodes[i]?.id);
       const edgesChanged = edges.length !== graph.edges.length || edges.some((e, i) => e.id !== graph.edges[i]?.id);
       if (nodesChanged) {

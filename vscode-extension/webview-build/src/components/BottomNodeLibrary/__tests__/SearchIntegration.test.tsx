@@ -10,7 +10,10 @@ const mockGetNodeDefinition = vi.fn()
 vi.mock('../../../stores/NodeDefinitionStore', () => ({
   useNodeDefinitionStore: vi.fn(() => ({
     getAllCategories: mockGetAllCategories,
-    getNodeDefinition: mockGetNodeDefinition
+    getNodeDefinition: mockGetNodeDefinition,
+    fetchNodes: vi.fn(),
+    isLoading: false,
+    error: null
   }))
 }))
 
@@ -20,9 +23,30 @@ const mockCategories = [
     icon: () => 'FileIcon',
     color: '#3b82f6',
     nodes: [
-      { name: 'ReadFile' },
-      { name: 'WriteFile' },
-      { name: 'ProcessData' }
+      { 
+        name: 'ReadFile',
+        displayName: 'ReadFile',
+        namespace: 'FileIO',
+        description: 'Reads data from CSV files',
+        inputs: [{ name: 'path', type: 'string' }],
+        outputs: [{ name: 'content', type: 'string' }]
+      },
+      { 
+        name: 'WriteFile',
+        displayName: 'WriteFile',
+        namespace: 'FileIO',
+        description: 'Write content to file',
+        inputs: [{ name: 'path', type: 'string' }, { name: 'content', type: 'string' }],
+        outputs: []
+      },
+      { 
+        name: 'ProcessData',
+        displayName: 'ProcessData',
+        namespace: 'FileIO',
+        description: 'Process file data',
+        inputs: [{ name: 'data', type: 'any' }],
+        outputs: [{ name: 'result', type: 'any' }]
+      }
     ]
   },
   {
@@ -30,9 +54,30 @@ const mockCategories = [
     icon: () => 'MathIcon', 
     color: '#a259e6',
     nodes: [
-      { name: 'Add' },
-      { name: 'Multiply' },
-      { name: 'Calculate' }
+      { 
+        name: 'Add',
+        displayName: 'Add',
+        namespace: 'Math',
+        description: 'Add two numbers',
+        inputs: [{ name: 'a', type: 'number' }, { name: 'b', type: 'number' }],
+        outputs: [{ name: 'result', type: 'number' }]
+      },
+      { 
+        name: 'Multiply',
+        displayName: 'Multiply',
+        namespace: 'Math',
+        description: 'Multiply two numbers',
+        inputs: [{ name: 'a', type: 'number' }, { name: 'b', type: 'number' }],
+        outputs: [{ name: 'result', type: 'number' }]
+      },
+      { 
+        name: 'Calculate',
+        displayName: 'Calculate',
+        namespace: 'Math',
+        description: 'Calculate mathematical expression',
+        inputs: [{ name: 'expression', type: 'string' }],
+        outputs: [{ name: 'result', type: 'number' }]
+      }
     ]
   },
   {
@@ -40,9 +85,30 @@ const mockCategories = [
     icon: () => 'DataIcon',
     color: '#f59e42', 
     nodes: [
-      { name: 'Filter' },
-      { name: 'Transform' },
-      { name: 'ReadData' }
+      { 
+        name: 'Filter',
+        displayName: 'Filter',
+        namespace: 'DataOps',
+        description: 'Filter data',
+        inputs: [{ name: 'data', type: 'array' }, { name: 'condition', type: 'function' }],
+        outputs: [{ name: 'filtered', type: 'array' }]
+      },
+      { 
+        name: 'Transform',
+        displayName: 'Transform',
+        namespace: 'DataOps',
+        description: 'Transform data',
+        inputs: [{ name: 'data', type: 'any' }],
+        outputs: [{ name: 'transformed', type: 'any' }]
+      },
+      { 
+        name: 'ReadData',
+        displayName: 'ReadData',
+        namespace: 'DataOps',
+        description: 'Read data from source',
+        inputs: [{ name: 'source', type: 'string' }],
+        outputs: [{ name: 'data', type: 'any' }]
+      }
     ]
   }
 ]

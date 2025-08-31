@@ -31,7 +31,7 @@ export class RamenError extends Error {
         message: string,
         public category: ErrorCategory = ErrorCategory.UNKNOWN,
         public severity: ErrorSeverity = ErrorSeverity.ERROR,
-        public context?: any,
+        public context?: string,
         public originalError?: Error
     ) {
         super(message);
@@ -42,6 +42,21 @@ export class RamenError extends Error {
             this.stack = originalError.stack;
         }
     }
+}
+
+/**
+ * Server manager interface for error recovery
+ */
+interface ServerManagerInterface {
+    ensureServerRunning(): Promise<boolean>;
+}
+
+/**
+ * WebSocket manager interface for error recovery
+ */
+interface WebSocketManagerInterface {
+    connect(): Promise<void>;
+    isConnected(): boolean;
 }
 
 /**
@@ -57,14 +72,13 @@ interface ErrorRecoveryStrategy {
  */
 export class ErrorHandler {
     private static instance: ErrorHandler;
-    private outputChannel: vscode.OutputChannel;
     private errorLog: RamenError[] = [];
     private maxLogSize = 100;
     private recoveryStrategies = new Map<ErrorCategory, ErrorRecoveryStrategy>();
     private errorHandlers = new Map<ErrorCategory, (error: RamenError) => void>();
     
     private constructor() {
-        this.outputChannel = vscode.window.createOutputChannel('Ramen Errors');
+        // Removed output channel creation - errors will only be logged to console
         this.setupDefaultStrategies();
     }
     
@@ -119,7 +133,7 @@ export class ErrorHandler {
     /**
      * Wrap a function with error handling
      */
-    wrap<T extends (...args: any[]) => any>(
+    wrap<T extends (...args: unknown[]) => unknown>(
         fn: T,
         context?: string
     ): T {
@@ -249,7 +263,7 @@ export class ErrorHandler {
             this.errorLog.shift();
         }
         
-        // Format error for output
+        // Format error for console logging
         const timestamp = new Date().toISOString();
         const logEntry = [
             `[${timestamp}] ${error.severity.toUpperCase()}: ${error.message}`,
@@ -258,13 +272,9 @@ export class ErrorHandler {
             error.stack ? `Stack: ${error.stack}` : ''
         ].filter(Boolean).join('\n');
         
-        this.outputChannel.appendLine(logEntry);
-        this.outputChannel.appendLine('---');
-        
-        // Also log to console in development
-        if (process.env.NODE_ENV === 'development') {
-            console.error(error);
-        }
+        // Log to console instead of output channel
+        console.error(logEntry);
+        console.error('---');
     }
     
     /**
@@ -276,10 +286,10 @@ export class ErrorHandler {
             try {
                 const recovered = await strategy.recover(error);
                 if (recovered) {
-                    this.outputChannel.appendLine(`Successfully recovered from ${error.category} error`);
+                    console.log(`Successfully recovered from ${error.category} error`);
                 }
             } catch (recoveryError) {
-                this.outputChannel.appendLine(`Recovery failed: ${recoveryError}`);
+                console.error(`Recovery failed: ${recoveryError}`);
             }
         }
     }
@@ -289,14 +299,12 @@ export class ErrorHandler {
      */
     private notifyUser(error: RamenError): void {
         const showDetails = 'Show Details';
-        const showLog = 'Show Error Log';
         
         switch (error.severity) {
             case ErrorSeverity.CRITICAL:
                 vscode.window.showErrorMessage(
                     `Critical Error: ${error.message}`,
-                    showDetails,
-                    showLog
+                    showDetails
                 ).then(selection => this.handleUserSelection(selection, error));
                 break;
                 
@@ -343,8 +351,6 @@ export class ErrorHandler {
     private handleUserSelection(selection: string | undefined, error: RamenError): void {
         if (selection === 'Show Details') {
             this.showErrorDetails(error);
-        } else if (selection === 'Show Error Log') {
-            this.outputChannel.show();
         }
     }
     
@@ -375,7 +381,7 @@ export class ErrorHandler {
     /**
      * Report telemetry (placeholder for future implementation)
      */
-    private reportTelemetry(error: RamenError): void {
+    private reportTelemetry(_error: RamenError): void {
         // TODO: Implement telemetry reporting
         // This could send anonymized error data to help improve the extension
     }
@@ -387,11 +393,11 @@ export class ErrorHandler {
         // Network error recovery
         this.recoveryStrategies.set(ErrorCategory.NETWORK, {
             canRecover: (error) => error.message.includes('ECONNREFUSED'),
-            recover: async (error) => {
+            recover: async (_error) => {
                 // Try to restart the server
                 const serverManager = await this.getServerManager();
-                if (serverManager) {
-                    return await serverManager.ensureServerRunning();
+                if (serverManager && typeof serverManager === 'object' && 'ensureServerRunning' in serverManager) {
+                    return await (serverManager as ServerManagerInterface).ensureServerRunning();
                 }
                 return false;
             }
@@ -399,13 +405,13 @@ export class ErrorHandler {
         
         // WebSocket error recovery
         this.recoveryStrategies.set(ErrorCategory.WEBSOCKET, {
-            canRecover: (error) => true,
-            recover: async (error) => {
+            canRecover: (_error) => true,
+            recover: async (_error) => {
                 // Try to reconnect WebSocket
                 const wsManager = await this.getWebSocketManager();
-                if (wsManager) {
-                    await wsManager.connect();
-                    return wsManager.isConnected();
+                if (wsManager && typeof wsManager === 'object' && 'connect' in wsManager && 'isConnected' in wsManager) {
+                    await (wsManager as WebSocketManagerInterface).connect();
+                    return (wsManager as WebSocketManagerInterface).isConnected();
                 }
                 return false;
             }
@@ -415,17 +421,17 @@ export class ErrorHandler {
     /**
      * Get server manager instance (to avoid circular dependency)
      */
-    private async getServerManager(): Promise<any> {
+    private async getServerManager(): Promise<unknown> {
         // This will be injected or retrieved from global context
-        return (global as any).ramenServerManager;
+        return (global as Record<string, unknown>).ramenServerManager;
     }
     
     /**
      * Get WebSocket manager instance
      */
-    private async getWebSocketManager(): Promise<any> {
+    private async getWebSocketManager(): Promise<unknown> {
         // This will be injected or retrieved from global context
-        return (global as any).ramenWebSocketManager;
+        return (global as Record<string, unknown>).ramenWebSocketManager;
     }
     
     /**
@@ -440,7 +446,6 @@ export class ErrorHandler {
      */
     clearErrorLog(): void {
         this.errorLog = [];
-        this.outputChannel.clear();
     }
     
     /**

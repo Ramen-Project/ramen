@@ -201,23 +201,6 @@ def print_node(context: NodeContext):
     return value
 
 
-@register_node("builtin", "input")
-def input_node(context: NodeContext):
-    """輸入節點"""
-    prompt = context.get_input("prompt", "Enter value: ")
-    value = input(prompt)
-    
-    # 嘗試轉換為數字
-    try:
-        value = float(value)
-        if value.is_integer():
-            value = int(value)
-    except ValueError:
-        pass
-    
-    context.set_output("value", value)
-    return value
-
 
 # 子圖形節點
 @register_node("builtin", "subgraph")

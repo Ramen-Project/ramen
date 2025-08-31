@@ -73,7 +73,7 @@ function NodeHeader({ nodeName, namespace }: { nodeName: string, namespace: stri
             <Heading size="5" trim="both" style={{
                 fontWeight: 700,
                 fontFamily: 'Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif',
-                color: '#fff',
+                color: 'var(--gray-12)',
                 letterSpacing: '0.01em',
                 margin: 0,
                 flex: 1,

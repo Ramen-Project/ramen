@@ -17,6 +17,9 @@ export class RamenServerProvider implements vscode.TreeDataProvider<ServerInfo> 
         private context: vscode.ExtensionContext,
         private serverManager: RamenServerManager
     ) {
+        // Set initial context
+        this.updateContext();
+        
         // Listen to server status changes
         this.serverManager.onDidChangeStatus(() => {
             this.refresh();

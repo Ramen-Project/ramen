@@ -29,55 +29,55 @@ class NeuralNetworkBuilderTopping(ToppingBase):
     def initialize(self) -> None:
         """Register all neural network layer nodes."""
         # Convolutional Layers
-        self.register_node(Conv2dNode())
-        self.register_node(Conv1dNode())
-        self.register_node(Conv3dNode())
-        self.register_node(ConvTranspose2dNode())
+        self.register_node(Conv2dNode)
+        self.register_node(Conv1dNode)
+        self.register_node(Conv3dNode)
+        self.register_node(ConvTranspose2dNode)
         
         # Linear Layers
-        self.register_node(LinearNode())
-        self.register_node(BilinearNode())
+        self.register_node(LinearNode)
+        self.register_node(BilinearNode)
         
         # Pooling Layers
-        self.register_node(MaxPool2dNode())
-        self.register_node(AvgPool2dNode())
-        self.register_node(AdaptiveAvgPool2dNode())
-        self.register_node(AdaptiveMaxPool2dNode())
+        self.register_node(MaxPool2dNode)
+        self.register_node(AvgPool2dNode)
+        self.register_node(AdaptiveAvgPool2dNode)
+        self.register_node(AdaptiveMaxPool2dNode)
         
         # Normalization Layers
-        self.register_node(BatchNorm1dNode())
-        self.register_node(BatchNorm2dNode())
-        self.register_node(LayerNormNode())
-        self.register_node(GroupNormNode())
+        self.register_node(BatchNorm1dNode)
+        self.register_node(BatchNorm2dNode)
+        self.register_node(LayerNormNode)
+        self.register_node(GroupNormNode)
         
         # Activation Functions
-        self.register_node(ReLUNode())
-        self.register_node(LeakyReLUNode())
-        self.register_node(SigmoidNode())
-        self.register_node(TanhNode())
-        self.register_node(SoftmaxNode())
-        self.register_node(GELUNode())
+        self.register_node(ReLUNode)
+        self.register_node(LeakyReLUNode)
+        self.register_node(SigmoidNode)
+        self.register_node(TanhNode)
+        self.register_node(SoftmaxNode)
+        self.register_node(GELUNode)
         
         # Dropout Layers
-        self.register_node(DropoutNode())
-        self.register_node(Dropout2dNode())
+        self.register_node(DropoutNode)
+        self.register_node(Dropout2dNode)
         
         # Recurrent Layers
-        self.register_node(LSTMNode())
-        self.register_node(GRUNode())
-        self.register_node(RNNNode())
+        self.register_node(LSTMNode)
+        self.register_node(GRUNode)
+        self.register_node(RNNNode)
         
         # Transformer Layers
-        self.register_node(MultiheadAttentionNode())
-        self.register_node(TransformerEncoderLayerNode())
-        self.register_node(TransformerDecoderLayerNode())
+        self.register_node(MultiheadAttentionNode)
+        self.register_node(TransformerEncoderLayerNode)
+        self.register_node(TransformerDecoderLayerNode)
         
         # Embedding Layers
-        self.register_node(EmbeddingNode())
+        self.register_node(EmbeddingNode)
         
         # Container Layers
-        self.register_node(SequentialNode())
-        self.register_node(ModuleListNode())
+        self.register_node(SequentialNode)
+        self.register_node(ModuleListNode)
 
 
 # Base class for neural network layer nodes

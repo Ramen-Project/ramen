@@ -26,7 +26,7 @@ interface ResourceMetadata {
     type: ResourceType;
     name: string;
     createdAt: number;
-    context?: any;
+    context?: Record<string, unknown>;
     parentId?: string;
 }
 
@@ -249,7 +249,7 @@ export class ResourceManager {
                 `Failed to dispose resource: ${tracked.metadata.name}`,
                 ErrorCategory.UNKNOWN,
                 ErrorSeverity.WARNING,
-                { resource: tracked.metadata, error }
+                JSON.stringify({ resource: tracked.metadata, error })
             );
             
             if (hooks?.onError) {
@@ -394,7 +394,7 @@ export class ResourceManager {
                     warning,
                     ErrorCategory.UNKNOWN,
                     ErrorSeverity.WARNING,
-                    { type, count, resources: this.getResourcesByType(type) }
+                    JSON.stringify({ type, count, resources: this.getResourcesByType(type) })
                 )
             );
         }
@@ -473,7 +473,7 @@ export class ResourceManager {
                     this.log(`Terminating process ${process.pid}`);
                 }
             },
-            onError: (error, resource) => {
+            onError: (error, _resource) => {
                 this.log(`Failed to terminate process: ${error.message}`, 'error');
             }
         });

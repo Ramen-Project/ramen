@@ -132,9 +132,9 @@ export class RamenDependenciesProvider implements vscode.TreeDataProvider<Depend
                         const version = match[2] ? match[2].replace(/[",]/g, '').trim() : undefined;
                         
                         let type: Dependency['type'] = 'dependency';
-                        if (inDevDependencies) type = 'dev-dependency';
-                        else if (inOptionalDependencies) type = 'optional-dependency';
-                        else if (inToppings) type = 'topping';
+                        if (inDevDependencies) {type = 'dev-dependency';}
+                        else if (inOptionalDependencies) {type = 'optional-dependency';}
+                        else if (inToppings) {type = 'topping';}
 
                         dependencies.push({
                             name,

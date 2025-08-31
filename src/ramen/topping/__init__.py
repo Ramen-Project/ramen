@@ -6,7 +6,15 @@ from .topping_base import (
     NodeMetadata,
     NodeContext,
     PortDefinition,
-    PortType
+    PortType,
+    Node,
+    on
+)
+from .decorators import (
+    ramen_node,
+    input_port,
+    output_port,
+    get_simple_node_metadata
 )
 from .loader import (
     ToppingLoader,
@@ -24,6 +32,14 @@ __all__ = [
     'NodeContext',
     'PortDefinition',
     'PortType',
+    # Advanced API
+    'Node',
+    'on',
+    # Simple API (decorators)
+    'ramen_node',
+    'input_port', 
+    'output_port',
+    'get_simple_node_metadata',
     # Loader and registry
     'ToppingLoader',
     'ToppingRegistry',

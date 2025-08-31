@@ -21,6 +21,7 @@
   "include": [
     "src/extension/**/*",
     "src/language-server/**/*",
+    "src/server/**/*",
     "src/webview/**/*",
     "src/test/**/*"
   ]

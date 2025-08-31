@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "nodes": [
+    {
+      "id": "input1",
+      "type": "Input",
+      "position": { "x": 100, "y": 100 },
+      "data": { "label": "Input Node" }
+    },
+    {
+      "id": "output1",
+      "type": "Output",
+      "position": { "x": 300, "y": 100 },
+      "data": { "label": "Output Node" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge1",
+      "source": "input1",
+      "target": "output1"
+    }
+  ],
+  "metadata": {
+    "created": "2024-08-30",
+    "author": "test"
+  }
+}

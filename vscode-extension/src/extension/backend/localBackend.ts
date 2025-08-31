@@ -1,9 +1,7 @@
-import * as vscode from 'vscode';
 import { spawn, ChildProcess } from 'child_process';
 import { 
     BaseBackendConnection, 
     BackendType, 
-    BackendCapabilities, 
     ConnectionOptions,
     ConnectionStatus,
     BackendProvider 
@@ -18,7 +16,7 @@ export class LocalBackendConnection extends BaseBackendConnection {
     private requestCounter = 0;
     private pendingRequests = new Map<number, {
         resolve: (value: any) => void;
-        reject: (error: any) => void;
+        reject: (error: Error) => void;
         timeout: NodeJS.Timeout;
     }>();
     
@@ -70,7 +68,7 @@ export class LocalBackendConnection extends BaseBackendConnection {
         this.setStatus(ConnectionStatus.DISCONNECTED);
     }
     
-    async sendRequest<T = any>(method: string, params?: any): Promise<T> {
+    async sendRequest<T = unknown>(method: string, params?: unknown): Promise<T> {
         if (this.status !== ConnectionStatus.CONNECTED) {
             throw new Error('Not connected to backend');
         }
@@ -100,7 +98,7 @@ export class LocalBackendConnection extends BaseBackendConnection {
         });
     }
     
-    sendNotification(method: string, params?: any): void {
+    sendNotification(method: string, params?: unknown): void {
         if (this.status !== ConnectionStatus.CONNECTED) {
             console.warn('Cannot send notification: not connected');
             return;
@@ -177,7 +175,7 @@ export class LocalBackendConnection extends BaseBackendConnection {
         }
     }
     
-    private sendToProcess(message: any): void {
+    private sendToProcess(message: Record<string, unknown>): void {
         if (this.serverProcess && this.serverProcess.stdin) {
             this.serverProcess.stdin.write(JSON.stringify(message) + '\n');
         }
@@ -188,7 +186,7 @@ export class LocalBackendConnection extends BaseBackendConnection {
         
         while (Date.now() - startTime < timeout) {
             try {
-                const result = await this.sendRequest('health');
+                const result = await this.sendRequest<{status: string}>('health');
                 if (result && result.status === 'healthy') {
                     return;
                 }

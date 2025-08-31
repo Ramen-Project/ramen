@@ -130,7 +130,7 @@ export class RamenLanguageServer {
     }
     
     private registerFeatures(): void {
-        if (!this.client) return;
+        if (!this.client) {return;}
         
         // Register custom commands
         this.registerCommands();
@@ -295,7 +295,7 @@ export class RamenLanguageServer {
     }
     
     onNotification(method: string, handler: (params: any) => void): void {
-        if (!this.client) return;
+        if (!this.client) {return;}
         
         this.client.onNotification(method, handler);
     }

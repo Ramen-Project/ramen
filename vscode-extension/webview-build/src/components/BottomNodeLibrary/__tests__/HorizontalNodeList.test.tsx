@@ -2,28 +2,47 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '../../../test/test-utils'
 import HorizontalNodeList from '../HorizontalNodeList'
 
-// Mock node data
+// Mock node data with full node definitions
 const mockNodes = [
-  { name: 'ReadFile' },
-  { name: 'WriteFile' },
-  { name: 'ProcessData' },
-  { name: 'SaveResults' }
+  { 
+    name: 'ReadFile',
+    displayName: 'ReadFile',
+    namespace: 'FileIO',
+    description: 'Read file content',
+    inputs: [{ name: 'path', type: 'string' }],
+    outputs: [{ name: 'content', type: 'string' }]
+  },
+  { 
+    name: 'WriteFile',
+    displayName: 'WriteFile', 
+    namespace: 'FileIO',
+    description: 'Write content to file',
+    inputs: [{ name: 'path', type: 'string' }, { name: 'content', type: 'string' }],
+    outputs: []
+  },
+  { 
+    name: 'ProcessData',
+    displayName: 'ProcessData',
+    namespace: 'Processing',
+    description: 'Process data',
+    inputs: [{ name: 'data', type: 'any' }],
+    outputs: [{ name: 'result', type: 'any' }]
+  },
+  { 
+    name: 'SaveResults',
+    displayName: 'SaveResults',
+    namespace: 'Output',
+    description: 'Save processing results',
+    inputs: [{ name: 'data', type: 'any' }],
+    outputs: []
+  }
 ]
-
-const mockGetNodeDefinition = vi.fn((name: string) => ({
-  name,
-  namespace: 'FileIO',
-  description: `Test ${name} description`,
-  inputs: [{ name: 'input', typeId: 'string' }],
-  outputs: [{ name: 'output', typeId: 'string' }]
-}))
 
 describe('HorizontalNodeList', () => {
   it('should render nodes horizontally', () => {
     render(
       <HorizontalNodeList 
-        nodes={mockNodes} 
-        getNodeDefinition={mockGetNodeDefinition}
+        nodes={mockNodes}
       />
     )
     
@@ -37,8 +56,7 @@ describe('HorizontalNodeList', () => {
   it('should have horizontal scroll container', () => {
     render(
       <HorizontalNodeList 
-        nodes={mockNodes} 
-        getNodeDefinition={mockGetNodeDefinition}
+        nodes={mockNodes}
       />
     )
     
@@ -52,8 +70,7 @@ describe('HorizontalNodeList', () => {
   it('should handle empty nodes array', () => {
     render(
       <HorizontalNodeList 
-        nodes={[]} 
-        getNodeDefinition={mockGetNodeDefinition}
+        nodes={[]}
       />
     )
     
@@ -63,20 +80,30 @@ describe('HorizontalNodeList', () => {
   })
 
   it('should skip nodes without definitions', () => {
-    const mockGetNodeDefinitionWithNull = vi.fn((name: string) => 
-      name === 'InvalidNode' ? null : mockGetNodeDefinition(name)
-    )
-
     const nodesWithInvalid = [
-      { name: 'ReadFile' },
+      { 
+        name: 'ReadFile',
+        displayName: 'ReadFile',
+        namespace: 'FileIO',
+        description: 'Read file content',
+        inputs: [{ name: 'path', type: 'string' }],
+        outputs: [{ name: 'content', type: 'string' }]
+      },
+      // Invalid node - missing required fields
       { name: 'InvalidNode' },
-      { name: 'WriteFile' }
+      { 
+        name: 'WriteFile',
+        displayName: 'WriteFile',
+        namespace: 'FileIO', 
+        description: 'Write content to file',
+        inputs: [{ name: 'path', type: 'string' }, { name: 'content', type: 'string' }],
+        outputs: []
+      }
     ]
 
     render(
       <HorizontalNodeList 
-        nodes={nodesWithInvalid} 
-        getNodeDefinition={mockGetNodeDefinitionWithNull}
+        nodes={nodesWithInvalid}
       />
     )
     
@@ -91,7 +118,6 @@ describe('HorizontalNodeList', () => {
     render(
       <HorizontalNodeList 
         nodes={mockNodes} 
-        getNodeDefinition={mockGetNodeDefinition}
       />
     )
     
@@ -104,7 +130,6 @@ describe('HorizontalNodeList', () => {
     render(
       <HorizontalNodeList 
         nodes={mockNodes} 
-        getNodeDefinition={mockGetNodeDefinition}
       />
     )
     

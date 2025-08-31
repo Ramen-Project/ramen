@@ -119,7 +119,7 @@ export default function BottomNodeLibrary() {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
 
-      if (event.code === 'Space' && event.target === document.body) {
+      if (event.code === 'Space' && (event.target === document.body || !target.tagName || target.tagName === 'BODY' || target.tagName === 'HTML')) {
         event.preventDefault();
         toggleExpanded();
       }
@@ -146,14 +146,17 @@ export default function BottomNodeLibrary() {
 
     allCategories.forEach(category => {
       category.nodes.forEach(node => {
+        // Skip nodes that don't have required properties
+        if (!node || !node.displayName) return;
+        
         // Search in displayName, description, namespace, type, inputs, outputs
         const searchableText = [
           node.displayName,
-          node.description,
-          node.namespace,
-          node.type,
-          ...node.inputs.map(i => `${i.name} ${i.type}`),
-          ...node.outputs.map(o => `${o.name} ${o.type}`)
+          node.description || '',
+          node.namespace || '',
+          node.type || '',
+          ...(node.inputs && Array.isArray(node.inputs) ? node.inputs.map(i => `${i.name || ''} ${i.type || ''}`) : []),
+          ...(node.outputs && Array.isArray(node.outputs) ? node.outputs.map(o => `${o.name || ''} ${o.type || ''}`) : [])
         ].join(' ').toLowerCase();
 
         if (searchableText.includes(lowerQuery)) {
@@ -199,45 +202,29 @@ export default function BottomNodeLibrary() {
 
   return (
     <Container data-testid="bottom-node-library">
-      {/* Debug info - temporary for troubleshooting */}
-      {(
-        <div style={{
-          position: 'absolute',
-          top: '-30px',
-          right: '10px',
-          background: 'rgba(0,0,0,0.7)',
-          color: 'white',
-          padding: '2px 8px',
-          fontSize: '10px',
-          borderRadius: '3px',
-          zIndex: 1000
-        }}>
-          Height: {Math.round(currentHeight)}px (VH: {window.innerHeight}px)
-        </div>
-      )}
       
+      {/* Only show category tabs when expanded */}
       {isExpanded && (
-        <CategoryTabs
-          categories={displayCategories}
-          activeTabIndex={activeTab}
-          onTabChange={setActiveTab}
-          isBottom={false}
-        />
-      )}
-
-      {isExpanded && (
-        <SearchContainer>
-          <TextField.Root
-            placeholder="Search nodes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="2"
-          >
-            <TextField.Slot>
-              <MagnifyingGlassIcon height="16" width="16" />
-            </TextField.Slot>
-          </TextField.Root>
-        </SearchContainer>
+        <>
+          <CategoryTabs
+            categories={displayCategories}
+            activeTabIndex={activeTab}
+            onTabChange={setActiveTab}
+            isBottom={false}
+          />
+          <SearchContainer>
+            <TextField.Root
+              placeholder="Search nodes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="2"
+            >
+              <TextField.Slot>
+                <MagnifyingGlassIcon height="16" width="16" />
+              </TextField.Slot>
+            </TextField.Root>
+          </SearchContainer>
+        </>
       )}
 
       <ContentArea $isExpanded={isExpanded} $height={currentHeight}>

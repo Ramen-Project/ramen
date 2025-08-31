@@ -23,7 +23,7 @@ export const graphCommands: Array<{ metadata: CommandMetadata; handler: CommandH
                 prompt: 'Enter graph name',
                 placeHolder: 'my_graph',
                 validateInput: (value) => {
-                    if (!value) return 'Graph name is required';
+                    if (!value) { return 'Graph name is required'; }
                     if (!/^[a-zA-Z0-9_]+$/.test(value)) {
                         return 'Graph name must contain only alphanumeric characters and underscores';
                     }
@@ -66,7 +66,7 @@ export const graphCommands: Array<{ metadata: CommandMetadata; handler: CommandH
             icon: '$(file)',
             keybinding: 'ctrl+alt+o'
         },
-        handler: async (context: CommandContext) => {
+        handler: async (_context: CommandContext) => {
             const files = await vscode.workspace.findFiles('**/*.ramen');
             
             if (files.length === 0) {
@@ -139,7 +139,7 @@ export const graphCommands: Array<{ metadata: CommandMetadata; handler: CommandH
                 prompt: 'Enter new graph name',
                 value: `${sourceName}_copy`,
                 validateInput: (value) => {
-                    if (!value) return 'Graph name is required';
+                    if (!value) { return 'Graph name is required'; }
                     if (!/^[a-zA-Z0-9_]+$/.test(value)) {
                         return 'Graph name must contain only alphanumeric characters and underscores';
                     }

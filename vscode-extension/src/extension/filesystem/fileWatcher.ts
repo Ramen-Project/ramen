@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { RamenWebviewManager } from '../webview/webviewManager';
-import { RamenGraphProvider } from '../providers/graphProvider';
 
 export class RamenFileWatcher {
     private fileWatcher: vscode.FileSystemWatcher | undefined;
@@ -10,8 +9,7 @@ export class RamenFileWatcher {
     
     constructor(
         private context: vscode.ExtensionContext,
-        private webviewManager: RamenWebviewManager,
-        private graphProvider?: RamenGraphProvider
+        private webviewManager: RamenWebviewManager
     ) {
         this.initialize();
     }
@@ -59,9 +57,7 @@ export class RamenFileWatcher {
         console.log(`New .ramen file created: ${uri.fsPath}`);
         
         // Refresh graph provider
-        if (this.graphProvider) {
-            this.graphProvider.refresh();
-        }
+        // Graph provider removed - no refresh needed
         
         // Show notification
         const fileName = path.basename(uri.fsPath);
@@ -89,9 +85,7 @@ export class RamenFileWatcher {
         console.log(`Ramen file deleted: ${uri.fsPath}`);
         
         // Refresh graph provider
-        if (this.graphProvider) {
-            this.graphProvider.refresh();
-        }
+        // Graph provider removed - no refresh needed
         
         // Close any open webviews for this file
         this.webviewManager.closeGraph(uri);
@@ -108,9 +102,7 @@ export class RamenFileWatcher {
         this.validateGraphContent(document);
         
         // Update any related views
-        if (this.graphProvider) {
-            this.graphProvider.refresh();
-        }
+        // Graph provider removed - no refresh needed
     }
     
     private handleExternalChange(document: vscode.TextDocument) {

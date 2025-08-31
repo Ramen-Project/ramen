@@ -73,7 +73,8 @@ class KernelRuntime:
                 "ramen_topping_numpy",
                 "ramen_topping_pandas",
                 "ramen_topping_torch",
-                "ramen_topping_plots"
+                "ramen_topping_plots",
+                "ramen_topping_nn_builder"
             ]
             
             for topping_module in standard_toppings:

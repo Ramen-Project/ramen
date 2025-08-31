@@ -12,8 +12,8 @@ export interface IBackendConnection {
     
     connect(options: ConnectionOptions): Promise<void>;
     disconnect(): Promise<void>;
-    sendRequest<T = any>(method: string, params?: any): Promise<T>;
-    sendNotification(method: string, params?: any): void;
+    sendRequest<T = unknown>(method: string, params?: unknown): Promise<T>;
+    sendNotification(method: string, params?: unknown): void;
     onRequest(method: string, handler: RequestHandler): vscode.Disposable;
     onNotification(method: string, handler: NotificationHandler): vscode.Disposable;
     onStatusChange(handler: (status: ConnectionStatus) => void): vscode.Disposable;
@@ -54,8 +54,8 @@ export interface BackendCapabilities {
     customNodes?: boolean;
 }
 
-export type RequestHandler = (params: any) => Promise<any>;
-export type NotificationHandler = (params: any) => void;
+export type RequestHandler<T = unknown, R = unknown> = (params: T) => Promise<R>;
+export type NotificationHandler<T = unknown> = (params: T) => void;
 
 /**
  * Factory for creating backend connections
@@ -114,8 +114,8 @@ export abstract class BaseBackendConnection implements IBackendConnection {
     
     abstract connect(options: ConnectionOptions): Promise<void>;
     abstract disconnect(): Promise<void>;
-    abstract sendRequest<T = any>(method: string, params?: any): Promise<T>;
-    abstract sendNotification(method: string, params?: any): void;
+    abstract sendRequest<T = unknown>(method: string, params?: unknown): Promise<T>;
+    abstract sendNotification(method: string, params?: unknown): void;
     
     onRequest(method: string, handler: RequestHandler): vscode.Disposable {
         if (this.requestHandlers.has(method)) {
@@ -145,7 +145,7 @@ export abstract class BaseBackendConnection implements IBackendConnection {
         return this._statusEmitter.event(handler);
     }
     
-    protected async handleRequest(method: string, params: any): Promise<any> {
+    protected async handleRequest(method: string, params: unknown): Promise<unknown> {
         const handler = this.requestHandlers.get(method);
         if (!handler) {
             throw new Error(`No handler registered for request method: ${method}`);
@@ -153,7 +153,7 @@ export abstract class BaseBackendConnection implements IBackendConnection {
         return handler(params);
     }
     
-    protected handleNotification(method: string, params: any): void {
+    protected handleNotification(method: string, params: unknown): void {
         const handlers = this.notificationHandlers.get(method);
         if (handlers) {
             handlers.forEach(handler => {

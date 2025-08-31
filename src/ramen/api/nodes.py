@@ -415,50 +415,6 @@ def _get_builtin_nodes() -> Dict[str, List[Dict[str, Any]]]:
                 }
             }
         ],
-        "Input/Output": [
-            {
-                "type": "builtin.input",
-                "namespace": "builtin",
-                "nodeType": "input",
-                "displayName": "Input",
-                "description": "Graph input node",
-                "icon": "📥",
-                "color": "#4CAF50",
-                "inputs": [],
-                "outputs": [
-                    {
-                        "name": "value",
-                        "type": "any",
-                        "required": True,
-                        "description": "Input value"
-                    }
-                ],
-                "properties": {
-                    "input_name": "input"
-                }
-            },
-            {
-                "type": "builtin.output",
-                "namespace": "builtin",
-                "nodeType": "output",
-                "displayName": "Output",
-                "description": "Graph output node",
-                "icon": "📤",
-                "color": "#FF5722",
-                "inputs": [
-                    {
-                        "name": "value",
-                        "type": "any",
-                        "required": True,
-                        "description": "Output value"
-                    }
-                ],
-                "outputs": [],
-                "properties": {
-                    "output_name": "output"
-                }
-            }
-        ],
         "Basic": [
             {
                 "type": "builtin.constant",

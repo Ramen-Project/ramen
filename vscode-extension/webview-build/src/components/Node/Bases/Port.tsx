@@ -11,10 +11,10 @@ const StyledHandle = styled(Handle) <{ $isInput?: boolean, $color: string }>`
     border: 3px solid ${props => props.$color};
     // Reset the position
     ${props => props.$isInput ? "left: -2.2rem;" : "right: -2.2rem;"}
-    width: .6rem;
-    height: .6rem;
-    min-width: .6rem;
-    min-height: .6rem;
+    width: 1rem;
+    height: 1rem;
+    min-width: 1rem;
+    min-height: 1rem;
     border-radius: 2px;
     top: 20%;
     transform: rotate(45deg);

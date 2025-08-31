@@ -218,7 +218,7 @@ export class WebSocketManager {
                     `Failed to send WebSocket message: ${error}`,
                     ErrorCategory.WEBSOCKET,
                     ErrorSeverity.ERROR,
-                    { message, error }
+                    JSON.stringify({ message, error })
                 )
             );
             this.queueMessage(message);
@@ -304,7 +304,7 @@ export class WebSocketManager {
     }
     
     getConnectionState(): string {
-        if (!this.ws) return 'Disconnected';
+        if (!this.ws) {return 'Disconnected';}
         
         switch (this.ws.readyState) {
             case WebSocket.CONNECTING:
@@ -435,7 +435,7 @@ export class WebSocketManager {
                     `Message ${message.id} failed after ${message.retryCount} retries`,
                     ErrorCategory.WEBSOCKET,
                     ErrorSeverity.WARNING,
-                    { message }
+                    JSON.stringify({ message })
                 )
             );
         }

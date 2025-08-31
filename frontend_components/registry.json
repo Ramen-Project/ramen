@@ -1,0 +1,11 @@
+{
+  "TestNodeWithComponent": {
+    "component_name": "TestNodeWithComponent",
+    "component_path": "/tmp/tmpod_darpc/TestComponent.js",
+    "dependencies": [
+      "react"
+    ],
+    "hash": "e91e44be9169e9e4e639c290b30b9ed8",
+    "last_modified": 1756632266.542024
+  }
+}

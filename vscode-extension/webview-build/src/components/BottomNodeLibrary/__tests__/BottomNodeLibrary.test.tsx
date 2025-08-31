@@ -12,8 +12,22 @@ vi.mock('../../../stores/NodeDefinitionStore', () => ({
         icon: () => null,
         color: '#3b82f6',
         nodes: [
-          { name: 'ReadFile' },
-          { name: 'WriteFile' }
+          { 
+            name: 'ReadFile',
+            displayName: 'ReadFile',
+            namespace: 'FileIO',
+            description: 'Read file content',
+            inputs: [{ name: 'path', type: 'string' }],
+            outputs: [{ name: 'content', type: 'string' }]
+          },
+          { 
+            name: 'WriteFile',
+            displayName: 'WriteFile',
+            namespace: 'FileIO', 
+            description: 'Write content to file',
+            inputs: [{ name: 'path', type: 'string' }, { name: 'content', type: 'string' }],
+            outputs: []
+          }
         ]
       },
       {
@@ -21,8 +35,22 @@ vi.mock('../../../stores/NodeDefinitionStore', () => ({
         icon: () => null,
         color: '#a259e6',
         nodes: [
-          { name: 'Add' },
-          { name: 'Multiply' }
+          { 
+            name: 'Add',
+            displayName: 'Add',
+            namespace: 'Math',
+            description: 'Add two numbers',
+            inputs: [{ name: 'a', type: 'number' }, { name: 'b', type: 'number' }],
+            outputs: [{ name: 'result', type: 'number' }]
+          },
+          { 
+            name: 'Multiply',
+            displayName: 'Multiply',
+            namespace: 'Math',
+            description: 'Multiply two numbers', 
+            inputs: [{ name: 'a', type: 'number' }, { name: 'b', type: 'number' }],
+            outputs: [{ name: 'result', type: 'number' }]
+          }
         ]
       }
     ]),
@@ -32,7 +60,10 @@ vi.mock('../../../stores/NodeDefinitionStore', () => ({
       description: `Test ${name} description`,
       inputs: [{ name: 'input', typeId: 'string' }],
       outputs: [{ name: 'output', typeId: 'string' }]
-    }))
+    })),
+    fetchNodes: vi.fn(),
+    isLoading: false,
+    error: null
   }))
 }))
 

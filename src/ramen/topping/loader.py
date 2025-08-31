@@ -208,8 +208,50 @@ class ToppingLoader:
                     return obj()
                 except Exception as e:
                     logger.error(f"Failed to instantiate topping {name}: {e}")
+        
+        # Look for simple decorator-based nodes
+        simple_topping = self._find_simple_nodes_in_module(module)
+        if simple_topping:
+            return simple_topping
                     
         return None
+    
+    def _find_simple_nodes_in_module(self, module) -> Optional[ToppingBase]:
+        """Find simple decorator-based nodes in a module and create a topping."""
+        from .decorators import get_simple_node_metadata
+        
+        simple_functions = []
+        for name in dir(module):
+            obj = getattr(module, name)
+            if callable(obj) and hasattr(obj, '_ramen_node_builder'):
+                simple_functions.append(obj)
+        
+        if not simple_functions:
+            return None
+        
+        # Create a dynamic topping for simple functions
+        class SimpleFunctionTopping(ToppingBase):
+            def __init__(self, functions):
+                super().__init__()
+                self.functions = functions
+                
+            def get_name(self) -> str:
+                return getattr(module, '__name__', 'simple_functions')
+            
+            def get_version(self) -> str:
+                return "1.0.0"
+            
+            def get_description(self) -> str:
+                return f"Simple decorator-based nodes from {module.__name__}"
+            
+            def initialize(self):
+                """Register all simple functions as nodes."""
+                for func in self.functions:
+                    metadata = get_simple_node_metadata(func)
+                    if metadata:
+                        self.register_simple_node(func, metadata)
+        
+        return SimpleFunctionTopping(simple_functions)
         
     def discover_toppings(self, search_paths: Optional[List[Path]] = None) -> List[str]:
         """Discover available toppings in search paths."""
@@ -253,7 +295,8 @@ def load_toppings() -> ToppingLoader:
         "ramen_topping_numpy",
         "ramen_topping_pandas",
         "ramen_topping_torch",
-        "ramen_topping_plots"
+        "ramen_topping_plots",
+        "ramen_topping_nn_builder"
     ]
     
     for topping in standard_toppings:

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Webview Message Proxy</title>
+</head>
+<body>
+    <h1>Test Node Fetching via Message Proxy</h1>
+    <button id="testFetch">Test Fetch Nodes</button>
+    <div id="status">Ready</div>
+    <pre id="result"></pre>
+    
+    <script>
+        // Simulate VSCode API
+        const vscode = {
+            postMessage: (message) => {
+                console.log('🍜 Sending message to extension:', message);
+                document.getElementById('status').textContent = 'Message sent, waiting for response...';
+                
+                // Simulate extension response after a delay
+                setTimeout(() => {
+                    window.postMessage({
+                        command: 'nodesResponse',
+                        success: true,
+                        data: {
+                            success: true,
+                            nodes: {
+                                'Test Category': [
+                                    { type: 'test.node1', displayName: 'Test Node 1' },
+                                    { type: 'test.node2', displayName: 'Test Node 2' }
+                                ]
+                            }
+                        }
+                    }, '*');
+                }, 1000);
+            }
+        };
+        
+        window.vscode = vscode;
+        
+        document.getElementById('testFetch').addEventListener('click', () => {
+            console.log('🍜 Testing node fetch...');
+            
+            // Listen for response
+            const handleMessage = (event) => {
+                const message = event.data;
+                console.log('🍜 Received message:', message);
+                
+                if (message.command === 'nodesResponse') {
+                    window.removeEventListener('message', handleMessage);
+                    
+                    if (message.success) {
+                        document.getElementById('status').textContent = 'Success!';
+                        document.getElementById('result').textContent = JSON.stringify(message.data, null, 2);
+                    } else {
+                        document.getElementById('status').textContent = 'Failed: ' + message.error;
+                    }
+                }
+            };
+            
+            window.addEventListener('message', handleMessage);
+            
+            // Send fetch request
+            vscode.postMessage({
+                command: 'fetchNodes'
+            });
+        });
+    </script>
+</body>
+</html>

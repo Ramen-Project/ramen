@@ -15,7 +15,6 @@ import {
     DidChangeConfigurationNotification,
     DocumentFormattingParams,
     TextEdit,
-    Range,
     DefinitionParams,
     Definition,
     Location
@@ -33,7 +32,6 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
 
 // Node type definitions
 const nodeTypes = [
@@ -54,7 +52,7 @@ interface GraphNode {
     id: string;
     type: string;
     position: { x: number; y: number };
-    data: Record<string, any>;
+    data: Record<string, unknown>;
 }
 
 interface GraphEdge {
@@ -69,7 +67,7 @@ interface Graph {
     version: string;
     nodes: GraphNode[];
     edges: GraphEdge[];
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 connection.onInitialize((params: InitializeParams) => {
@@ -80,11 +78,6 @@ connection.onInitialize((params: InitializeParams) => {
     );
     hasWorkspaceFolderCapability = !!(
         capabilities.workspace && !!capabilities.workspace.workspaceFolders
-    );
-    hasDiagnosticRelatedInformationCapability = !!(
-        capabilities.textDocument &&
-        capabilities.textDocument.publishDiagnostics &&
-        capabilities.textDocument.publishDiagnostics.relatedInformation
     );
 
     const result: InitializeResult = {
@@ -146,7 +139,7 @@ connection.onDidChangeConfiguration(change => {
     }
 
     // Revalidate all open documents
-    documents.all().forEach(validateDocument);
+    documents.all().forEach(validateAndSendDiagnostics);
 });
 
 function getDocumentSettings(resource: string): Thenable<RamenSettings> {
@@ -158,6 +151,9 @@ function getDocumentSettings(resource: string): Thenable<RamenSettings> {
         result = connection.workspace.getConfiguration({
             scopeUri: resource,
             section: 'ramenLanguageServer'
+        }).then(config => {
+            // Ensure we always return valid settings with defaults
+            return config || defaultSettings;
         });
         documentSettings.set(resource, result);
     }
@@ -170,12 +166,16 @@ documents.onDidClose(e => {
 });
 
 documents.onDidChangeContent(change => {
-    validateDocument(change.document);
+    validateAndSendDiagnostics(change.document);
 });
 
-// Validation
-async function validateDocument(textDocument: TextDocument): Promise<void> {
-    const settings = await getDocumentSettings(textDocument.uri);
+// Validation - internal function that returns diagnostics
+async function validateDocument(textDocument: TextDocument, settings?: RamenSettings): Promise<Diagnostic[]> {
+    if (!settings) {
+        settings = await getDocumentSettings(textDocument.uri);
+    }
+    // Ensure settings is never null/undefined
+    settings = settings || defaultSettings;
     const text = textDocument.getText();
     const diagnostics: Diagnostic[] = [];
 
@@ -232,10 +232,28 @@ async function validateDocument(textDocument: TextDocument): Promise<void> {
                                 start: textDocument.positionAt(index),
                                 end: textDocument.positionAt(index + nodeText.length)
                             },
-                            message: 'Node must have a type',
+                            message: 'Node must have a type. Available types: ' + nodeTypes.map(t => t.label).join(', '),
                             source: 'ramen',
                             code: 'missing-node-type'
                         });
+                    }
+                } else {
+                    // Validate node type exists
+                    const validTypes = nodeTypes.map(t => t.label);
+                    if (!validTypes.includes(node.type)) {
+                        const index = text.indexOf(`"type": "${node.type}"`);
+                        if (index !== -1) {
+                            diagnostics.push({
+                                severity: DiagnosticSeverity.Warning,
+                                range: {
+                                    start: textDocument.positionAt(index),
+                                    end: textDocument.positionAt(index + `"type": "${node.type}"`.length)
+                                },
+                                message: `Unknown node type '${node.type}'. Available types: ${validTypes.join(', ')}`,
+                                source: 'ramen',
+                                code: 'unknown-node-type'
+                            });
+                        }
                     }
                 }
             }
@@ -284,13 +302,15 @@ async function validateDocument(textDocument: TextDocument): Promise<void> {
         }
         
         // Limit number of problems
-        if (diagnostics.length > settings.maxNumberOfProblems) {
-            diagnostics.length = settings.maxNumberOfProblems;
+        const maxProblems = settings?.maxNumberOfProblems ?? defaultSettings.maxNumberOfProblems;
+        if (diagnostics.length > maxProblems) {
+            diagnostics.length = maxProblems;
         }
         
     } catch (error) {
         // JSON parse error
-        const match = /at position (\d+)/.exec(error.message);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const match = /at position (\d+)/.exec(errorMessage);
         const position = match ? parseInt(match[1]) : 0;
         
         diagnostics.push({
@@ -299,20 +319,55 @@ async function validateDocument(textDocument: TextDocument): Promise<void> {
                 start: textDocument.positionAt(position),
                 end: textDocument.positionAt(Math.min(position + 20, text.length))
             },
-            message: `JSON parse error: ${error.message}`,
+            message: `JSON parse error: ${errorMessage}`,
             source: 'ramen'
         });
     }
 
+    return diagnostics;
+}
+
+// Send diagnostics helper - calls validateDocument and sends results
+async function validateAndSendDiagnostics(textDocument: TextDocument): Promise<void> {
+    const diagnostics = await validateDocument(textDocument);
     connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
 // Completion
 connection.onCompletion(
-    (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+    (params: TextDocumentPositionParams): CompletionItem[] => {
+        const document = documents.get(params.textDocument.uri);
+        if (!document) {
+            return [];
+        }
+        
         const completions: CompletionItem[] = [];
         
-        // Add node type completions
+        // Get context around cursor position
+        const lineText = document.getText({
+            start: { line: params.position.line, character: 0 },
+            end: { line: params.position.line, character: params.position.character }
+        });
+        
+        // Context-aware completions
+        if (lineText.includes('"type":')) {
+            // Completing node type value
+            for (const nodeType of nodeTypes) {
+                completions.push({
+                    label: nodeType.label,
+                    kind: nodeType.kind,
+                    detail: nodeType.detail,
+                    documentation: {
+                        kind: MarkupKind.Markdown,
+                        value: `**${nodeType.label}**\\n\\n${nodeType.detail}`
+                    },
+                    insertText: nodeType.label
+                });
+            }
+            return completions;
+        }
+        
+        // Add node type completions for general context
         for (const nodeType of nodeTypes) {
             completions.push({
                 label: nodeType.label,
@@ -372,7 +427,9 @@ connection.onCompletion(
 // Hover
 connection.onHover((params: TextDocumentPositionParams): Hover | null => {
     const document = documents.get(params.textDocument.uri);
-    if (!document) return null;
+    if (!document) {
+        return null;
+    }
     
     const text = document.getText();
     const offset = document.offsetAt(params.position);
@@ -435,7 +492,9 @@ connection.onHover((params: TextDocumentPositionParams): Hover | null => {
 // Format document
 connection.onDocumentFormatting((params: DocumentFormattingParams): TextEdit[] => {
     const document = documents.get(params.textDocument.uri);
-    if (!document) return [];
+    if (!document) {
+        return [];
+    }
     
     const text = document.getText();
     
@@ -459,7 +518,9 @@ connection.onDocumentFormatting((params: DocumentFormattingParams): TextEdit[] =
 // Go to definition
 connection.onDefinition((params: DefinitionParams): Definition | null => {
     const document = documents.get(params.textDocument.uri);
-    if (!document) return null;
+    if (!document) {
+        return null;
+    }
     
     const text = document.getText();
     
@@ -506,6 +567,24 @@ connection.onDefinition((params: DefinitionParams): Definition | null => {
     }
     
     return null;
+});
+
+// Handle diagnostic pull requests (LSP 3.17+)
+// Using onRequest to handle the method directly
+connection.onRequest('textDocument/diagnostic', async (params: any) => {
+    const document = documents.get(params.textDocument.uri);
+    if (!document) {
+        return { kind: 'full', items: [] };
+    }
+    
+    // Reuse the validation logic
+    const settings = await getDocumentSettings(params.textDocument.uri);
+    const diagnostics = await validateDocument(document, settings);
+    
+    return {
+        kind: 'full',
+        items: diagnostics
+    };
 });
 
 // Listen to document changes

@@ -39,7 +39,7 @@ export interface GraphState {
     lastExecutionStatus: 'success' | 'error' | null;
     nodes: number;
     edges: number;
-    variables: Record<string, any>;
+    variables: Record<string, unknown>;
 }
 
 export interface UIState {
@@ -132,7 +132,7 @@ export class StateManager {
      */
     get<T = any>(path: string): T | undefined {
         const keys = path.split('.');
-        let current: any = this.state;
+        let current: unknown = this.state;
         
         for (const key of keys) {
             if (current === null || current === undefined) {
@@ -143,7 +143,7 @@ export class StateManager {
             if (current instanceof Map) {
                 current = current.get(key);
             } else {
-                current = current[key];
+                current = (current as Record<string, unknown>)[key];
             }
         }
         
@@ -485,7 +485,7 @@ export class StateManager {
                         `Subscriber error: ${error}`,
                         ErrorCategory.UNKNOWN,
                         ErrorSeverity.WARNING,
-                        { path, event }
+                        JSON.stringify({ path, event })
                     )
                 );
             }
@@ -504,7 +504,7 @@ export class StateManager {
                             `Parent subscriber error: ${error}`,
                             ErrorCategory.UNKNOWN,
                             ErrorSeverity.WARNING,
-                            { path: parentPath, event }
+                            JSON.stringify({ path: parentPath, event })
                         )
                     );
                 }
@@ -521,7 +521,7 @@ export class StateManager {
                         `Global subscriber error: ${error}`,
                         ErrorCategory.UNKNOWN,
                         ErrorSeverity.WARNING,
-                        { event }
+                        JSON.stringify({ event })
                     )
                 );
             }
@@ -661,7 +661,7 @@ export class StateManager {
         }
         
         if (obj instanceof Date) {
-            return new Date(obj.getTime()) as any;
+            return new Date(obj.getTime()) as T;
         }
         
         if (obj instanceof Map) {
@@ -669,23 +669,23 @@ export class StateManager {
             for (const [key, value] of obj) {
                 clonedMap.set(key, this.deepClone(value));
             }
-            return clonedMap as any;
+            return clonedMap as T;
         }
         
         if (obj instanceof Set) {
-            return new Set(Array.from((obj as any).values()).map(
+            return new Set(Array.from(obj.values()).map(
                 v => this.deepClone(v)
-            )) as any;
+            )) as T;
         }
         
         if (obj instanceof Array) {
-            return obj.map(item => this.deepClone(item)) as any;
+            return obj.map(item => this.deepClone(item)) as T;
         }
         
         const cloned: any = {};
         for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                cloned[key] = this.deepClone(obj[key]);
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                cloned[key] = this.deepClone((obj as any)[key]);
             }
         }
         

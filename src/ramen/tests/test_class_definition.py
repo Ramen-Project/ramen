@@ -4,18 +4,19 @@ import unittest
 import sys
 import os
 
-# Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# Add parent directories to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from topping.class_definition import (
+from ramen.topping.class_definition import (
     ClassDefinitionNode, ClassMetadata, ClassType,
-    PropertyDefinition, MethodDefinition, NodeContext,
+    PropertyDefinition, MethodDefinition,
     class_registry
 )
-from topping.pytorch_module_definition import (
+from ramen.engine.context import NodeContext
+from ramen.topping.pytorch_module_definition import (
     PyTorchModuleDefinition, LayerDefinition, ConnectionDefinition
 )
-from topping.pydantic_model_definition import (
+from ramen.topping.pydantic_model_definition import (
     PydanticModelDefinition, FieldDefinition, FieldType, ValidatorDefinition
 )
 
@@ -55,7 +56,9 @@ class TestClassDefinition(unittest.TestCase):
         self.assertEqual(len(metadata.inputs), 2)
         
         # Execute to create instance
-        context = NodeContext("test_node", {"name": "test", "value": 42}, {})
+        context = NodeContext("test_node", "SimpleClass_Definition")
+        context.set_input("name", "test")
+        context.set_input("value", 42)
         instance = definition.execute(context)
         
         # Check instance
@@ -210,11 +213,10 @@ class TestNeuralNetworkBuilder(unittest.TestCase):
             self.assertEqual(metadata.category, "Convolutional")
             
             # Execute Conv2d node
-            context = NodeContext(
-                "conv_test",
-                {"in_channels": 3, "out_channels": 64, "kernel_size": 3},
-                {}
-            )
+            context = NodeContext("conv_test", "Conv2d")
+            context.set_input("in_channels", 3)
+            context.set_input("out_channels", 64)
+            context.set_input("kernel_size", 3)
             result = conv_node.execute(context)
             
             self.assertEqual(result["type"], "Conv2d")

@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { RamenGraphProvider } from './providers/graphProvider';
 import { RamenCustomEditorProvider } from './providers/customEditorProvider';
 import { RamenVariablesProvider } from './providers/variablesProvider';
 import { RamenServerProvider } from './providers/serverProvider';
@@ -7,7 +6,7 @@ import { RamenDependenciesProvider } from './providers/dependenciesProvider';
 import { RamenWebviewManager } from './webview/webviewManager';
 import { RamenServerManager } from './server/serverManager';
 import { WebSocketManager } from './websocket/websocketManager';
-import { RamenLanguageClient } from './language/languageClient';
+import { RamenLanguageServer } from './language/languageServer';
 import { RamenCommands } from './commands';
 import { RamenFileSystemProvider } from './filesystem/fileSystemProvider';
 import { RamenFileWatcher } from './filesystem/fileWatcher';
@@ -19,10 +18,9 @@ import { ErrorHandler } from './core/errorHandler';
 let serverManager: RamenServerManager;
 let webviewManager: RamenWebviewManager;
 let websocketManager: WebSocketManager;
-let languageClient: RamenLanguageClient;
+let languageServer: RamenLanguageServer;
 let fileSystemProvider: RamenFileSystemProvider;
 let fileWatcher: RamenFileWatcher;
-let graphProvider: RamenGraphProvider;
 let variablesProvider: RamenVariablesProvider;
 let serverProvider: RamenServerProvider;
 let dependenciesProvider: RamenDependenciesProvider;
@@ -46,15 +44,14 @@ export async function activate(context: vscode.ExtensionContext) {
     // Initialize webview manager with WebSocket support
     webviewManager = new RamenWebviewManager(context, serverManager, websocketManager);
     
-    // Initialize language client
+    // Initialize language server
     const config = vscode.workspace.getConfiguration('ramen');
     if (config.get<boolean>('enableLanguageServer', true)) {
-        languageClient = new RamenLanguageClient(context, serverManager);
-        await languageClient.start();
+        languageServer = new RamenLanguageServer(context);
+        await languageServer.start();
     }
     
     // Initialize tree view providers
-    graphProvider = new RamenGraphProvider(context);
     
     // Initialize file system provider
     fileSystemProvider = new RamenFileSystemProvider(context);
@@ -65,18 +62,14 @@ export async function activate(context: vscode.ExtensionContext) {
         })
     );
     
-    // Initialize file watcher (after graphProvider is created)
-    fileWatcher = new RamenFileWatcher(context, webviewManager, graphProvider);
+    // Initialize file watcher
+    fileWatcher = new RamenFileWatcher(context, webviewManager);
     context.subscriptions.push(fileWatcher);
     variablesProvider = new RamenVariablesProvider(context);
     serverProvider = new RamenServerProvider(context, serverManager);
     dependenciesProvider = new RamenDependenciesProvider(context);
     
     // Create tree views
-    vscode.window.createTreeView('ramenGraphs', {
-        treeDataProvider: graphProvider,
-        showCollapseAll: true
-    });
     
     vscode.window.createTreeView('ramenVariables', {
         treeDataProvider: variablesProvider,
@@ -106,12 +99,9 @@ export async function activate(context: vscode.ExtensionContext) {
     commandRegistry.registerBatch(allCommands);
     
     // Register legacy commands for backward compatibility (only those not in new command registry)
-    const commands = new RamenCommands(serverManager, webviewManager, websocketManager, graphProvider, variablesProvider, serverProvider, dependenciesProvider);
+    const commands = new RamenCommands(serverManager, webviewManager, websocketManager, undefined, variablesProvider, serverProvider, dependenciesProvider);
     
     context.subscriptions.push(
-        vscode.commands.registerCommand('ramen.openGraphEditor', (uri?: vscode.Uri) => {
-            commands.openGraphEditor(uri);
-        }),
         
         vscode.commands.registerCommand('ramen.createNewGraph', async (uri?: vscode.Uri) => {
             await commands.createNewGraph(uri);
@@ -121,12 +111,22 @@ export async function activate(context: vscode.ExtensionContext) {
             await commands.manageProjectDependencies();
         }),
         
-        vscode.commands.registerCommand('ramen.refreshGraphs', async () => {
-            await commands.refreshGraphs();
-        }),
         
         vscode.commands.registerCommand('ramen.refreshDependencies', async () => {
             await commands.refreshDependencies();
+        }),
+        
+        // Server management commands
+        vscode.commands.registerCommand('ramen.startServer', async () => {
+            await commands.startServer();
+        }),
+        
+        vscode.commands.registerCommand('ramen.stopServer', async () => {
+            await commands.stopServer();
+        }),
+        
+        vscode.commands.registerCommand('ramen.restartServer', async () => {
+            await commands.restartServer();
         }),
         
         // Register command palette command
@@ -179,23 +179,50 @@ export async function activate(context: vscode.ExtensionContext) {
 export async function deactivate() {
     console.log('Ramen extension is deactivating...');
     
-    if (languageClient) {
-        await languageClient.stop();
+    try {
+        // Stop language server first
+        if (languageServer) {
+            await languageServer.stop();
+        }
+        
+        // Dispose WebSocket manager
+        if (websocketManager) {
+            websocketManager.dispose();
+        }
+        
+        // Stop server manager (most important)
+        if (serverManager) {
+            await serverManager.stop();
+        }
+        
+        // Dispose webview manager
+        if (webviewManager) {
+            webviewManager.disposeAll();
+        }
+        
+        // Clean up other resources
+        if (fileWatcher) {
+            fileWatcher.dispose();
+        }
+        
+        // ErrorHandler cleanup is automatic
+        
+        console.log('Ramen extension deactivated successfully');
+    } catch (error) {
+        console.error('Error during extension deactivation:', error);
+        // Even if there's an error, we should still try to force-stop the server
+        if (serverManager) {
+            try {
+                const processId = serverManager.getProcessId();
+                if (processId) {
+                    process.kill(processId, 'SIGKILL');
+                    console.log('Force-killed server process:', processId);
+                }
+            } catch (killError) {
+                console.error('Failed to force-kill server process:', killError);
+            }
+        }
     }
-    
-    if (websocketManager) {
-        websocketManager.dispose();
-    }
-    
-    if (serverManager) {
-        await serverManager.stop();
-    }
-    
-    if (webviewManager) {
-        webviewManager.disposeAll();
-    }
-    
-    console.log('Ramen extension deactivated');
 }
 
 async function handleConfigurationChange() {

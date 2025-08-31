@@ -77,7 +77,7 @@ export function debounce<T extends (...args: any[]) => any>(
                     `Debounced function error: ${error}`,
                     ErrorCategory.UNKNOWN,
                     ErrorSeverity.WARNING,
-                    { func: func.name, error }
+                    JSON.stringify({ func: func.name, error })
                 )
             );
         }
@@ -304,7 +304,7 @@ export class BatchProcessor<T> {
                     `Batch processing error: ${error}`,
                     ErrorCategory.UNKNOWN,
                     ErrorSeverity.ERROR,
-                    { batchSize: batch.length, error }
+                    JSON.stringify({ batchSize: batch.length, error })
                 )
             );
         } finally {

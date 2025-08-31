@@ -256,7 +256,7 @@ export class VersionManager {
                     `Migration failed: ${rule.description}`,
                     ErrorCategory.UNKNOWN,
                     ErrorSeverity.ERROR,
-                    { rule, error }
+                    JSON.stringify({ rule, error })
                 );
             }
         }

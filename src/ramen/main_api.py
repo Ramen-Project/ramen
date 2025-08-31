@@ -11,6 +11,9 @@ from datetime import datetime
 from .api.execution import router as execution_router
 from .api.graph import router as graph_router
 from .api.nodes import router as nodes_router
+from .api.components import router as components_router
+from .api.system import router as system_router
+from .topping import load_toppings
 
 # Create FastAPI app
 app = FastAPI(
@@ -33,10 +36,18 @@ app.add_middleware(
     allow_origin_regex=r"vscode-webview://.*",  # Allow all VSCode webview origins
 )
 
+# Load toppings on startup
+@app.on_event("startup")
+async def startup_event():
+    """Load toppings when the application starts."""
+    load_toppings()
+
 # Include routers
 app.include_router(execution_router)
 app.include_router(graph_router)
 app.include_router(nodes_router)
+app.include_router(components_router)
+app.include_router(system_router)
 
 # Root endpoint
 @app.get("/")
@@ -52,13 +63,13 @@ async def health():
 async def api_health():
     return {"status": "healthy", "service": "ramen-api", "version": "1.0.0"}
 
-# 簡單的 WebSocket 連接管理
-active_connections = []
+# WebSocket state management
+from .topping.websocket_sync import get_state_manager
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    active_connections.append(websocket)
+    state_manager = get_state_manager()
     
     try:
         # 發送連接成功訊息
@@ -74,12 +85,21 @@ async def websocket_endpoint(websocket: WebSocket):
             
             try:
                 message = json.loads(data)
+                message_type = message.get("type")
                 
-                if message.get("type") == "ping":
+                if message_type == "ping":
                     await websocket.send_json({
                         "type": "pong",
                         "timestamp": datetime.now().isoformat()
                     })
+                
+                elif message_type in ["subscribe_node", "unsubscribe_node", "node_event"]:
+                    # Handle node state sync events
+                    await state_manager.handle_event(websocket, message)
+                
+                else:
+                    # Handle other message types as needed
+                    pass
                     
             except json.JSONDecodeError:
                 await websocket.send_json({
@@ -89,7 +109,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 })
                 
     except WebSocketDisconnect:
-        active_connections.remove(websocket)
+        # Clean up state subscriptions
+        state_manager.disconnect_websocket(websocket)
 
 if __name__ == "__main__":
     import uvicorn

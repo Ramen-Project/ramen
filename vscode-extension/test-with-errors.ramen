@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "nodes": [
+    {
+      "id": "input1",
+      "type": "UnknownType",
+      "position": { "x": 100, "y": 100 },
+      "data": { "label": "Input Node" }
+    },
+    {
+      "id": "input1",
+      "type": "Output",
+      "position": { "x": 300, "y": 100 },
+      "data": { "label": "Duplicate ID Node" }
+    },
+    {
+      "id": "incomplete",
+      "position": { "x": 200, "y": 200 },
+      "data": { "label": "Missing Type Node" }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge1",
+      "source": "input1",
+      "target": "nonexistent"
+    }
+  ]
+}

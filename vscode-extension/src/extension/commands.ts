@@ -3,7 +3,6 @@ import * as path from 'path';
 import { RamenServerManager } from './server/serverManager';
 import { RamenWebviewManager } from './webview/webviewManager';
 import { WebSocketManager } from './websocket/websocketManager';
-import { RamenGraphProvider } from './providers/graphProvider';
 import { RamenVariablesProvider } from './providers/variablesProvider';
 import { RamenServerProvider } from './providers/serverProvider';
 import { RamenDependenciesProvider } from './providers/dependenciesProvider';
@@ -13,53 +12,13 @@ export class RamenCommands {
         private serverManager: RamenServerManager,
         private webviewManager: RamenWebviewManager,
         private websocketManager?: WebSocketManager,
-        private graphProvider?: RamenGraphProvider,
+        private _unusedGraphProvider?: any, // Keep parameter for backward compatibility
         private variablesProvider?: RamenVariablesProvider,
         private serverProvider?: RamenServerProvider,
         private dependenciesProvider?: RamenDependenciesProvider
     ) {}
 
-    async openGraphEditor(uri?: vscode.Uri) {
-        if (!uri) {
-            // If no URI provided, prompt user to select a .ramen file
-            const files = await vscode.workspace.findFiles('**/*.ramen');
-            if (files.length === 0) {
-                vscode.window.showWarningMessage('No .ramen files found in workspace');
-                return;
-            }
-            
-            const items = files.map(file => ({
-                label: path.basename(file.fsPath),
-                description: vscode.workspace.asRelativePath(file),
-                uri: file
-            }));
-            
-            const selected = await vscode.window.showQuickPick(items, {
-                placeHolder: 'Select a graph to open'
-            });
-            
-            if (!selected) {
-                return;
-            }
-            
-            uri = selected.uri;
-        }
-        
-        // Ensure server is running
-        const serverReady = await this.serverManager.ensureServerRunning();
-        if (!serverReady) {
-            vscode.window.showErrorMessage('Failed to start Ramen server');
-            return;
-        }
-        
-        // Ensure WebSocket connection
-        if (this.websocketManager && !this.websocketManager.isConnected()) {
-            await this.websocketManager.connect();
-        }
-        
-        // Open webview panel
-        await this.webviewManager.openGraph(uri);
-    }
+    // openGraphEditor method removed - now handled by custom editor
 
     async createNewGraph(uri?: vscode.Uri) {
         // Prompt for graph name
@@ -140,47 +99,32 @@ export class RamenCommands {
             version: '1.0',
             nodes: [
                 {
-                    id: 'input-1',
-                    type: 'input',
+                    id: 'constant-1',
+                    type: 'builtin.constant',
                     position: { x: 100, y: 100 },
                     data: {
-                        label: 'Input',
-                        description: 'Start your graph here'
+                        label: 'Constant',
+                        description: 'Start your graph with a constant value',
+                        value: 42
                     }
                 },
                 {
-                    id: 'process-1', 
-                    type: 'process',
+                    id: 'print-1', 
+                    type: 'builtin.print',
                     position: { x: 300, y: 100 },
                     data: {
-                        label: 'Process',
-                        description: 'Add your processing logic'
-                    }
-                },
-                {
-                    id: 'output-1',
-                    type: 'output',
-                    position: { x: 500, y: 100 },
-                    data: {
-                        label: 'Output',
-                        description: 'Final result'
+                        label: 'Print',
+                        description: 'Print the result to console'
                     }
                 }
             ],
             edges: [
                 {
                     id: 'edge-1',
-                    source: 'input-1',
-                    target: 'process-1',
+                    source: 'constant-1',
+                    target: 'print-1',
                     sourceHandle: 'output',
-                    targetHandle: 'input'
-                },
-                {
-                    id: 'edge-2', 
-                    source: 'process-1',
-                    target: 'output-1',
-                    sourceHandle: 'output',
-                    targetHandle: 'input'
+                    targetHandle: 'value'
                 }
             ],
             metadata: {
@@ -194,13 +138,8 @@ export class RamenCommands {
         const content = JSON.stringify(initialGraph, null, 2);
         await vscode.workspace.fs.writeFile(graphPath, Buffer.from(content, 'utf8'));
         
-        // Refresh graph provider
-        if (this.graphProvider) {
-            this.graphProvider.refresh();
-        }
-        
-        // Open the new graph
-        await this.openGraphEditor(graphPath);
+        // Graph will open automatically when user clicks on the .ramen file
+        // due to custom editor registration
         
         vscode.window.showInformationMessage(`Created new graph: ${graphName}.ramen`);
     }
@@ -307,17 +246,59 @@ export class RamenCommands {
         const started = await this.serverManager.start();
         if (started) {
             vscode.window.showInformationMessage('Ramen server started successfully');
+            // Refresh server provider to show updated status
+            if (this.serverProvider) {
+                this.serverProvider.refresh();
+            }
         } else {
             vscode.window.showErrorMessage('Failed to start Ramen server');
         }
     }
 
-    async refreshGraphs() {
-        if (this.graphProvider) {
-            this.graphProvider.refresh();
+    async stopServer() {
+        if (!this.serverManager.isRunning()) {
+            vscode.window.showWarningMessage('Ramen server is not running');
+            return;
         }
-        vscode.window.showInformationMessage('Refreshed graphs view');
+
+        await this.serverManager.stop();
+        vscode.window.showInformationMessage('Ramen server stopped');
+        
+        // Refresh server provider to show updated status
+        if (this.serverProvider) {
+            this.serverProvider.refresh();
+        }
+        
+        // Disconnect WebSocket if connected
+        if (this.websocketManager && this.websocketManager.isConnected()) {
+            this.websocketManager.disconnect();
+        }
     }
+
+    async restartServer() {
+        vscode.window.showInformationMessage('Restarting Ramen server...');
+        
+        await this.serverManager.restart();
+        
+        // Refresh server provider to show updated status
+        if (this.serverProvider) {
+            this.serverProvider.refresh();
+        }
+        
+        // Reconnect WebSocket if it was connected before
+        if (this.websocketManager) {
+            try {
+                await this.websocketManager.connect();
+                vscode.window.showInformationMessage('Ramen server restarted successfully');
+            } catch (error) {
+                vscode.window.showWarningMessage('Server restarted but WebSocket connection failed');
+            }
+        } else {
+            vscode.window.showInformationMessage('Ramen server restarted successfully');
+        }
+    }
+
+    // refreshGraphs method removed - graph provider no longer exists
 
     async refreshDependencies() {
         if (this.dependenciesProvider) {
