@@ -1,8 +1,0 @@
----
-alwaysApply: false
----
-
-- Always use uv as your python package manager.
-- Always use uv venv to manage your python virtual environment.
-- Always write PoC code first before writing production code.
-- Use linter to check your code.
