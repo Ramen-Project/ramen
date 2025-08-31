@@ -94,43 +94,15 @@ export class RamenCommands {
             // File doesn't exist, which is what we want
         }
         
-        // Create initial graph content with sample nodes
+        // Create initial graph content with empty nodes
         const initialGraph = {
             version: '1.0',
-            nodes: [
-                {
-                    id: 'constant-1',
-                    type: 'builtin.constant',
-                    position: { x: 100, y: 100 },
-                    data: {
-                        label: 'Constant',
-                        description: 'Start your graph with a constant value',
-                        value: 42
-                    }
-                },
-                {
-                    id: 'print-1', 
-                    type: 'builtin.print',
-                    position: { x: 300, y: 100 },
-                    data: {
-                        label: 'Print',
-                        description: 'Print the result to console'
-                    }
-                }
-            ],
-            edges: [
-                {
-                    id: 'edge-1',
-                    source: 'constant-1',
-                    target: 'print-1',
-                    sourceHandle: 'output',
-                    targetHandle: 'value'
-                }
-            ],
+            nodes: [],
+            edges: [],
             metadata: {
                 name: graphName,
                 created: new Date().toISOString(),
-                description: 'A sample Ramen graph - delete these nodes and create your own!',
+                description: 'A new Ramen graph',
                 author: 'Ramen VSCode Extension'
             }
         };
@@ -138,8 +110,8 @@ export class RamenCommands {
         const content = JSON.stringify(initialGraph, null, 2);
         await vscode.workspace.fs.writeFile(graphPath, Buffer.from(content, 'utf8'));
         
-        // Graph will open automatically when user clicks on the .ramen file
-        // due to custom editor registration
+        // Open the newly created graph file
+        await vscode.commands.executeCommand('vscode.open', graphPath);
         
         vscode.window.showInformationMessage(`Created new graph: ${graphName}.ramen`);
     }

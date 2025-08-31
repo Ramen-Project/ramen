@@ -26,30 +26,13 @@ dev = [
     "httpx>=0.25.0",
     "fastapi>=0.104.0",
 ]
-ml = [
-    "ramen-topping-torch",
-    "ramen-topping-numpy",
-    "ramen-topping-pandas",
-    "ramen-topping-plots"
-]
-
-[tool.uv]
-default-groups = ["ml"]
+# ML toppings are now separate packages and optional
+# Install with: uv add ramen-topping-torch ramen-topping-pandas etc.
 
 [project.scripts]
 ramen-cli = "ramen.entrypoint:main"
 
-[project.entry-points.'ramen.toppings']
-torch = "ramen_topping_torch"
-
-[tool.uv.sources]
-ramen-topping-torch = { workspace = true }
-ramen-topping-numpy = { workspace = true }
-ramen-topping-pandas = { workspace = true }
-ramen-topping-plots = { workspace = true }
-
-[tool.uv.workspace]
-members = ["toppings/*"]
+# Entry points and workspace members removed - toppings are now separate packages
 
 [build-system]
 requires = ["hatchling"]

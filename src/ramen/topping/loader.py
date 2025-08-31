@@ -29,12 +29,36 @@ class ToppingRegistry:
             
         self._toppings[name] = topping
         
-        # Register all nodes from the topping
-        for full_type, node_class in topping.get_nodes().items():
+        # Register all nodes from the topping (both advanced and simple)
+        nodes = topping.get_nodes()
+        metadata = topping.get_node_metadata()
+        
+        for full_type, node_class in nodes.items():
             self._nodes[full_type] = node_class
-            self._metadata[full_type] = topping.get_node_metadata()[full_type]
+            self._metadata[full_type] = metadata[full_type]
             self._node_to_topping[full_type] = name
             logger.debug(f"Registered node {full_type} from topping {name}")
+            
+        # Also register simple nodes if available
+        if hasattr(topping, '_simple_nodes'):
+            for full_type, func in topping._simple_nodes.items():
+                # Create a wrapper NodeFunction for simple functions
+                class SimpleNodeWrapper(NodeFunction):
+                    def __init__(self, func, metadata):
+                        self.func = func
+                        self.metadata_obj = metadata
+                        
+                    def execute(self, context: NodeContext) -> Any:
+                        return self.func(context)
+                        
+                    def get_metadata(self) -> NodeMetadata:
+                        return self.metadata_obj
+                
+                if full_type in metadata:
+                    self._nodes[full_type] = SimpleNodeWrapper(func, metadata[full_type])
+                    self._metadata[full_type] = metadata[full_type]
+                    self._node_to_topping[full_type] = name
+                    logger.debug(f"Registered simple node {full_type} from topping {name}")
             
     def unregister_topping(self, name: str) -> None:
         """Unregister a topping and its nodes."""
@@ -287,13 +311,25 @@ def load_toppings() -> ToppingLoader:
     """Load all available toppings."""
     loader = ToppingLoader()
     
+    # Load built-in nodes topping first
+    try:
+        from ..toppings.builtin_topping import get_topping as get_builtin_topping
+        builtin_topping = get_builtin_topping()
+        builtin_topping.initialize()
+        loader.registry.register_topping(builtin_topping)
+        logger.info("Loaded built-in nodes topping")
+    except Exception as e:
+        logger.error(f"Failed to load built-in nodes topping: {e}")
+    
     # Load from entry points
     loader.load_from_entry_points()
     
-    # Try to load standard toppings
+    # Load standard toppings from installed packages
+    # These are now expected to be installed as separate packages
+    # via pip/uv install ramen-topping-*
     standard_toppings = [
         "ramen_topping_numpy",
-        "ramen_topping_pandas",
+        "ramen_topping_pandas", 
         "ramen_topping_torch",
         "ramen_topping_plots",
         "ramen_topping_nn_builder"
@@ -302,8 +338,11 @@ def load_toppings() -> ToppingLoader:
     for topping in standard_toppings:
         try:
             loader.load_from_module(topping)
-        except Exception:
-            pass  # Topping not available
+            logger.debug(f"Loaded standard topping: {topping}")
+        except ImportError:
+            logger.debug(f"Standard topping not installed: {topping}")
+        except Exception as e:
+            logger.warning(f"Failed to load topping {topping}: {e}")
             
     return loader
 

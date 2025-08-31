@@ -1,5 +1,5 @@
 import { NodeProps, useReactFlow } from "@xyflow/react";
-import { FiFileText, FiFilter, FiHash } from "react-icons/fi";
+import { FiFileText, FiFilter, FiHash, FiCpu, FiHome, FiPlus, FiDatabase, FiGitBranch, FiBox, FiTool, FiBarChart } from "react-icons/fi";
 import { NodeBody, Port } from "./Bases";
 import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import { useTypeStore } from "../../stores";
@@ -20,15 +20,47 @@ export type OpNodeProps = {
 
 
 const NAMESPACE_ICONS: Record<string, any> = {
+    // Legacy namespaces
     FileIO: FiFileText,
     DataOps: FiFilter,
     Math: FiHash,
+    MachineLearning: FiBarChart,
+    builtin: FiCpu,
+    
+    // New namespaces
+    core: FiHome,
+    math: FiPlus,
+    collection: FiDatabase,
+    logic: FiGitBranch,
+    string: FiFileText,
+    type: FiBox,
+    flow: FiGitBranch,
+    object: FiBox,
+    debug: FiTool,
+    ml: FiBarChart,
+    
     default: FiFileText
 };
 const NAMESPACE_COLORS: Record<string, string> = {
+    // Legacy namespaces
     FileIO: '#3b82f6',
     DataOps: '#f59e42',
     Math: '#a259e6',
+    MachineLearning: '#ef4444',
+    builtin: '#10b981',
+    
+    // New namespaces
+    core: '#607D8B',        // Blue Grey - foundational
+    math: '#4CAF50',        // Green - calculations
+    collection: '#2196F3',  // Blue - data processing
+    logic: '#9C27B0',       // Purple - decision making
+    string: '#FF5722',      // Deep Orange - text processing
+    type: '#795548',        // Brown - type operations
+    flow: '#00BCD4',        // Cyan - control flow
+    object: '#FF9800',      // Orange - object operations
+    debug: '#F44336',       // Red - debugging
+    ml: '#ef4444',          // Red - machine learning (same as MachineLearning)
+    
     default: '#bbb'
 };
 

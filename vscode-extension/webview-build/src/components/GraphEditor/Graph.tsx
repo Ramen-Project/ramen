@@ -43,9 +43,23 @@ import { nanoid } from 'nanoid';
 
 // Namespace colors for operator nodes
 const NAMESPACE_COLORS: Record<string, string> = {
+  // Legacy namespaces
   FileIO: '#3b82f6',
   DataOps: '#f59e42',
   Math: '#a259e6',
+  builtin: '#10b981',
+  
+  // New namespaces
+  core: '#607D8B',
+  math: '#4CAF50',
+  collection: '#2196F3',
+  logic: '#9C27B0',
+  string: '#FF5722',
+  type: '#795548',
+  flow: '#00BCD4',
+  object: '#FF9800',
+  debug: '#F44336',
+  
   default: '#bbb'
 };
 

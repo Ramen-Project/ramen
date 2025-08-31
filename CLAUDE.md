@@ -50,15 +50,23 @@ Ramen is a **VSCode Extension** that provides visual programming capabilities fo
 - **Execution Engine**: Graph compilation and runtime
 - **API Server**: REST API and WebSocket for real-time updates
 - **CLI Interface**: Command-line tools for headless execution
-- **Toppings**: Plugin system for extending functionality (numpy, pandas, torch, plots)
+- **Topping System**: Plugin architecture for extending functionality
 - **Environment Management**: UV integration for dependency isolation
 
 ### Project Structure
 - **VSCode Extension**: `vscode-extension/` - Main deliverable, VSCode extension with graph editor
 - **Python Backend**: `src/ramen/` - Supporting service for graph execution
-- **Toppings**: `toppings/` - Plugin packages (numpy, pandas, torch, plots)
+  - `src/ramen/toppings/` - Built-in nodes and topping system framework
 - **Documentation**: `docs/technical-design/` - Architecture and design specifications
 - **Build script**: `build.py` - Build automation for both extension and backend
+
+### External Toppings (Separate Repositories)
+Toppings are now distributed as separate packages for modularity:
+- **ramen-topping-numpy** - NumPy numerical computation nodes
+- **ramen-topping-pandas** - Pandas DataFrame processing nodes
+- **ramen-topping-torch** - PyTorch deep learning nodes
+- **ramen-topping-plots** - Matplotlib visualization nodes
+- **ramen-topping-nn-builder** - Neural network visual construction
 
 ## Key Technical Details
 
@@ -82,14 +90,17 @@ Ramen is a **VSCode Extension** that provides visual programming capabilities fo
 - Command-line execution: `ramen-cli run my_graph` for automation
 
 ### Plugin System ("Toppings")
-- Extensible via workspace packages in `toppings/`
-- Entry points defined in `pyproject.toml`
-- Each topping provides specialized node types and operations
+- **Modular Architecture**: Toppings are now independent Python packages
+- **Entry Points**: Auto-discovery via `ramen.toppings` entry points in `pyproject.toml`
+- **Optional Installation**: Users install only needed functionality (`uv add ramen-topping-*`)
+- **Built-in Core**: 196+ core nodes always available (math, logic, collections, etc.)
+- **Extensible Framework**: Third-party developers can create custom toppings
 
 ### Build and Dependencies
-- Python: uv workspace with `pyproject.toml`
-- Frontend: Vite + TypeScript with standard npm/bun workflow
-- Monorepo structure with workspace members for toppings
+- **Python Core**: uv project with minimal dependencies
+- **Frontend**: Vite + TypeScript with standard npm/bun workflow  
+- **Toppings**: Separate repositories with independent versioning
+- **Lightweight Installation**: Core Ramen without heavy ML dependencies
 
 ## Development Guidelines
 
@@ -172,6 +183,52 @@ Benefits:
 - Interactive development in VSCode with optional headless execution via CLI
 - Seamless integration with VSCode's development environment
 
+## Topping Development Guidelines
+
+When working with or creating toppings:
+
+### Installing and Testing Toppings
+```bash
+# Install specific toppings for development
+uv add ramen-topping-numpy ramen-topping-pandas
+
+# Test with only core nodes (no external toppings)
+# This helps verify core functionality
+```
+
+### Creating New Toppings
+1. **Use the Template**: See `TOPPING_MIGRATION.md` for complete topping creation guide
+2. **Follow New API**: All toppings must use the new `ToppingBase` and `NodeFunction` APIs
+3. **Proper Entry Points**: Include `ramen.toppings` entry points in `pyproject.toml`
+4. **Independent Repos**: Create separate repositories for each topping
+5. **Testing**: Ensure toppings work both independently and with core Ramen
+
+### Topping Architecture Requirements
+- Inherit from `ramen.topping.topping_base.ToppingBase`
+- Implement `NodeFunction` subclasses for each node
+- Provide proper `NodeMetadata` with ports, categories, and descriptions
+- Handle missing dependencies gracefully with informative error messages
+- Use semantic versioning for releases
+
 ## Feature Request and Development Guidelines
 
 - When user requests new features, you should always put it to the KANBAN.md first.
+- Consider whether new functionality should be core nodes or external toppings
+- Core nodes: Basic operations everyone needs (math, logic, I/O)
+- Toppings: Specialized functionality (ML, plotting, specific libraries)
+
+## Important Architecture Notes
+
+### Topping Migration Completed
+- ✅ All toppings migrated to new `ToppingBase` API
+- ✅ Main project cleaned of legacy topping code
+- ✅ Core system works independently with 196+ built-in nodes
+- ✅ External toppings ready for separate repository deployment
+
+### Current System Status
+- **Core Nodes**: 196+ nodes across 10 namespaces (always available)
+- **External Toppings**: 5 toppings ready for independent distribution
+- **API Integration**: Fully functional with VSCode extension
+- **No Dependencies**: Core system has minimal external dependencies
+
+When working on this project, remember that toppings are now external packages that users install separately. The core system should always function without any external toppings installed.

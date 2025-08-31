@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiFileText, FiFilter, FiHash, FiBarChart, FiCode, FiGlobe, FiImage, FiClock, FiLayers, FiZap, FiSearch, FiSettings } from "react-icons/fi";
+import { FiFileText, FiFilter, FiHash, FiBarChart, FiCode, FiGlobe, FiImage, FiClock, FiLayers, FiZap, FiSearch, FiSettings, FiCpu, FiHome, FiPlus, FiDatabase, FiGitBranch, FiBox, FiTool } from "react-icons/fi";
 import { NodeBody } from "./Bases";
 import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import { useTypeStore } from "../../stores";
@@ -19,10 +19,12 @@ export type PreviewNodeProps = {
 }
 
 const NAMESPACE_ICONS: Record<string, any> = {
+    // Legacy namespaces
     FileIO: FiFileText,
     DataOps: FiFilter,
     Math: FiHash,
     MachineLearning: FiBarChart,
+    builtin: FiCpu,
     TextProcessing: FiCode,
     WebAPI: FiGlobe,
     ImageProcessing: FiImage,
@@ -31,14 +33,30 @@ const NAMESPACE_ICONS: Record<string, any> = {
     Automation: FiZap,
     DataQuality: FiSearch,
     Utilities: FiSettings,
+    builtin: FiCpu,
+    
+    // New namespaces
+    core: FiHome,
+    math: FiPlus,
+    collection: FiDatabase,
+    logic: FiGitBranch,
+    string: FiFileText,
+    type: FiBox,
+    flow: FiGitBranch,
+    object: FiBox,
+    debug: FiTool,
+    ml: FiBarChart,
+    
     default: FiFileText
 };
 
 const NAMESPACE_COLORS: Record<string, string> = {
+    // Legacy namespaces
     FileIO: '#3b82f6',
     DataOps: '#f59e42',
     Math: '#a259e6',
     MachineLearning: '#ef4444',
+    builtin: '#10b981',
     TextProcessing: '#06b6d4',
     WebAPI: '#10b981',
     ImageProcessing: '#f97316',
@@ -47,6 +65,20 @@ const NAMESPACE_COLORS: Record<string, string> = {
     Automation: '#f59e0b',
     DataQuality: '#ec4899',
     Utilities: '#6b7280',
+    builtin: '#10b981',
+    
+    // New namespaces
+    core: '#607D8B',
+    math: '#4CAF50',
+    collection: '#2196F3',
+    logic: '#9C27B0',
+    string: '#FF5722',
+    type: '#795548',
+    flow: '#00BCD4',
+    object: '#FF9800',
+    debug: '#F44336',
+    ml: '#ef4444',
+    
     default: '#bbb'
 };
 

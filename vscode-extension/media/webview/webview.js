@@ -65539,14 +65539,38 @@ template {
     };
     return IconContext !== void 0 ? /* @__PURE__ */ React.createElement(IconContext.Consumer, null, (conf) => elem(conf)) : elem(DefaultContext);
   }
+  function FiBarChart$1(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "line", "attr": { "x1": "12", "y1": "20", "x2": "12", "y2": "10" }, "child": [] }, { "tag": "line", "attr": { "x1": "18", "y1": "20", "x2": "18", "y2": "4" }, "child": [] }, { "tag": "line", "attr": { "x1": "6", "y1": "20", "x2": "6", "y2": "16" }, "child": [] }] })(props);
+  }
+  function FiBox(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "path", "attr": { "d": "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" }, "child": [] }, { "tag": "polyline", "attr": { "points": "3.27 6.96 12 12.01 20.73 6.96" }, "child": [] }, { "tag": "line", "attr": { "x1": "12", "y1": "22.08", "x2": "12", "y2": "12" }, "child": [] }] })(props);
+  }
+  function FiCpu(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "rect", "attr": { "x": "4", "y": "4", "width": "16", "height": "16", "rx": "2", "ry": "2" }, "child": [] }, { "tag": "rect", "attr": { "x": "9", "y": "9", "width": "6", "height": "6" }, "child": [] }, { "tag": "line", "attr": { "x1": "9", "y1": "1", "x2": "9", "y2": "4" }, "child": [] }, { "tag": "line", "attr": { "x1": "15", "y1": "1", "x2": "15", "y2": "4" }, "child": [] }, { "tag": "line", "attr": { "x1": "9", "y1": "20", "x2": "9", "y2": "23" }, "child": [] }, { "tag": "line", "attr": { "x1": "15", "y1": "20", "x2": "15", "y2": "23" }, "child": [] }, { "tag": "line", "attr": { "x1": "20", "y1": "9", "x2": "23", "y2": "9" }, "child": [] }, { "tag": "line", "attr": { "x1": "20", "y1": "14", "x2": "23", "y2": "14" }, "child": [] }, { "tag": "line", "attr": { "x1": "1", "y1": "9", "x2": "4", "y2": "9" }, "child": [] }, { "tag": "line", "attr": { "x1": "1", "y1": "14", "x2": "4", "y2": "14" }, "child": [] }] })(props);
+  }
+  function FiDatabase(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "ellipse", "attr": { "cx": "12", "cy": "5", "rx": "9", "ry": "3" }, "child": [] }, { "tag": "path", "attr": { "d": "M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" }, "child": [] }, { "tag": "path", "attr": { "d": "M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" }, "child": [] }] })(props);
+  }
   function FiFileText(props) {
     return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "path", "attr": { "d": "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" }, "child": [] }, { "tag": "polyline", "attr": { "points": "14 2 14 8 20 8" }, "child": [] }, { "tag": "line", "attr": { "x1": "16", "y1": "13", "x2": "8", "y2": "13" }, "child": [] }, { "tag": "line", "attr": { "x1": "16", "y1": "17", "x2": "8", "y2": "17" }, "child": [] }, { "tag": "polyline", "attr": { "points": "10 9 9 9 8 9" }, "child": [] }] })(props);
   }
   function FiFilter(props) {
     return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "polygon", "attr": { "points": "22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" }, "child": [] }] })(props);
   }
+  function FiGitBranch(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "line", "attr": { "x1": "6", "y1": "3", "x2": "6", "y2": "15" }, "child": [] }, { "tag": "circle", "attr": { "cx": "18", "cy": "6", "r": "3" }, "child": [] }, { "tag": "circle", "attr": { "cx": "6", "cy": "18", "r": "3" }, "child": [] }, { "tag": "path", "attr": { "d": "M18 9a9 9 0 0 1-9 9" }, "child": [] }] })(props);
+  }
   function FiHash(props) {
     return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "line", "attr": { "x1": "4", "y1": "9", "x2": "20", "y2": "9" }, "child": [] }, { "tag": "line", "attr": { "x1": "4", "y1": "15", "x2": "20", "y2": "15" }, "child": [] }, { "tag": "line", "attr": { "x1": "10", "y1": "3", "x2": "8", "y2": "21" }, "child": [] }, { "tag": "line", "attr": { "x1": "16", "y1": "3", "x2": "14", "y2": "21" }, "child": [] }] })(props);
+  }
+  function FiHome(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "path", "attr": { "d": "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" }, "child": [] }, { "tag": "polyline", "attr": { "points": "9 22 9 12 15 12 15 22" }, "child": [] }] })(props);
+  }
+  function FiPlus(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "line", "attr": { "x1": "12", "y1": "5", "x2": "12", "y2": "19" }, "child": [] }, { "tag": "line", "attr": { "x1": "5", "y1": "12", "x2": "19", "y2": "12" }, "child": [] }] })(props);
+  }
+  function FiTool(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "path", "attr": { "d": "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" }, "child": [] }] })(props);
   }
   function setRef(ref, value) {
     if (typeof ref === "function") {
@@ -69302,15 +69326,53 @@ template {
     }
   }
   const NAMESPACE_ICONS$1 = {
+    // Legacy namespaces
     FileIO: FiFileText,
     DataOps: FiFilter,
     Math: FiHash,
+    MachineLearning: FiBarChart$1,
+    builtin: FiCpu,
+    // New namespaces
+    core: FiHome,
+    math: FiPlus,
+    collection: FiDatabase,
+    logic: FiGitBranch,
+    string: FiFileText,
+    type: FiBox,
+    flow: FiGitBranch,
+    object: FiBox,
+    debug: FiTool,
+    ml: FiBarChart$1,
     default: FiFileText
   };
   const NAMESPACE_COLORS$2 = {
+    // Legacy namespaces
     FileIO: "#3b82f6",
     DataOps: "#f59e42",
     Math: "#a259e6",
+    MachineLearning: "#ef4444",
+    builtin: "#10b981",
+    // New namespaces
+    core: "#607D8B",
+    // Blue Grey - foundational
+    math: "#4CAF50",
+    // Green - calculations
+    collection: "#2196F3",
+    // Blue - data processing
+    logic: "#9C27B0",
+    // Purple - decision making
+    string: "#FF5722",
+    // Deep Orange - text processing
+    type: "#795548",
+    // Brown - type operations
+    flow: "#00BCD4",
+    // Cyan - control flow
+    object: "#FF9800",
+    // Orange - object operations
+    debug: "#F44336",
+    // Red - debugging
+    ml: "#ef4444",
+    // Red - machine learning (same as MachineLearning)
     default: "#bbb"
   };
   function NodeHeader$1({ nodeName, namespace: namespace2 }) {
@@ -70947,9 +71009,21 @@ template {
     };
   }
   const NAMESPACE_COLORS$1 = {
+    // Legacy namespaces
     FileIO: "#3b82f6",
     DataOps: "#f59e42",
     Math: "#a259e6",
+    builtin: "#10b981",
+    // New namespaces
+    core: "#607D8B",
+    math: "#4CAF50",
+    collection: "#2196F3",
+    logic: "#9C27B0",
+    string: "#FF5722",
+    type: "#795548",
+    flow: "#00BCD4",
+    object: "#FF9800",
+    debug: "#F44336",
     default: "#bbb"
   };
   const edgeTypes = {
@@ -72033,15 +72107,43 @@ template {
     }
   }
   const NAMESPACE_ICONS = {
+    // Legacy namespaces
     FileIO: FiFileText,
     DataOps: FiFilter,
     Math: FiHash,
+    MachineLearning: FiBarChart,
+    builtin: FiCpu,
+    // New namespaces
+    core: FiHome,
+    math: FiPlus,
+    collection: FiDatabase,
+    logic: FiGitBranch,
+    string: FiFileText,
+    type: FiBox,
+    flow: FiGitBranch,
+    object: FiBox,
+    debug: FiTool,
+    ml: FiBarChart,
     default: FiFileText
   };
   const NAMESPACE_COLORS = {
+    // Legacy namespaces
     FileIO: "#3b82f6",
     DataOps: "#f59e42",
     Math: "#a259e6",
+    MachineLearning: "#ef4444",
+    builtin: "#10b981",
+    // New namespaces
+    core: "#607D8B",
+    math: "#4CAF50",
+    collection: "#2196F3",
+    logic: "#9C27B0",
+    string: "#FF5722",
+    type: "#795548",
+    flow: "#00BCD4",
+    object: "#FF9800",
+    debug: "#F44336",
+    ml: "#ef4444",
     default: "#bbb"
   };
   const PreviewContainer = dt.div`

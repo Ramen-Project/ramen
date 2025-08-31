@@ -13,7 +13,7 @@ from .api.graph import router as graph_router
 from .api.nodes import router as nodes_router
 from .api.components import router as components_router
 from .api.system import router as system_router
-from .topping import load_toppings
+from .topping.loader import load_toppings
 
 # Create FastAPI app
 app = FastAPI(

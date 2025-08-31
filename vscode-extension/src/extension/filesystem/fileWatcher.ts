@@ -66,7 +66,8 @@ export class RamenFileWatcher {
             'Open'
         ).then(selection => {
             if (selection === 'Open') {
-                vscode.commands.executeCommand('ramen.openGraphEditor', uri);
+                // Use vscode.open command to open the file with the registered custom editor
+                vscode.commands.executeCommand('vscode.open', uri);
             }
         });
     }

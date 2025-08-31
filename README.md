@@ -44,12 +44,24 @@ uv pip install ramen
 uv pip install ramenrt
 ```
 
-### 3. 安裝配料（選用）
+### 3. 安裝 Toppings（選用功能擴展）
+Toppings 是獨立的套件，提供特定領域的節點功能：
+
 ```bash
+# 基礎數值計算
 uv add ramen-topping-numpy
+
+# 資料處理和分析
 uv add ramen-topping-pandas
+
+# 深度學習和機器學習
 uv add ramen-topping-torch
+
+# 資料視覺化和圖表
 uv add ramen-topping-plots
+
+# 神經網路視覺化建構
+uv add ramen-topping-nn-builder
 ```
 
 ## 快速開始
@@ -63,10 +75,13 @@ uv add ramen-topping-plots
     uv pip install ramen
     ```
 
-2. **安裝所需配料**
+2. **安裝所需 Toppings**
     ```bash
-    uv add ramen-topping-numpy
-    uv add ramen-topping-pandas
+    # 根據需要安裝功能擴展
+    uv add ramen-topping-numpy     # 數值計算
+    uv add ramen-topping-pandas    # 資料處理
+    uv add ramen-topping-torch     # 深度學習（可選）
+    uv add ramen-topping-plots     # 圖表繪製（可選）
     ```
 
 3. **在 VSCode 中開啟專案**
@@ -136,6 +151,7 @@ result = ramenrt.run("my_graph.ramen", x=42)
 
 ## 專案架構
 
+### 核心 Repository
 ```
 Ramen/
 ├── vscode-extension/        # VSCode 擴充套件（主要元件）
@@ -145,14 +161,26 @@ Ramen/
 ├── src/ramen/              # Python 後端服務
 │   ├── core/              # 核心執行引擎
 │   ├── api/               # REST API 和 WebSocket
-│   └── cli/               # 命令列介面
-├── toppings/              # 插件套件
-│   ├── ramen-topping-numpy/
-│   ├── ramen-topping-pandas/
-│   ├── ramen-topping-torch/
-│   └── ramen-topping-plots/
+│   ├── cli/               # 命令列介面
+│   └── toppings/          # 內建節點和 topping 系統
 └── docs/technical-design/  # 技術文件
 ```
+
+### 獨立 Topping Repositories
+每個 topping 現在是獨立的套件，擁有自己的版本控制：
+
+- **ramen-topping-numpy** - NumPy 數值計算節點
+- **ramen-topping-pandas** - Pandas 資料處理節點
+- **ramen-topping-torch** - PyTorch 深度學習節點
+- **ramen-topping-plots** - Matplotlib 繪圖節點
+- **ramen-topping-nn-builder** - 神經網路視覺化建構器
+
+### 架構優勢
+- 🎯 **模組化設計**：只安裝需要的功能
+- 📦 **輕量核心**：核心 Ramen 安裝體積更小
+- 🔄 **獨立版本**：每個 topping 可獨立發布和更新
+- 👥 **社群擴展**：第三方開發者可輕鬆創建自訂 toppings
+- 🛡️ **穩定性**：核心功能與擴展功能解耦
 
 ## 開發
 
@@ -206,7 +234,8 @@ uv run pytest
 - [技術設計規範](docs/technical-design/) - 詳細的架構和設計文件
 - [API 文件](docs/api/) - Python API 和 REST API 參考
 - [擴充套件開發](docs/extension/) - VSCode 擴充套件開發指南
-- [配料開發](docs/toppings/) - 建立自訂配料插件
+- [Topping 開發指南](TOPPING_MIGRATION.md) - 建立和發布自訂 toppings
+- [Topping 遷移指南](TOPPING_MIGRATION.md) - 從舊架構遷移到新架構
 
 ## 貢獻
 
