@@ -4,9 +4,24 @@ import GraphEditor from './components/GraphEditor';
 import './Global.css';
 
 import { Theme } from '@radix-ui/themes';
-import BottomNodeLibrary from './components/BottomNodeLibrary/BottomNodeLibrary';
+import LeftNodeLibrary from './components/LeftNodeLibrary/LeftNodeLibrary';
 import { DndProvider } from 'react-dnd';
+import styled from 'styled-components';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+
+// Constants
+const ANIMATION_DURATION = '0.3s';
+const DEFAULT_NODE_LIBRARY_WIDTH = 360;
+
+// Animated container for the node library
+const AnimatedNodeLibraryContainer = styled.div<{ $isVisible: boolean; $width: number }>`
+  width: ${props => props.$isVisible ? `${props.$width}px` : '0px'};
+  overflow: hidden;
+  transition: width ${ANIMATION_DURATION} ease;
+  flex-shrink: 0;
+  height: 100vh;
+  background: var(--gray-2);
+`;
 import { useGraphStore } from './stores/GraphStore';
 import { nanoid } from 'nanoid';
 import { useCtrlHotkey } from './hooks/useHotkeys';
@@ -20,6 +35,9 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [apiClient, setApiClient] = useState<RamenApiClient | null>(null);
   const [isServerHealthy, setIsServerHealthy] = useState(false);
+  const [isNodeLibraryVisible, setIsNodeLibraryVisible] = useState(true);
+  const [nodeLibraryWidth, setNodeLibraryWidth] = useState(DEFAULT_NODE_LIBRARY_WIDTH);
+  const [shouldRenderNodeLibrary, setShouldRenderNodeLibrary] = useState(true);
   
   console.log('🍜 App render - isLoading:', isLoading, 'error:', error);
   
@@ -182,6 +200,36 @@ export default function App() {
     // Selection is now handled by SelectionStore
   };
 
+  // Handle rendering state based on visibility
+  useEffect(() => {
+    if (isNodeLibraryVisible) {
+      // Show immediately when becoming visible
+      setShouldRenderNodeLibrary(true);
+    } else {
+      // Hide after animation completes when becoming invisible
+      const timer = setTimeout(() => {
+        setShouldRenderNodeLibrary(false);
+      }, 300); // Match ANIMATION_DURATION
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isNodeLibraryVisible]);
+
+  // Handle space key to toggle node library
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+
+      if (event.code === 'Space' && (event.target === document.body || !target.tagName || target.tagName === 'BODY' || target.tagName === 'HTML')) {
+        event.preventDefault();
+        setIsNodeLibraryVisible(prev => !prev);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Keyboard shortcuts
   useCtrlHotkey('s', (e) => {
     e.preventDefault();
@@ -311,13 +359,26 @@ export default function App() {
           width: '100%',
           height: '100vh',
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           overflow: 'hidden',
           backgroundColor: 'var(--vscode-editor-background, #1e1e1e)',
           minWidth: 320, // Minimum width for usability
           boxSizing: 'border-box'
         }}>
-          {/* Main content: graph editor with bottom node library */}
+          {/* Animated Left Node Library */}
+          <AnimatedNodeLibraryContainer 
+            $isVisible={isNodeLibraryVisible} 
+            $width={nodeLibraryWidth}
+          >
+            {shouldRenderNodeLibrary && (
+              <LeftNodeLibrary 
+                onWidthChange={setNodeLibraryWidth}
+                initialWidth={nodeLibraryWidth}
+              />
+            )}
+          </AnimatedNodeLibraryContainer>
+          
+          {/* Main content: graph editor */}
           <div style={{ 
             flex: 1, 
             display: 'flex', 
@@ -337,8 +398,6 @@ export default function App() {
                 graphId={activeGraphId || undefined}
               />
             </div>
-            {/* Bottom Node Library */}
-            <BottomNodeLibrary />
           </div>
         </div>
       </Theme>
