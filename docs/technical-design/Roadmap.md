@@ -1,65 +1,93 @@
 # Ramen Project Roadmap
 
-## Phase 1: Core MVP
+## Phase 1: Core MVP ✅ COMPLETED
 
-- [ ] **Graph Model & Serialization**
-  - Implement node, edge, port, and graph data structures
-  - JSON-based serialization/deserialization
-  - Versioning support
+- [x] **Graph Model & Serialization**
+  - ✅ Implemented node, edge, port, and graph data structures
+  - ✅ JSON-based serialization/deserialization with RamenGraphFile format
+  - ✅ Versioning support with schema migration tools
 
-- [ ] **Basic Frontend**
-  - Node-based graph editor (add, move, connect nodes)
-  - Project open/save (local)
-  - Minimal UI/UX polish
+- [x] **Basic Frontend**
+  - ✅ Node-based graph editor with React + @xyflow/react
+  - ✅ VSCode extension with custom editor for .ramen files
+  - ✅ Drag-and-drop node library and property panels
 
-- [ ] **Backend & Kernel**
-  - Graph parsing and in-memory representation
-  - JIT compilation to Python bytecode
-  - Execution engine in uv-managed environment
-  - Error propagation to frontend
+- [x] **Backend & Kernel**
+  - ✅ Graph parsing and in-memory representation
+  - ✅ JIT compilation to Python bytecode
+  - ✅ Execution engine in uv-managed environment
+  - ✅ Real-time WebSocket communication for execution updates
 
-- [ ] **Project Management**
-  - Create/open/switch projects
-  - `uv sync` integration on project load
+- [x] **Project Management**
+  - ✅ VSCode workspace integration
+  - ✅ Automatic uv environment management
+  - ✅ Project dependency tracking
 
-- [ ] **Single Session Enforcement**
-  - Only one session per graph, with session takeover prompt
-
----
-
-## Phase 2: Extensibility & Toppings
-
-- [ ] **Topping System**
-  - Plugin API for registering new node/edge types
-  - Runtime loading of toppings from project environment
-  - Example toppings: numpy, pandas, torch, plots
-
-- [ ] **Topping Management UI**
-  - Install/uninstall toppings from frontend
-  - List available/active toppings
-
-- [ ] **Custom Node/Edge Types**
-  - Support for user-defined nodes/edges via toppings
+- [x] **Single Session Enforcement**
+  - ✅ Session manager with graph locking
+  - ✅ Session takeover prompts for conflicting access
 
 ---
 
-## Phase 3: Advanced Execution & Usability
+## Phase 2: Extensibility & Toppings ✅ COMPLETED
+
+- [x] **Topping System**
+  - ✅ Comprehensive ToppingBase API with NodeFunction and NodeMetadata
+  - ✅ Entry points system for automatic topping discovery
+  - ✅ 196+ built-in nodes across 10 namespaces
+  - ✅ Modular toppings: numpy, pandas, torch, plots, nn-builder
+
+- [x] **Topping Management UI**
+  - ✅ Node library panel with topping categorization
+  - ✅ Dynamic topping loading and error handling
+  - ✅ Integrated dependency management with uv
+
+- [x] **Custom Node/Edge Types**
+  - ✅ Full support for user-defined nodes via toppings
+  - ✅ Extensible type system with TypeRegistry
+  - ✅ Custom port definitions and metadata
+
+---
+
+## Phase 3: Advanced Execution & Usability 🚧 IN PROGRESS
 
 - [ ] **AOT Compilation & Caching**
   - Ahead-of-time compilation for faster repeated execution
+  - Bytecode caching with graph hash versioning
 
 - [ ] **Resource Management**
   - Optional CPU/memory/time limits per execution
+  - Process isolation and monitoring
 
-- [ ] **Improved Error Handling**
-  - Node/edge context in error messages
-  - UI for error inspection and debugging
+- [x] **Improved Error Handling** 
+  - ✅ Node/edge context in error messages via WebSocket streaming
+  - ✅ Real-time execution status and error propagation
+  - ✅ VSCode integrated error display and debugging
 
-- [ ] **Graph Versioning & Migration**
-  - Tools for upgrading graph schemas
+- [x] **Graph Versioning & Migration**
+  - ✅ Schema version tracking in GraphMetadata
+  - ✅ Migration tools for format compatibility
+  - ✅ Backward compatibility support
+
+- [x] **Git Integration & Version Control** ✅ COMPLETED
+  - ✅ Semantic diff system for .ramen files
+  - ✅ Node-level change detection and analysis
+  - ✅ VSCode Git integration commands (diff, status, log)
+  - ✅ REST API for graph diff computation
+  - ✅ Visual diff viewer with HTML webview
+  - [ ] Conflict resolution for graph merging (Phase 3 next)
+  - [ ] Graph history and version comparison UI (Phase 3 next)
+
+- [ ] **Frontend Components with Toppings** 🆕 NEW FEATURE
+  - Package-bundled frontend components for rich UI nodes
+  - React components distributed with topping packages
+  - Automatic component discovery from installed toppings
+  - Custom UI elements for data visualization and interaction
+  - Self-contained topping architecture (backend + frontend)
 
 - [ ] **Session Persistence**
   - Restore session state after browser refresh/crash
+  - Persistent execution contexts
 
 ---
 
@@ -112,35 +140,36 @@
 
 ```mermaid
 gantt
-    title Ramen Project Roadmap
+    title Ramen Project Roadmap (Updated 2025-08)
     dateFormat  YYYY-MM-DD
-    section Core MVP
-    Graph Model & Serialization      :done,    des1, 2024-07-01, 10d
-    Basic Frontend                  :active,  des2, 2024-07-05, 15d
-    Backend & Kernel                :         des3, 2024-07-10, 15d
-    Project Management              :         des4, 2024-07-15, 10d
-    Single Session Enforcement      :         des5, 2024-07-20, 5d
-    section Extensibility & Toppings
-    Topping System                  :         des6, 2024-07-25, 10d
-    Topping Management UI           :         des7, 2024-08-01, 7d
-    Custom Node/Edge Types          :         des8, 2024-08-05, 7d
-    section Advanced Execution & Usability
-    AOT Compilation & Caching       :         des9, 2024-08-10, 7d
-    Resource Management             :         des10, 2024-08-15, 7d
-    Improved Error Handling         :         des11, 2024-08-20, 7d
-    Graph Versioning & Migration    :         des12, 2024-08-25, 7d
-    Session Persistence             :         des13, 2024-08-30, 7d
+    section Core MVP ✅
+    Graph Model & Serialization      :done,    des1, 2024-07-01, 2024-12-01
+    Basic Frontend                   :done,    des2, 2024-07-01, 2024-12-01
+    Backend & Kernel                 :done,    des3, 2024-07-01, 2024-12-01
+    Project Management               :done,    des4, 2024-07-01, 2024-12-01
+    Single Session Enforcement      :done,    des5, 2024-07-01, 2024-12-01
+    section Extensibility & Toppings ✅
+    Topping System                   :done,    des6, 2024-10-01, 2025-01-01
+    Topping Management UI            :done,    des7, 2024-10-01, 2025-01-01
+    Custom Node/Edge Types           :done,    des8, 2024-10-01, 2025-01-01
+    section Advanced Execution & Usability 🚧
+    AOT Compilation & Caching        :         des9, 2025-02-01, 2025-02-15
+    Resource Management              :         des10, 2025-02-15, 2025-03-01
+    Improved Error Handling          :done,    des11, 2024-12-01, 2025-01-15
+    Graph Versioning & Migration     :done,    des12, 2024-12-01, 2025-01-15
+    Git Integration & Version Control :active, des13, 2025-01-15, 2025-02-15
+    Session Persistence              :         des14, 2025-03-01, 2025-03-15
     section Collaboration & Deployment
-    Multi-Session Support           :         des14, 2024-09-05, 7d
-    Remote/Server Deployment        :         des15, 2024-09-10, 7d
-    Authentication (Optional)       :         des16, 2024-09-15, 7d
+    Multi-Session Support            :         des15, 2025-03-15, 2025-04-01
+    Remote/Server Deployment         :         des16, 2025-04-01, 2025-04-15
+    Authentication (Optional)        :         des17, 2025-04-15, 2025-05-01
     section Community & Ecosystem
-    Documentation & Tutorials       :         des17, 2024-09-20, 10d
-    Example Projects & Templates    :         des18, 2024-09-25, 7d
-    Community Topping Registry      :         des19, 2024-09-30, 10d
-    API Stability & LTS             :         des20, 2024-10-05, 10d
+    Documentation & Tutorials        :         des18, 2025-05-01, 2025-05-15
+    Example Projects & Templates     :         des19, 2025-05-15, 2025-06-01
+    Community Topping Registry       :         des20, 2025-06-01, 2025-06-15
+    API Stability & LTS              :         des21, 2025-06-15, 2025-07-01
     section Ongoing
-    Testing & CI                    :active,  des21, 2024-07-01, 100d
-    Performance Optimization        :         des22, 2024-07-01, 100d
-    Feedback & Iteration            :         des23, 2024-07-01, 100d
+    Testing & CI                     :active,  des22, 2024-07-01, 2025-12-31
+    Performance Optimization         :         des23, 2025-01-01, 2025-12-31
+    Feedback & Iteration             :active,  des24, 2024-07-01, 2025-12-31
 ``` 

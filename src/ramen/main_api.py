@@ -11,8 +11,9 @@ from datetime import datetime
 from .api.execution import router as execution_router
 from .api.graph import router as graph_router
 from .api.nodes import router as nodes_router
-from .api.components import router as components_router
+from .api.frontend_components import router as frontend_components_router
 from .api.system import router as system_router
+from .api.git import router as git_router
 from .topping.loader import load_toppings
 
 # Create FastAPI app
@@ -46,8 +47,9 @@ async def startup_event():
 app.include_router(execution_router)
 app.include_router(graph_router)
 app.include_router(nodes_router)
-app.include_router(components_router)
+app.include_router(frontend_components_router)
 app.include_router(system_router)
+app.include_router(git_router)
 
 # Root endpoint
 @app.get("/")

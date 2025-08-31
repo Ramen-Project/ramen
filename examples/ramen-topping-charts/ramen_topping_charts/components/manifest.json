@@ -1,0 +1,68 @@
+{
+  "components": {
+    "InteractiveScatterPlot": {
+      "path": "InteractiveScatterPlot.tsx",
+      "dependencies": ["react", "recharts", "d3-scale"],
+      "description": "Interactive scatter plot with selection and zoom capabilities",
+      "props_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "description": "Array of data points"
+          },
+          "xColumn": {
+            "type": "string",
+            "description": "Name of X-axis column"
+          },
+          "yColumn": {
+            "type": "string", 
+            "description": "Name of Y-axis column"
+          },
+          "colorColumn": {
+            "type": "string",
+            "description": "Optional column for color grouping"
+          },
+          "onSelectionChange": {
+            "type": "function",
+            "description": "Callback when data selection changes"
+          }
+        },
+        "required": ["data", "xColumn", "yColumn"]
+      }
+    },
+    "InteractiveDataTable": {
+      "path": "InteractiveDataTable.tsx",
+      "dependencies": ["react", "react-table", "styled-components"],
+      "description": "Interactive data table with filtering, sorting, and pagination",
+      "props_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "description": "Array of data rows"
+          },
+          "pageSize": {
+            "type": "number",
+            "description": "Number of rows per page",
+            "default": 20
+          },
+          "searchable": {
+            "type": "boolean",
+            "description": "Enable search functionality",
+            "default": true
+          },
+          "onFilterChange": {
+            "type": "function",
+            "description": "Callback when filter changes"
+          },
+          "onSelectionChange": {
+            "type": "function",
+            "description": "Callback when selection changes"
+          }
+        },
+        "required": ["data"]
+      }
+    }
+  }
+}

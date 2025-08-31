@@ -7,6 +7,7 @@ from .topping_base import (
     NodeContext,
     PortDefinition,
     PortType,
+    FrontendComponent,
     Node,
     on
 )
@@ -32,6 +33,7 @@ __all__ = [
     'NodeContext',
     'PortDefinition',
     'PortType',
+    'FrontendComponent',
     # Advanced API
     'Node',
     'on',
