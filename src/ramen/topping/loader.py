@@ -306,23 +306,32 @@ class ToppingLoader:
         self._loaded_modules.clear()
 
 
+# Global loader instance
+_global_loader = None
+
 # Convenience functions
 def load_toppings() -> ToppingLoader:
-    """Load all available toppings."""
-    loader = ToppingLoader()
+    """Load all available toppings. Uses singleton pattern to avoid duplicate loading."""
+    global _global_loader
+    
+    if _global_loader is not None:
+        return _global_loader
+        
+    logger.info("Initializing topping loader...")
+    _global_loader = ToppingLoader()
     
     # Load built-in nodes topping first
     try:
         from ..toppings.builtin_topping import get_topping as get_builtin_topping
         builtin_topping = get_builtin_topping()
         builtin_topping.initialize()
-        loader.registry.register_topping(builtin_topping)
+        _global_loader.registry.register_topping(builtin_topping)
         logger.info("Loaded built-in nodes topping")
     except Exception as e:
         logger.error(f"Failed to load built-in nodes topping: {e}")
     
     # Load from entry points
-    loader.load_from_entry_points()
+    _global_loader.load_from_entry_points()
     
     # External toppings are disabled to keep core system lightweight
     # Users can manually install and load external toppings if needed
@@ -332,7 +341,7 @@ def load_toppings() -> ToppingLoader:
     # This reduces startup time and eliminates error messages
     logger.info("External toppings disabled - using built-in nodes only")
             
-    return loader
+    return _global_loader
 
 
 def get_registry() -> ToppingRegistry:
