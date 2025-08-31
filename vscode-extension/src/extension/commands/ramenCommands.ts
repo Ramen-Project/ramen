@@ -442,6 +442,152 @@ export const viewCommands: Array<{ metadata: CommandMetadata; handler: CommandHa
                 await vscode.commands.executeCommand('workbench.action.closeSidebar');
             }
         }
+    },
+    {
+        metadata: {
+            id: 'showVersionHistory',
+            title: 'Show Version History',
+            category: 'Git',
+            icon: '$(history)',
+            keybinding: 'ctrl+alt+h',
+            when: 'resourceExtname == .ramen'
+        },
+        handler: async (context: CommandContext, uri?: vscode.Uri) => {
+            const graphUri = uri || context.activeEditor?.document.uri;
+            
+            if (!graphUri || !graphUri.fsPath.endsWith('.ramen')) {
+                vscode.window.showErrorMessage('No Ramen graph selected');
+                return;
+            }
+            
+            try {
+                const panel = vscode.window.createWebviewPanel(
+                    'ramenVersionHistory',
+                    `Version History - ${path.basename(graphUri.fsPath)}`,
+                    vscode.ViewColumn.Beside,
+                    {
+                        enableScripts: true,
+                        retainContextWhenHidden: true,
+                        localResourceRoots: [
+                            vscode.Uri.file(path.join(context.extensionPath, 'media')),
+                            vscode.Uri.file(path.join(context.extensionPath, 'out'))
+                        ]
+                    }
+                );
+                
+                // Generate webview HTML content for version history
+                const webviewUri = panel.webview.asWebviewUri(
+                    vscode.Uri.file(path.join(context.extensionPath, 'media', 'version-history.html'))
+                );
+                
+                panel.webview.html = getVersionHistoryWebviewContent(panel.webview, webviewUri, graphUri.fsPath);
+                
+                // Handle messages from the webview
+                panel.webview.onDidReceiveMessage(
+                    async message => {
+                        switch (message.command) {
+                            case 'getHistory':
+                                try {
+                                    // Make API call to backend to get git history
+                                    const relativePath = vscode.workspace.asRelativePath(graphUri);
+                                    // This would make an API call to /git/history endpoint
+                                    panel.webview.postMessage({
+                                        command: 'historyData',
+                                        data: {
+                                            graphPath: relativePath,
+                                            commits: [], // Would be populated from API
+                                            branches: [],
+                                            currentBranch: 'main'
+                                        }
+                                    });
+                                } catch (error) {
+                                    panel.webview.postMessage({
+                                        command: 'error',
+                                        error: `Failed to load history: ${error}`
+                                    });
+                                }
+                                break;
+                            case 'viewCommit':
+                                const commitHash = message.commitHash;
+                                // Open diff view for the commit
+                                vscode.window.showInformationMessage(`Viewing commit: ${commitHash}`);
+                                break;
+                            case 'compareCommits':
+                                const { fromCommit, toCommit } = message;
+                                // Show diff between two commits
+                                vscode.window.showInformationMessage(`Comparing ${fromCommit} to ${toCommit}`);
+                                break;
+                        }
+                    },
+                    undefined,
+                    context.subscriptions
+                );
+                
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to show version history: ${error}`);
+            }
+        }
+    },
+    {
+        metadata: {
+            id: 'showGitDiff',
+            title: 'Show Git Diff',
+            category: 'Git',
+            icon: '$(diff)',
+            when: 'resourceExtname == .ramen'
+        },
+        handler: async (context: CommandContext, uri?: vscode.Uri) => {
+            const graphUri = uri || context.activeEditor?.document.uri;
+            
+            if (!graphUri || !graphUri.fsPath.endsWith('.ramen')) {
+                vscode.window.showErrorMessage('No Ramen graph selected');
+                return;
+            }
+            
+            try {
+                const panel = vscode.window.createWebviewPanel(
+                    'ramenGitDiff',
+                    `Git Diff - ${path.basename(graphUri.fsPath)}`,
+                    vscode.ViewColumn.Beside,
+                    {
+                        enableScripts: true,
+                        retainContextWhenHidden: true
+                    }
+                );
+                
+                panel.webview.html = getGitDiffWebviewContent();
+                
+                // Handle webview messages for diff viewing
+                panel.webview.onDidReceiveMessage(
+                    async message => {
+                        switch (message.command) {
+                            case 'getDiff':
+                                try {
+                                    const relativePath = vscode.workspace.asRelativePath(graphUri);
+                                    // This would make API calls to /git/diff endpoint
+                                    panel.webview.postMessage({
+                                        command: 'diffData',
+                                        data: {
+                                            // Would be populated from API call
+                                        }
+                                    });
+                                } catch (error) {
+                                    panel.webview.postMessage({
+                                        command: 'error',
+                                        error: `Failed to get diff: ${error}`
+                                    });
+                                }
+                                break;
+                        }
+                    },
+                    undefined,
+                    context.subscriptions
+                );
+                
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to show git diff: ${error}`);
+            }
+        }
     }
 ];
 
@@ -562,6 +708,265 @@ export const nodeCommands: Array<{ metadata: CommandMetadata; handler: CommandHa
         }
     }
 ];
+
+// Helper functions for webview content
+function getVersionHistoryWebviewContent(webview: vscode.Webview, webviewUri: vscode.Uri, graphPath: string): string {
+    return `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Version History</title>
+        <style>
+            body {
+                font-family: var(--vscode-font-family);
+                color: var(--vscode-editor-foreground);
+                background-color: var(--vscode-editor-background);
+                margin: 0;
+                padding: 20px;
+            }
+            .timeline {
+                position: relative;
+                max-width: 800px;
+                margin: 0 auto;
+            }
+            .timeline::after {
+                content: '';
+                position: absolute;
+                width: 2px;
+                background-color: var(--vscode-activityBarBadge-background);
+                top: 0;
+                bottom: 0;
+                left: 50px;
+                margin-left: -1px;
+            }
+            .commit {
+                padding: 10px 40px;
+                position: relative;
+                background-color: inherit;
+                width: 100%;
+                box-sizing: border-box;
+                margin: 10px 0;
+                border: 1px solid var(--vscode-panel-border);
+                border-radius: 6px;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+            .commit:hover {
+                background-color: var(--vscode-list-hoverBackground);
+            }
+            .commit::after {
+                content: '';
+                position: absolute;
+                width: 12px;
+                height: 12px;
+                left: 44px;
+                background-color: var(--vscode-activityBarBadge-background);
+                border: 2px solid var(--vscode-editor-background);
+                top: 15px;
+                border-radius: 50%;
+                z-index: 1;
+            }
+            .commit-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+            .commit-hash {
+                font-family: monospace;
+                background-color: var(--vscode-textBlockQuote-background);
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 12px;
+            }
+            .commit-date {
+                color: var(--vscode-descriptionForeground);
+                font-size: 12px;
+            }
+            .commit-message {
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+            .commit-author {
+                color: var(--vscode-descriptionForeground);
+                font-size: 12px;
+            }
+            .loading {
+                text-align: center;
+                padding: 40px;
+            }
+            .error {
+                color: var(--vscode-errorForeground);
+                text-align: center;
+                padding: 20px;
+            }
+            .header {
+                margin-bottom: 20px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid var(--vscode-panel-border);
+            }
+            .graph-path {
+                color: var(--vscode-descriptionForeground);
+                font-size: 14px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h2>Version History</h2>
+            <div class="graph-path">${graphPath}</div>
+        </div>
+        <div id="content">
+            <div class="loading">Loading version history...</div>
+        </div>
+
+        <script>
+            const vscode = acquireVsCodeApi();
+            
+            window.addEventListener('message', event => {
+                const message = event.data;
+                switch (message.command) {
+                    case 'historyData':
+                        renderHistory(message.data);
+                        break;
+                    case 'error':
+                        showError(message.error);
+                        break;
+                }
+            });
+            
+            function renderHistory(data) {
+                const content = document.getElementById('content');
+                if (data.commits.length === 0) {
+                    content.innerHTML = '<div class="error">No version history found</div>';
+                    return;
+                }
+                
+                let html = '<div class="timeline">';
+                data.commits.forEach(commit => {
+                    html += \`
+                        <div class="commit" onclick="viewCommit('\${commit.hash}')">
+                            <div class="commit-header">
+                                <span class="commit-hash">\${commit.shortHash}</span>
+                                <span class="commit-date">\${new Date(commit.timestamp * 1000).toLocaleString()}</span>
+                            </div>
+                            <div class="commit-message">\${commit.subject}</div>
+                            <div class="commit-author">by \${commit.author}</div>
+                        </div>
+                    \`;
+                });
+                html += '</div>';
+                content.innerHTML = html;
+            }
+            
+            function showError(error) {
+                const content = document.getElementById('content');
+                content.innerHTML = \`<div class="error">\${error}</div>\`;
+            }
+            
+            function viewCommit(commitHash) {
+                vscode.postMessage({
+                    command: 'viewCommit',
+                    commitHash: commitHash
+                });
+            }
+            
+            // Request history data on load
+            vscode.postMessage({ command: 'getHistory' });
+        </script>
+    </body>
+    </html>`;
+}
+
+function getGitDiffWebviewContent(): string {
+    return `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Git Diff</title>
+        <style>
+            body {
+                font-family: var(--vscode-font-family);
+                color: var(--vscode-editor-foreground);
+                background-color: var(--vscode-editor-background);
+                margin: 0;
+                padding: 20px;
+            }
+            .diff-container {
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+            .diff-summary {
+                margin-bottom: 20px;
+                padding: 15px;
+                border: 1px solid var(--vscode-panel-border);
+                border-radius: 6px;
+                background-color: var(--vscode-textBlockQuote-background);
+            }
+            .diff-stats {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 10px;
+            }
+            .stat {
+                font-weight: 600;
+            }
+            .added { color: var(--vscode-gitDecoration-addedResourceForeground); }
+            .removed { color: var(--vscode-gitDecoration-deletedResourceForeground); }
+            .modified { color: var(--vscode-gitDecoration-modifiedResourceForeground); }
+            .loading {
+                text-align: center;
+                padding: 40px;
+            }
+            .error {
+                color: var(--vscode-errorForeground);
+                text-align: center;
+                padding: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="diff-container">
+            <h2>Git Diff</h2>
+            <div id="content">
+                <div class="loading">Loading diff...</div>
+            </div>
+        </div>
+
+        <script>
+            const vscode = acquireVsCodeApi();
+            
+            window.addEventListener('message', event => {
+                const message = event.data;
+                switch (message.command) {
+                    case 'diffData':
+                        renderDiff(message.data);
+                        break;
+                    case 'error':
+                        showError(message.error);
+                        break;
+                }
+            });
+            
+            function renderDiff(data) {
+                const content = document.getElementById('content');
+                // Render diff data here
+                content.innerHTML = '<div class="diff-summary">Diff content would be rendered here</div>';
+            }
+            
+            function showError(error) {
+                const content = document.getElementById('content');
+                content.innerHTML = \`<div class="error">\${error}</div>\`;
+            }
+            
+            // Request diff data on load
+            vscode.postMessage({ command: 'getDiff' });
+        </script>
+    </body>
+    </html>`;
+}
 
 // All commands combined
 export const allCommands = [

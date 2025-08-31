@@ -50,12 +50,7 @@ class AdvancedCSVReader(Node(CSVReaderState)):
             ]
         )
     
-    def get_frontend_component(self):
-        """Return frontend component configuration."""
-        return {
-            "component_path": "dist/components/AdvancedCSVReaderUI.js",
-            "component_name": "AdvancedCSVReaderUI"
-        }
+    # Frontend components removed
     
     @on("input_changed")
     def handle_input_change(self, event_data: dict):
@@ -184,11 +179,7 @@ class InteractiveChart(Node(InteractiveChartState)):
             ]
         )
     
-    def get_frontend_component(self):
-        return {
-            "component_path": "dist/components/InteractiveChartUI.js", 
-            "component_name": "InteractiveChartUI"
-        }
+    # Frontend components removed
     
     @on("ui_interaction")
     def handle_ui_interaction(self, event_data: dict):

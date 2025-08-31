@@ -14,6 +14,7 @@ import { CommandRegistry } from './commands/commandRegistry';
 import { allCommands } from './commands/ramenCommands';
 import { StateManager } from './core/stateManager';
 import { ErrorHandler } from './core/errorHandler';
+import { registerGitCommands } from './commands/gitCommands';
 
 let serverManager: RamenServerManager;
 let webviewManager: RamenWebviewManager;
@@ -116,18 +117,8 @@ export async function activate(context: vscode.ExtensionContext) {
             await commands.refreshDependencies();
         }),
         
-        // Server management commands
-        vscode.commands.registerCommand('ramen.startServer', async () => {
-            await commands.startServer();
-        }),
-        
-        vscode.commands.registerCommand('ramen.stopServer', async () => {
-            await commands.stopServer();
-        }),
-        
-        vscode.commands.registerCommand('ramen.restartServer', async () => {
-            await commands.restartServer();
-        }),
+        // Server management commands are now registered via CommandRegistry
+        // Removed duplicate registrations of startServer, stopServer, restartServer
         
         // Register command palette command
         vscode.commands.registerCommand('ramen.showCommandPalette', async () => {
@@ -173,6 +164,9 @@ export async function activate(context: vscode.ExtensionContext) {
     //     })
     // );
 
+    // Register Git integration commands
+    registerGitCommands(context);
+    
     console.log('Ramen extension activated successfully');
 }
 

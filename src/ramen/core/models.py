@@ -107,11 +107,7 @@ class GraphMetadata:
     """圖形元數據"""
     name: str
     description: Optional[str] = None
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    last_modified: str = field(default_factory=lambda: datetime.now().isoformat())
     version: str = "1.0.0"
-    author: Optional[str] = None
-    tags: Optional[List[str]] = None
 
 @dataclass
 class Viewport:
@@ -146,7 +142,6 @@ class TypeInfo:
     color: str
     description: Optional[str] = None
     python_type: Optional[str] = None
-    validator: Optional[Any] = None  # 函數不能序列化，需要特別處理
 
 # 類型註冊表
 TypeRegistry = Dict[TypeId, TypeInfo]
@@ -262,11 +257,7 @@ class GraphDeserializer:
                 metadata = GraphMetadata(
                     name=metadata_data.get('name', 'Unknown'),
                     description=metadata_data.get('description'),
-                    created_at=metadata_data.get('created_at', datetime.now().isoformat()),
-                    last_modified=metadata_data.get('last_modified', datetime.now().isoformat()),
-                    version=metadata_data.get('version', '1.0.0'),
-                    author=metadata_data.get('author'),
-                    tags=metadata_data.get('tags')
+                    version=metadata_data.get('version', '1.0.0')
                 )
                 
                 # 處理嵌套的 nodes

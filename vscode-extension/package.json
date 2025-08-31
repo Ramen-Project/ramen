@@ -82,21 +82,71 @@
         "command": "ramen.refreshDependencies",
         "title": "Ramen: Refresh Dependencies",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "ramen.git.diff",
+        "title": "Ramen: Show Git Diff",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "ramen.git.status",
+        "title": "Ramen: Git Status",
+        "icon": "$(source-control)"
+      },
+      {
+        "command": "ramen.git.log",
+        "title": "Ramen: Git Log",
+        "icon": "$(history)"
+      },
+      {
+        "command": "ramen.git.merge",
+        "title": "Ramen: Git Merge (Interactive)",
+        "icon": "$(git-merge)"
+      },
+      {
+        "command": "ramen.git.mergeHead",
+        "title": "Ramen: Git Merge HEAD",
+        "icon": "$(git-pull-request)"
       }
     ],
     "menus": {
-      "explorer/context": [
-        {
-          "command": "ramen.createNewGraph",
-          "when": "explorerResourceIsFolder",
-          "group": "2_workspace@1"
-        }
-      ],
       "editor/title": [
         {
           "when": "resourceExtname == .ramen",
           "command": "ramen.executeGraph",
           "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .ramen && gitOpenRepositoryCount != 0",
+          "command": "ramen.git.diff",
+          "group": "1_git"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "ramen.createNewGraph",
+          "when": "explorerResourceIsFolder",
+          "group": "2_workspace@1"
+        },
+        {
+          "command": "ramen.git.diff",
+          "when": "resourceExtname == .ramen && gitOpenRepositoryCount != 0",
+          "group": "7_modification"
+        },
+        {
+          "command": "ramen.git.log",
+          "when": "resourceExtname == .ramen && gitOpenRepositoryCount != 0", 
+          "group": "7_modification"
+        },
+        {
+          "command": "ramen.git.merge",
+          "when": "resourceExtname == .ramen && gitOpenRepositoryCount != 0", 
+          "group": "8_merge"
+        },
+        {
+          "command": "ramen.git.mergeHead",
+          "when": "resourceExtname == .ramen && gitOpenRepositoryCount != 0", 
+          "group": "8_merge"
         }
       ],
       "commandPalette": [

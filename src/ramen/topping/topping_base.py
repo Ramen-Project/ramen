@@ -35,6 +35,14 @@ class PortDefinition:
 
 
 @dataclass
+class FrontendComponent:
+    """Definition of a frontend component for a node."""
+    component_name: str
+    component_path: str  # Relative path within the topping package
+    dependencies: List[str] = field(default_factory=list)  # npm dependencies
+    props_schema: Optional[Dict[str, Any]] = None  # JSON schema for component props
+
+@dataclass  
 class NodeMetadata:
     """Metadata for a node type."""
     namespace: str
@@ -47,6 +55,7 @@ class NodeMetadata:
     inputs: List[PortDefinition] = field(default_factory=list)
     outputs: List[PortDefinition] = field(default_factory=list)
     properties: Dict[str, Any] = field(default_factory=dict)
+    frontend_component: Optional[FrontendComponent] = None
     
     @property
     def full_type(self) -> str:
@@ -160,9 +169,7 @@ def Node(state_class: Type[BaseModel]):
             """Get node metadata (must be implemented by subclasses)."""
             raise NotImplementedError("Subclasses must implement get_metadata")
         
-        def get_frontend_component(self) -> Optional[Dict[str, Any]]:
-            """Get frontend component configuration (optional)."""
-            return None
+        # Frontend components removed
     
     return DynamicNode
 

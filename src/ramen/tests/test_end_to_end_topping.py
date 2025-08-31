@@ -14,7 +14,7 @@ from ramen.topping import (
     ramen_node, input_port, output_port, get_simple_node_metadata
 )
 from ramen.topping.websocket_sync import WebSocketStateManager, get_state_manager
-from ramen.topping.component_loader import ComponentLoader, get_component_loader
+# Component loader removed
 
 
 class TestEndToEndSimpleAPI(unittest.TestCase):
@@ -276,71 +276,7 @@ class TestWebSocketStateSync(unittest.TestCase):
         self.assertEqual(manager.node_id, node_id)
 
 
-class TestComponentLoader(unittest.TestCase):
-    """Test frontend component loading."""
-    
-    def setUp(self):
-        """Set up test environment."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.component_path = os.path.join(self.temp_dir, "TestComponent.js")
-        
-        # Create a mock component file
-        component_content = """
-        import React from 'react';
-        export const TestComponent = ({ state, onEvent }) => {
-            return <div>Test Component: {state.value}</div>;
-        };
-        """
-        with open(self.component_path, 'w') as f:
-            f.write(component_content)
-    
-    def tearDown(self):
-        """Clean up test environment."""
-        import shutil
-        shutil.rmtree(self.temp_dir)
-    
-    def test_component_registration_and_loading(self):
-        """Test component registration and loading."""
-        
-        class TestState(BaseModel):
-            value: str = "test"
-        
-        class TestNodeWithComponent(Node(TestState)):
-            def __init__(self, component_path):
-                super().__init__()
-                self.component_path = component_path
-                
-            def get_metadata(self) -> NodeMetadata:
-                return NodeMetadata(
-                    namespace="test",
-                    node_type="component_test",
-                    display_name="Component Test Node"
-                )
-            
-            def get_frontend_component(self) -> Dict[str, Any]:
-                return {
-                    "component_path": self.component_path,
-                    "component_name": "TestComponent",
-                    "dependencies": ["react"]
-                }
-        
-        # Create component loader
-        loader = ComponentLoader()
-        node = TestNodeWithComponent(self.component_path)
-        
-        # Load component for node
-        component_info = loader.load_component_for_node(node)
-        
-        self.assertIsNotNone(component_info)
-        self.assertEqual(component_info["component_path"], self.component_path)
-        self.assertIn("react", component_info["dependencies"])
-        
-        # Test component manifest generation
-        manifest = loader.generate_component_manifest()
-        
-        self.assertIn("components", manifest)
-        self.assertIn("dependencies", manifest)
-        self.assertIn("react", manifest["dependencies"])
+# Component loader tests removed
 
 
 if __name__ == "__main__":

@@ -160,9 +160,7 @@ def Node(state_class: Type[BaseModel]):
             """Get node metadata (must be implemented by subclasses)."""
             raise NotImplementedError("Subclasses must implement get_metadata")
         
-        def get_frontend_component(self) -> Optional[Dict[str, Any]]:
-            """Get frontend component configuration (optional)."""
-            return None
+        # Frontend components removed
     
     return DynamicNode
 

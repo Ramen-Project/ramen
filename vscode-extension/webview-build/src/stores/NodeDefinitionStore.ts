@@ -23,7 +23,6 @@ import {
   BookmarkIcon,
   StackIcon,
 } from '@radix-ui/react-icons';
-import { OpNodeProps, NodeIOProps } from '../components/Node/OperationNode';
 
 export interface PortDefinition {
   name: string;
@@ -69,10 +68,17 @@ interface NodeDefinitionState {
 
 // Icon mapping for categories
 const CATEGORY_ICONS: Record<string, React.ComponentType> = {
+  'Core': CubeIcon,
+  'Math': PlusIcon,
+  'Logic': LightningBoltIcon,
+  'String': CodeIcon,
+  'Collection': LayersIcon,
+  'Object': MixIcon,
+  'Type': GearIcon,
+  'Flow': LightningBoltIcon,
+  'Debug': MagnifyingGlassIcon,
   'File I/O': FileTextIcon,
   'Data Operations': MixIcon,
-  'Math & Statistics': PlusIcon,
-  'Math': PlusIcon,
   'Machine Learning': BarChartIcon,
   'Data Visualization': BarChartIcon,
   'Text Processing': CodeIcon,
@@ -84,13 +90,12 @@ const CATEGORY_ICONS: Record<string, React.ComponentType> = {
   'Automation': LightningBoltIcon,
   'Data Quality': MagnifyingGlassIcon,
   'Utilities': GearIcon,
-  'Basic': CubeIcon,
-  'Logic': LightningBoltIcon,
   'NumPy': PlusIcon,
   'Pandas': LayersIcon,
   'Torch': BarChartIcon,
   'Custom': GearIcon,
   'Context Manager': GearIcon,
+  'Class Definitions': GearIcon,
   // Neural Network Categories
   'Convolutional': SquareIcon,
   'Linear': Link1Icon,
@@ -106,10 +111,17 @@ const CATEGORY_ICONS: Record<string, React.ComponentType> = {
 
 // Color mapping for categories
 const CATEGORY_COLORS: Record<string, string> = {
+  'Core': '#607D8B',
+  'Math': '#2196F3',
+  'Logic': '#FFC107',
+  'String': '#06b6d4',
+  'Collection': '#f59e42',
+  'Object': '#9C27B0',
+  'Type': '#00BCD4',
+  'Flow': '#f59e0b',
+  'Debug': '#ec4899',
   'File I/O': '#3b82f6',
   'Data Operations': '#f59e42',
-  'Math & Statistics': '#a259e6',
-  'Math': '#2196F3',
   'Machine Learning': '#ef4444',
   'Data Visualization': '#8b5cf6',
   'Text Processing': '#06b6d4',
@@ -121,13 +133,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Automation': '#f59e0b',
   'Data Quality': '#ec4899',
   'Utilities': '#6b7280',
-  'Basic': '#607D8B',
-  'Logic': '#FFC107',
   'NumPy': '#013243',
   'Pandas': '#150954',
   'Torch': '#EE4C2C',
   'Custom': '#9C27B0',
   'Context Manager': '#00BCD4',
+  'Class Definitions': '#9C27B0',
   // Neural Network Categories
   'Convolutional': '#FF6B6B',     // Red for conv layers
   'Linear': '#4ECDC4',            // Teal for linear layers
@@ -141,11 +152,98 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Container': '#7F8C8D',         // Gray for containers
 };
 
+// Normalize category names by extracting the main category
+function normalizeCategory(category: string): string {
+  // Handle subcategories like "Math/Basic" -> "Math"
+  if (category.includes('/')) {
+    const mainCategory = category.split('/')[0];
+    // Filter out ML categories
+    if (mainCategory === 'ML') {
+      return null; // Will be filtered out
+    }
+    return mainCategory;
+  }
+  
+  // Map some specific categories
+  const categoryMappings: Record<string, string> = {
+    'Test': 'Debug',
+    'Testing': 'Debug',
+    'Text': 'String',
+    'Basic': 'Core',
+    'Utilities': 'Core',
+    'Class Definitions': 'Type',
+  };
+  
+  // Filter out ML categories
+  if (category === 'ML' || category === 'Machine Learning') {
+    return null;
+  }
+  
+  return categoryMappings[category] || category;
+}
+
 // Convert API response to internal format
 function convertApiNodesToCategories(apiNodes: Record<string, any[]>): NodeCategory[] {
-  const categories: NodeCategory[] = [];
+  // First, merge subcategories into main categories
+  const mergedCategories: Record<string, any[]> = {};
   
   for (const [categoryName, nodes] of Object.entries(apiNodes)) {
+    const mainCategory = normalizeCategory(categoryName);
+    
+    // Skip null categories (filtered out ML nodes)
+    if (mainCategory === null) {
+      continue;
+    }
+    
+    if (!mergedCategories[mainCategory]) {
+      mergedCategories[mainCategory] = [];
+    }
+    
+    // Add nodes to the main category
+    mergedCategories[mainCategory].push(...nodes.map(node => ({
+      ...node,
+      originalCategory: categoryName // Keep track of original category
+    })));
+  }
+  
+  // Now convert to NodeCategory array
+  const categories: NodeCategory[] = [];
+  
+  // Define preferred order of categories
+  const categoryOrder = [
+    'Core', 'Math', 'Logic', 'String', 'Collection', 
+    'Object', 'Type', 'Flow', 'Debug',
+    'NumPy', 'Pandas', 'Torch', 'Context Manager'
+  ];
+  
+  // Add categories in preferred order first
+  for (const categoryName of categoryOrder) {
+    if (mergedCategories[categoryName]) {
+      const category: NodeCategory = {
+        name: categoryName,
+        icon: CATEGORY_ICONS[categoryName] || GearIcon,
+        color: CATEGORY_COLORS[categoryName] || '#6b7280',
+        nodes: mergedCategories[categoryName].map(node => ({
+          type: node.type,
+          namespace: node.namespace,
+          nodeType: node.nodeType,
+          displayName: node.displayName,
+          description: node.description,
+          icon: node.icon,
+          color: node.color,
+          category: categoryName,
+          inputs: node.inputs || [],
+          outputs: node.outputs || [],
+          properties: node.properties || {}
+        }))
+      };
+      categories.push(category);
+      delete mergedCategories[categoryName];
+    }
+  }
+  
+  // Add any remaining categories not in the preferred order
+  for (const [categoryName, nodes] of Object.entries(mergedCategories)) {
     const category: NodeCategory = {
       name: categoryName,
       icon: CATEGORY_ICONS[categoryName] || GearIcon,

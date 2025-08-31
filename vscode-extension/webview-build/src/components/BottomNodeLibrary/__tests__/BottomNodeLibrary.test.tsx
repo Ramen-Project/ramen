@@ -8,14 +8,14 @@ vi.mock('../../../stores/NodeDefinitionStore', () => ({
   useNodeDefinitionStore: vi.fn(() => ({
     getAllCategories: vi.fn(() => [
       {
-        name: 'FileIO',
+        name: 'Core',
         icon: () => null,
-        color: '#3b82f6',
+        color: '#607D8B',
         nodes: [
           { 
             name: 'ReadFile',
             displayName: 'ReadFile',
-            namespace: 'FileIO',
+            namespace: 'Core',
             description: 'Read file content',
             inputs: [{ name: 'path', type: 'string' }],
             outputs: [{ name: 'content', type: 'string' }]
@@ -23,7 +23,7 @@ vi.mock('../../../stores/NodeDefinitionStore', () => ({
           { 
             name: 'WriteFile',
             displayName: 'WriteFile',
-            namespace: 'FileIO', 
+            namespace: 'Core', 
             description: 'Write content to file',
             inputs: [{ name: 'path', type: 'string' }, { name: 'content', type: 'string' }],
             outputs: []
@@ -110,7 +110,7 @@ describe('BottomNodeLibrary', () => {
     render(<BottomNodeLibrary />)
     
     // Should show tab buttons for each category
-    expect(screen.getByRole('tab', { name: /FileIO/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Core/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /Math/i })).toBeInTheDocument()
   })
 
@@ -121,7 +121,7 @@ describe('BottomNodeLibrary', () => {
     // Expand the library
     await user.keyboard(' ')
     
-    // Should show FileIO nodes by default (first tab)
+    // Should show Core nodes by default (first tab)
     expect(screen.getByText('ReadFile')).toBeInTheDocument()
     expect(screen.queryByText('Add')).not.toBeInTheDocument()
     

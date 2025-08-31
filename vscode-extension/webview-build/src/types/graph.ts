@@ -149,16 +149,8 @@ export interface GraphMetadata {
   name: string;
   /** 圖形描述 */
   description?: string;
-  /** 創建時間 */
-  createdAt: string;
-  /** 最後修改時間 */
-  lastModified: string;
   /** 版本號 */
   version: string;
-  /** 作者信息 */
-  author?: string;
-  /** 標籤 */
-  tags?: string[];
 }
 
 /**
@@ -228,8 +220,6 @@ export interface TypeRegistry {
     description?: string;
     /** Python 類型對應 */
     pythonType?: string;
-    /** 類型驗證函數 */
-    validator?: (value: any) => boolean;
   };
 }
 

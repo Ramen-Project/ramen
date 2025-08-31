@@ -68,22 +68,9 @@ class KernelRuntime:
             except Exception as e:
                 logger.warning(f"Failed to load toppings from entry points: {e}")
             
-            # Try to load standard toppings
-            standard_toppings = [
-                "ramen_topping_numpy",
-                "ramen_topping_pandas",
-                "ramen_topping_torch",
-                "ramen_topping_plots",
-                "ramen_topping_nn_builder"
-            ]
-            
-            for topping_module in standard_toppings:
-                try:
-                    self.topping_loader.load_from_module(topping_module)
-                    loaded_toppings.append(topping_module)
-                except Exception:
-                    # Topping not available, skip
-                    pass
+            # External toppings are disabled to keep runtime lightweight
+            # Only built-in nodes are available by default
+            logger.info("External toppings disabled - using built-in nodes only")
             
             # Get available nodes from registry
             registry = get_registry()

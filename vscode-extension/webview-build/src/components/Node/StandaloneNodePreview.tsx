@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiFileText, FiFilter, FiHash, FiCpu, FiHome, FiPlus, FiDatabase, FiGitBranch, FiBox, FiTool } from "react-icons/fi";
+import { FiFileText, FiFilter, FiHash, FiCpu, FiHome, FiPlus, FiDatabase, FiGitBranch, FiBox, FiTool, FiBarChart } from "react-icons/fi";
 import { NodeBody } from "./Bases";
 import { PreviewPort } from "./PreviewPort";
 import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
@@ -19,15 +19,20 @@ export type OpNodeProps = {
     outputs: Array<NodeIOProps>
 }
 
-const NAMESPACE_ICONS: Record<string, any> = {
-    // Legacy namespaces
-    FileIO: FiFileText,
-    DataOps: FiFilter,
-    Math: FiHash,
-    MachineLearning: FiBarChart,
-    builtin: FiCpu,
+// Package/Category icons (not namespace)
+const PACKAGE_ICONS: Record<string, any> = {
+    // Main categories
+    Core: FiHome,
+    Math: FiPlus,
+    Collection: FiDatabase,
+    Logic: FiGitBranch,
+    String: FiFileText,
+    Type: FiBox,
+    Flow: FiGitBranch,
+    Object: FiBox,
+    Debug: FiTool,
     
-    // New namespaces
+    // Also support lowercase versions
     core: FiHome,
     math: FiPlus,
     collection: FiDatabase,
@@ -37,32 +42,45 @@ const NAMESPACE_ICONS: Record<string, any> = {
     flow: FiGitBranch,
     object: FiBox,
     debug: FiTool,
-    ml: FiBarChart,
     
-    default: FiFileText
+    // Legacy support
+    FileIO: FiFileText,
+    DataOps: FiFilter,
+    builtin: FiCpu,
+    
+    default: FiCpu
 };
 
-const NAMESPACE_COLORS: Record<string, string> = {
-    // Legacy namespaces
+// Package/Category colors (not namespace)
+const PACKAGE_COLORS: Record<string, string> = {
+    // Main categories with consistent colors
+    Core: '#607D8B',
+    Math: '#2196F3',
+    Collection: '#f59e42',
+    Logic: '#FFC107',
+    String: '#06b6d4',
+    Type: '#00BCD4',
+    Flow: '#f59e0b',
+    Object: '#9C27B0',
+    Debug: '#ec4899',
+    
+    // Also support lowercase versions
+    core: '#607D8B',
+    math: '#2196F3',
+    collection: '#f59e42',
+    logic: '#FFC107',
+    string: '#06b6d4',
+    type: '#00BCD4',
+    flow: '#f59e0b',
+    object: '#9C27B0',
+    debug: '#ec4899',
+    
+    // Legacy support
     FileIO: '#3b82f6',
     DataOps: '#f59e42',
-    Math: '#a259e6',
-    MachineLearning: '#ef4444',
     builtin: '#10b981',
     
-    // New namespaces
-    core: '#607D8B',
-    math: '#4CAF50',
-    collection: '#2196F3',
-    logic: '#9C27B0',
-    string: '#FF5722',
-    type: '#795548',
-    flow: '#00BCD4',
-    object: '#FF9800',
-    debug: '#F44336',
-    ml: '#ef4444',
-    
-    default: '#bbb'
+    default: '#6b7280'
 };
 
 const PreviewContainer = styled.div<{ $scale: number }>`
@@ -88,8 +106,12 @@ const PreviewContainer = styled.div<{ $scale: number }>`
 `;
 
 function NodeHeader({ nodeName, namespace }: { nodeName: string, namespace: string }) {
-    const Icon = NAMESPACE_ICONS[namespace] || NAMESPACE_ICONS.default;
-    const color = NAMESPACE_COLORS[namespace] || NAMESPACE_COLORS.default;
+    // Extract package/category from namespace (e.g., "core.io" -> "core")
+    const packageName = namespace.split('.')[0] || namespace;
+    const capitalizedPackage = packageName.charAt(0).toUpperCase() + packageName.slice(1);
+    
+    const Icon = PACKAGE_ICONS[capitalizedPackage] || PACKAGE_ICONS[packageName] || PACKAGE_ICONS.default;
+    const color = PACKAGE_COLORS[capitalizedPackage] || PACKAGE_COLORS[packageName] || PACKAGE_COLORS.default;
     return (
         <Box px="0" pt="4" pb="4"
             style={{

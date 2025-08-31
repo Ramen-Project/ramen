@@ -62409,10 +62409,17 @@ template {
     }));
   });
   const CATEGORY_ICONS = {
+    "Core": CubeIcon,
+    "Math": PlusIcon,
+    "Logic": LightningBoltIcon,
+    "String": CodeIcon,
+    "Collection": LayersIcon,
+    "Object": MixIcon,
+    "Type": GearIcon,
+    "Flow": LightningBoltIcon,
+    "Debug": MagnifyingGlassIcon,
     "File I/O": FileTextIcon,
     "Data Operations": MixIcon,
-    "Math & Statistics": PlusIcon,
-    "Math": PlusIcon,
     "Machine Learning": BarChartIcon,
     "Data Visualization": BarChartIcon,
     "Text Processing": CodeIcon,
@@ -62424,13 +62431,12 @@ template {
     "Automation": LightningBoltIcon,
     "Data Quality": MagnifyingGlassIcon,
     "Utilities": GearIcon,
-    "Basic": CubeIcon,
-    "Logic": LightningBoltIcon,
     "NumPy": PlusIcon,
     "Pandas": LayersIcon,
     "Torch": BarChartIcon,
     "Custom": GearIcon,
     "Context Manager": GearIcon,
+    "Class Definitions": GearIcon,
     // Neural Network Categories
     "Convolutional": SquareIcon,
     "Linear": Link1Icon,
@@ -62444,10 +62450,17 @@ template {
     "Container": StackIcon
   };
   const CATEGORY_COLORS = {
+    "Core": "#607D8B",
+    "Math": "#2196F3",
+    "Logic": "#FFC107",
+    "String": "#06b6d4",
+    "Collection": "#f59e42",
+    "Object": "#9C27B0",
+    "Type": "#00BCD4",
+    "Flow": "#f59e0b",
+    "Debug": "#ec4899",
     "File I/O": "#3b82f6",
     "Data Operations": "#f59e42",
-    "Math & Statistics": "#a259e6",
-    "Math": "#2196F3",
     "Machine Learning": "#ef4444",
     "Data Visualization": "#8b5cf6",
     "Text Processing": "#06b6d4",
@@ -62459,13 +62472,12 @@ template {
     "Automation": "#f59e0b",
     "Data Quality": "#ec4899",
     "Utilities": "#6b7280",
-    "Basic": "#607D8B",
-    "Logic": "#FFC107",
     "NumPy": "#013243",
     "Pandas": "#150954",
     "Torch": "#EE4C2C",
     "Custom": "#9C27B0",
     "Context Manager": "#00BCD4",
+    "Class Definitions": "#9C27B0",
     // Neural Network Categories
     "Convolutional": "#FF6B6B",
     // Red for conv layers
@@ -62488,9 +62500,84 @@ template {
     "Container": "#7F8C8D"
     // Gray for containers
   };
+  function normalizeCategory(category) {
+    if (category.includes("/")) {
+      const mainCategory = category.split("/")[0];
+      if (mainCategory === "ML") {
+        return null;
+      }
+      return mainCategory;
+    }
+    const categoryMappings = {
+      "Test": "Debug",
+      "Testing": "Debug",
+      "Text": "String",
+      "Basic": "Core",
+      "Utilities": "Core",
+      "Class Definitions": "Type"
+    };
+    if (category === "ML" || category === "Machine Learning") {
+      return null;
+    }
+    return categoryMappings[category] || category;
+  }
   function convertApiNodesToCategories(apiNodes) {
-    const categories = [];
+    const mergedCategories = {};
     for (const [categoryName, nodes] of Object.entries(apiNodes)) {
+      const mainCategory = normalizeCategory(categoryName);
+      if (mainCategory === null) {
+        continue;
+      }
+      if (!mergedCategories[mainCategory]) {
+        mergedCategories[mainCategory] = [];
+      }
+      mergedCategories[mainCategory].push(...nodes.map((node2) => ({
+        ...node2,
+        originalCategory: categoryName
+        // Keep track of original category
+      })));
+    }
+    const categories = [];
+    const categoryOrder = [
+      "Core",
+      "Math",
+      "Logic",
+      "String",
+      "Collection",
+      "Object",
+      "Type",
+      "Flow",
+      "Debug",
+      "NumPy",
+      "Pandas",
+      "Torch",
+      "Context Manager"
+    ];
+    for (const categoryName of categoryOrder) {
+      if (mergedCategories[categoryName]) {
+        const category = {
+          name: categoryName,
+          icon: CATEGORY_ICONS[categoryName] || GearIcon,
+          color: CATEGORY_COLORS[categoryName] || "#6b7280",
+          nodes: mergedCategories[categoryName].map((node2) => ({
+            type: node2.type,
+            namespace: node2.namespace,
+            nodeType: node2.nodeType,
+            displayName: node2.displayName,
+            description: node2.description,
+            icon: node2.icon,
+            color: node2.color,
+            category: categoryName,
+            inputs: node2.inputs || [],
+            outputs: node2.outputs || [],
+            properties: node2.properties || {}
+          }))
+        };
+        categories.push(category);
+        delete mergedCategories[categoryName];
+      }
+    }
+    for (const [categoryName, nodes] of Object.entries(mergedCategories)) {
       const category = {
         name: categoryName,
         icon: CATEGORY_ICONS[categoryName] || GearIcon,
@@ -65539,7 +65626,7 @@ template {
     };
     return IconContext !== void 0 ? /* @__PURE__ */ React.createElement(IconContext.Consumer, null, (conf) => elem(conf)) : elem(DefaultContext);
   }
-  function FiBarChart$1(props) {
+  function FiBarChart(props) {
     return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "line", "attr": { "x1": "12", "y1": "20", "x2": "12", "y2": "10" }, "child": [] }, { "tag": "line", "attr": { "x1": "18", "y1": "20", "x2": "18", "y2": "4" }, "child": [] }, { "tag": "line", "attr": { "x1": "6", "y1": "20", "x2": "6", "y2": "16" }, "child": [] }] })(props);
   }
   function FiBox(props) {
@@ -69325,12 +69412,12 @@ template {
       ] });
     }
   }
-  const NAMESPACE_ICONS$1 = {
+  const NAMESPACE_ICONS = {
     // Legacy namespaces
     FileIO: FiFileText,
     DataOps: FiFilter,
     Math: FiHash,
-    MachineLearning: FiBarChart$1,
+    MachineLearning: FiBarChart,
     builtin: FiCpu,
     // New namespaces
     core: FiHome,
@@ -69342,10 +69429,10 @@ template {
     flow: FiGitBranch,
     object: FiBox,
     debug: FiTool,
-    ml: FiBarChart$1,
+    ml: FiBarChart,
     default: FiFileText
   };
-  const NAMESPACE_COLORS$2 = {
+  const NAMESPACE_COLORS$1 = {
     // Legacy namespaces
     FileIO: "#3b82f6",
     DataOps: "#f59e42",
@@ -69376,8 +69463,8 @@ template {
     default: "#bbb"
   };
   function NodeHeader$1({ nodeName, namespace: namespace2 }) {
-    const Icon = NAMESPACE_ICONS$1[namespace2] || NAMESPACE_ICONS$1.default;
-    const color2 = NAMESPACE_COLORS$2[namespace2] || NAMESPACE_COLORS$2.default;
+    const Icon = NAMESPACE_ICONS[namespace2] || NAMESPACE_ICONS.default;
+    const color2 = NAMESPACE_COLORS$1[namespace2] || NAMESPACE_COLORS$1.default;
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(
       p$5,
       {
@@ -71008,7 +71095,7 @@ template {
       isEnabled: finalConfig.enabled
     };
   }
-  const NAMESPACE_COLORS$1 = {
+  const NAMESPACE_COLORS = {
     // Legacy namespaces
     FileIO: "#3b82f6",
     DataOps: "#f59e42",
@@ -71729,7 +71816,7 @@ template {
           if (node2.selected) {
             if (node2.type === "operator") {
               const namespace2 = node2.data?.namespace || "default";
-              return NAMESPACE_COLORS$1[namespace2] || NAMESPACE_COLORS$1.default;
+              return NAMESPACE_COLORS[namespace2] || NAMESPACE_COLORS.default;
             }
             return "#ff6b6b";
           }
@@ -71744,7 +71831,7 @@ template {
             return node2.data?.backgroundColor || "rgb(0, 145, 255)";
           } else if (node2.type === "operator") {
             const namespace2 = node2.data?.namespace || "default";
-            return NAMESPACE_COLORS$1[namespace2] || NAMESPACE_COLORS$1.default;
+            return NAMESPACE_COLORS[namespace2] || NAMESPACE_COLORS.default;
           }
           return "#ff6b6b";
         } else {
@@ -72106,14 +72193,18 @@ template {
       ] }) });
     }
   }
-  const NAMESPACE_ICONS = {
-    // Legacy namespaces
-    FileIO: FiFileText,
-    DataOps: FiFilter,
-    Math: FiHash,
-    MachineLearning: FiBarChart,
-    builtin: FiCpu,
-    // New namespaces
+  const PACKAGE_ICONS = {
+    // Main categories
+    Core: FiHome,
+    Math: FiPlus,
+    Collection: FiDatabase,
+    Logic: FiGitBranch,
+    String: FiFileText,
+    Type: FiBox,
+    Flow: FiGitBranch,
+    Object: FiBox,
+    Debug: FiTool,
+    // Also support lowercase versions
     core: FiHome,
     math: FiPlus,
     collection: FiDatabase,
@@ -72123,28 +72214,38 @@ template {
     flow: FiGitBranch,
     object: FiBox,
     debug: FiTool,
-    ml: FiBarChart,
-    default: FiFileText
+    // Legacy support
+    FileIO: FiFileText,
+    DataOps: FiFilter,
+    builtin: FiCpu,
+    default: FiCpu
   };
-  const NAMESPACE_COLORS = {
-    // Legacy namespaces
+  const PACKAGE_COLORS = {
+    // Main categories with consistent colors
+    Core: "#607D8B",
+    Math: "#2196F3",
+    Collection: "#f59e42",
+    Logic: "#FFC107",
+    String: "#06b6d4",
+    Type: "#00BCD4",
+    Flow: "#f59e0b",
+    Object: "#9C27B0",
+    Debug: "#ec4899",
+    // Also support lowercase versions
+    core: "#607D8B",
+    math: "#2196F3",
+    collection: "#f59e42",
+    logic: "#FFC107",
+    string: "#06b6d4",
+    type: "#00BCD4",
+    flow: "#f59e0b",
+    object: "#9C27B0",
+    debug: "#ec4899",
+    // Legacy support
     FileIO: "#3b82f6",
     DataOps: "#f59e42",
-    Math: "#a259e6",
-    MachineLearning: "#ef4444",
     builtin: "#10b981",
-    // New namespaces
-    core: "#607D8B",
-    math: "#4CAF50",
-    collection: "#2196F3",
-    logic: "#9C27B0",
-    string: "#FF5722",
-    type: "#795548",
-    flow: "#00BCD4",
-    object: "#FF9800",
-    debug: "#F44336",
-    ml: "#ef4444",
-    default: "#bbb"
+    default: "#6b7280"
   };
   const PreviewContainer = dt.div`
     transform: scale(${(props) => props.$scale});
@@ -72168,8 +72269,10 @@ template {
     }
 `;
   function NodeHeader({ nodeName, namespace: namespace2 }) {
-    const Icon = NAMESPACE_ICONS[namespace2] || NAMESPACE_ICONS.default;
-    const color2 = NAMESPACE_COLORS[namespace2] || NAMESPACE_COLORS.default;
+    const packageName = namespace2.split(".")[0] || namespace2;
+    const capitalizedPackage = packageName.charAt(0).toUpperCase() + packageName.slice(1);
+    const Icon = PACKAGE_ICONS[capitalizedPackage] || PACKAGE_ICONS[packageName] || PACKAGE_ICONS.default;
+    const color2 = PACKAGE_COLORS[capitalizedPackage] || PACKAGE_COLORS[packageName] || PACKAGE_COLORS.default;
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(
       p$5,
       {

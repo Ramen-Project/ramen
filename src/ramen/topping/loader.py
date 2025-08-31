@@ -324,25 +324,13 @@ def load_toppings() -> ToppingLoader:
     # Load from entry points
     loader.load_from_entry_points()
     
-    # Load standard toppings from installed packages
-    # These are now expected to be installed as separate packages
-    # via pip/uv install ramen-topping-*
-    standard_toppings = [
-        "ramen_topping_numpy",
-        "ramen_topping_pandas", 
-        "ramen_topping_torch",
-        "ramen_topping_plots",
-        "ramen_topping_nn_builder"
-    ]
+    # External toppings are disabled to keep core system lightweight
+    # Users can manually install and load external toppings if needed
+    # via pip/uv install ramen-topping-* and manual loading
     
-    for topping in standard_toppings:
-        try:
-            loader.load_from_module(topping)
-            logger.debug(f"Loaded standard topping: {topping}")
-        except ImportError:
-            logger.debug(f"Standard topping not installed: {topping}")
-        except Exception as e:
-            logger.warning(f"Failed to load topping {topping}: {e}")
+    # Skip loading external standard toppings by default
+    # This reduces startup time and eliminates error messages
+    logger.info("External toppings disabled - using built-in nodes only")
             
     return loader
 

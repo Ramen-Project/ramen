@@ -18,6 +18,8 @@ dependencies = [
     "lsprotocol>=2023.0.1",
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
+    "requests>=2.32.5",
+    "ramen-topping-charts",
 ]
 
 [dependency-groups]
@@ -43,4 +45,7 @@ exclude = ["node_modules", "dist", "vscode-extension"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ramen"]
+
+[tool.uv.sources]
+ramen-topping-charts = { path = "examples/ramen-topping-charts", editable = true }
 

@@ -64,8 +64,8 @@ def run(graph_path: str, inputs: str = None, output: str = None, compile_mode: s
         if verbose:
             print(f"Loading graph from: {graph_file}")
         
-        if not graph_file.suffix in ['.ramen', '.json']:
-            print(f"Error: Unsupported file format. Use .ramen or .json files")
+        if graph_file.suffix not in ['.ramen', '.json']:
+            print("Error: Unsupported file format. Use .ramen or .json files")
             sys.exit(1)
         
         # 使用 GraphLoader 載入圖形

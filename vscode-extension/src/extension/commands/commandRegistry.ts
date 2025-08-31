@@ -17,6 +17,8 @@ export interface CommandContext {
     activeEditor?: vscode.TextEditor;
     selectedFiles?: vscode.Uri[];
     stateManager: StateManager;
+    extensionPath: string;
+    subscriptions: vscode.Disposable[];
 }
 
 export type CommandHandler = (context: CommandContext, ...args: any[]) => void | Promise<void>;
@@ -143,7 +145,9 @@ export class CommandRegistry {
             workspaceFolder: vscode.workspace.workspaceFolders?.[0],
             activeEditor: vscode.window.activeTextEditor,
             selectedFiles: this.getSelectedFiles(),
-            stateManager: this.stateManager
+            stateManager: this.stateManager,
+            extensionPath: this.context.extensionPath,
+            subscriptions: this.context.subscriptions
         };
     }
     
