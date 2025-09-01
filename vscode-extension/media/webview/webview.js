@@ -73069,7 +73069,8 @@ template {
   width: 16px;
   height: 16px;
   color: var(--gray-10);
-  transition: transform 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: ${(props) => props.$isExpanded ? "rotate(90deg)" : "rotate(0deg)"};
 `;
   const IconWrapper = dt.div`
   display: flex;
@@ -73080,14 +73081,18 @@ template {
 `;
   const NodesContainer = dt.div`
   overflow: hidden;
-  transition: max-height 0.3s ease;
-  max-height: ${(props) => props.$isExpanded ? "2000px" : "0px"};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: ${(props) => props.$isExpanded ? `${props.$contentHeight || 2e3}px` : "0px"};
+  opacity: ${(props) => props.$isExpanded ? "1" : "0"};
+  transform: ${(props) => props.$isExpanded ? "translateY(0)" : "translateY(-10px)"};
 `;
   const NodesGrid = dt.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding-left: 16px;
+  padding-top: 8px;
+  padding-bottom: 8px;
 `;
   function CollapsibleCategoriesNodeList({
     categories,
@@ -73099,6 +73104,8 @@ template {
       new Set(categories.map((cat) => cat.name))
       // Start with all categories expanded
     );
+    const [contentHeights, setContentHeights] = reactExports.useState({});
+    const nodeRefs = reactExports.useRef({});
     reactExports.useEffect(() => {
       if (isSearching) {
         setExpandedCategories(new Set(categories.map((cat) => cat.name)));
@@ -73121,6 +73128,17 @@ template {
       inputs: node2.inputs || [],
       outputs: node2.outputs || []
     }), []);
+    reactExports.useEffect(() => {
+      const heights = {};
+      Object.keys(nodeRefs.current).forEach((categoryName) => {
+        const element = nodeRefs.current[categoryName];
+        if (element) {
+          const height = element.scrollHeight;
+          heights[categoryName] = height;
+        }
+      });
+      setContentHeights(heights);
+    }, [categories]);
     const toggleCategory = (categoryName) => {
       setExpandedCategories((prev2) => {
         const newSet = new Set(prev2);
@@ -73174,26 +73192,41 @@ template {
               $isExpanded: isExpanded,
               $isSearchResult: isSearching,
               children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(CollapseIcon, { children: isExpanded ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDownIcon, {}) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronRightIcon, {}) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(CollapseIcon, { $isExpanded: isExpanded, children: /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronRightIcon, {}) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(IconWrapper, { $color: category.color, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Icon, {}) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(CategoryName, { size: "2", weight: "medium", color: "gray", children: category.name }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(e$8, { color: "gray", variant: "soft", size: "1", children: category.nodes.length })
               ]
             }
           ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(NodesContainer, { $isExpanded: isExpanded, children: /* @__PURE__ */ jsxRuntimeExports.jsx(NodesGrid, { children: category.nodes.map((node2) => {
-            const previewData = transformToPreviewData(node2);
-            return /* @__PURE__ */ jsxRuntimeExports.jsx(
-              StandaloneNodePreview,
-              {
-                nodeData: previewData,
-                scale: 0.9,
-                draggable: true,
-                onDragStart: (e2) => handleDragStart(e2, node2.type || node2.displayName || node2.name)
-              },
-              node2.type || node2.displayName || node2.name
-            );
-          }) }) })
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            NodesContainer,
+            {
+              $isExpanded: isExpanded,
+              $contentHeight: contentHeights[category.name],
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                NodesGrid,
+                {
+                  ref: (el) => {
+                    if (el) nodeRefs.current[category.name] = el;
+                  },
+                  children: category.nodes.map((node2) => {
+                    const previewData = transformToPreviewData(node2);
+                    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      StandaloneNodePreview,
+                      {
+                        nodeData: previewData,
+                        scale: 0.9,
+                        draggable: true,
+                        onDragStart: (e2) => handleDragStart(e2, node2.type || node2.displayName || node2.name)
+                      },
+                      node2.type || node2.displayName || node2.name
+                    );
+                  })
+                }
+              )
+            }
+          )
         ] }, category.name);
       }) })
     ] });

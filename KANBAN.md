@@ -60,6 +60,12 @@
 - [ ] 完善測試覆蓋率到 95%+
 - [ ] 最佳化大型圖形處理效能
 
+### Bug 修復
+- [ ] **修復 .ramen 檔案仍包含 author/description/created 欄位**
+  - VSCode 擴展創建的 .ramen 檔案仍然包含已移除的欄位
+  - 需要更新前端序列化邏輯以完全移除這些欄位
+  - 確保與後端 schema 一致
+
 ---
 
 ## 🟡 IN PROGRESS
