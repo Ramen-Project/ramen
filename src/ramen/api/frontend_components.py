@@ -1,4 +1,9 @@
-"""API endpoints for frontend component management."""
+"""API endpoints for frontend component management.
+
+⚠️  DEPRECATED: HTTP endpoints in this module are deprecated.
+All functionality has been migrated to WebSocket API.
+See: src/ramen/api/websocket_handler.py
+"""
 
 import logging
 from typing import Dict, Any

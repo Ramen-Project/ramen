@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { 
-  FileTextIcon, 
-  MixIcon, 
+import {
+  FileTextIcon,
+  MixIcon,
   GearIcon,
   PlusIcon,
   BarChartIcon,
@@ -23,6 +23,7 @@ import {
   BookmarkIcon,
   StackIcon,
 } from '@radix-ui/react-icons';
+import { getWebSocketClient, initializeWebSocketClient } from '../api/WebSocketClient';
 
 export interface PortDefinition {
   name: string;
@@ -268,28 +269,28 @@ function convertApiNodesToCategories(apiNodes: Record<string, any[]>): NodeCateg
   return categories;
 }
 
-// Fetch nodes from API
+// Fetch nodes from API using WebSocket
 async function fetchNodesFromAPI(): Promise<Record<string, any[]>> {
   try {
     // Check if we're in VSCode webview environment
     if (typeof window !== 'undefined' && (window as any).vscode) {
       console.log('🍜 [NodeStore] VSCode webview detected, using message proxy');
-      
+
       // Use VSCode message passing instead of direct fetch
       return new Promise((resolve, reject) => {
         let timeoutId: number;
-        
+
         // Listen for response
         const handleMessage = (event: MessageEvent) => {
           const message = event.data;
           console.log('🍜 [NodeStore] Received message:', message);
-          
+
           if (message.command === 'nodesResponse') {
             window.removeEventListener('message', handleMessage);
             clearTimeout(timeoutId);
-            
+
             if (message.success && message.data && message.data.nodes) {
-              console.log('🍜 [NodeStore] Successfully received nodes:', 
+              console.log('🍜 [NodeStore] Successfully received nodes:',
                 Object.keys(message.data.nodes).length, 'categories');
               resolve(message.data.nodes);
             } else {
@@ -298,15 +299,15 @@ async function fetchNodesFromAPI(): Promise<Record<string, any[]>> {
             }
           }
         };
-        
+
         window.addEventListener('message', handleMessage);
-        
+
         console.log('🍜 [NodeStore] Sending fetchNodes command to extension...');
         // Request nodes from extension
         (window as any).vscode.postMessage({
           command: 'fetchNodes'
         });
-        
+
         // Timeout after 20 seconds (increased for debugging)
         timeoutId = window.setTimeout(() => {
           console.error('🍜 [NodeStore] Request timeout after 20 seconds');
@@ -315,27 +316,22 @@ async function fetchNodesFromAPI(): Promise<Record<string, any[]>> {
         }, 20000);
       });
     } else {
-      // Fallback to direct fetch for non-VSCode environments
-      console.log('🍜 [NodeStore] Non-VSCode environment, using direct fetch');
-      const apiUrl = 'http://localhost:8000';
-      
-      const response = await fetch(`${apiUrl}/api/nodes`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch nodes: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.nodes) {
-        return data.nodes;
-      } else {
-        throw new Error(data.error || 'Failed to fetch nodes');
+      // Use WebSocket for non-VSCode environments
+      console.log('🍜 [NodeStore] Non-VSCode environment, using WebSocket');
+
+      try {
+        const wsClient = await initializeWebSocketClient('ws://localhost:8000/ws');
+        const response = await wsClient.getNodes();
+
+        if (response && response.nodes) {
+          console.log('🍜 [NodeStore] Successfully received nodes via WebSocket');
+          return response.nodes;
+        } else {
+          throw new Error('Invalid response from WebSocket');
+        }
+      } catch (error) {
+        console.error('🍜 [NodeStore] WebSocket request failed:', error);
+        throw error;
       }
     }
   } catch (error) {

@@ -132,7 +132,14 @@ class NodeContext:
         return self._outputs.copy()
 
 
-# Global node registry
+# Import new registry system
+from ..registry.node_registry import (
+    get_global_registry,
+    NodeDefinition as NewNodeDefinition,
+    PortDefinition as NewPortDefinition,
+)
+
+# Legacy compatibility - these will be deprecated
 NODE_REGISTRY: Dict[str, Callable] = {}
 NODE_METADATA: Dict[str, NodeMetadata] = {}
 
@@ -170,7 +177,7 @@ def node(
             return result
     """
     def decorator(func: Callable) -> Callable:
-        # Create metadata
+        # Create old metadata for compatibility
         metadata = NodeMetadata(
             namespace=namespace,
             node_type=node_type,
@@ -183,21 +190,61 @@ def node(
             outputs=outputs or [],
             properties=properties or {}
         )
-        
-        # Register node
+
+        # Register in legacy system
         full_type = metadata.full_type
         NODE_REGISTRY[full_type] = func
         NODE_METADATA[full_type] = metadata
-        
+
+        # Register in new registry system
+        registry = get_global_registry()
+        new_inputs = [
+            NewPortDefinition(
+                name=p.name,
+                type=p.port_type.value if hasattr(p.port_type, 'value') else str(p.port_type),
+                required=p.required,
+                default=p.default,
+                description=p.description,
+                multiple=p.multiple
+            ) for p in (inputs or [])
+        ]
+        new_outputs = [
+            NewPortDefinition(
+                name=p.name,
+                type=p.port_type.value if hasattr(p.port_type, 'value') else str(p.port_type),
+                required=p.required,
+                default=p.default,
+                description=p.description,
+                multiple=p.multiple
+            ) for p in (outputs or [])
+        ]
+
+        new_node_def = NewNodeDefinition(
+            node_id=full_type,
+            namespace=namespace,
+            node_type=node_type,
+            display_name=display_name,
+            category=category,
+            description=description,
+            icon=icon,
+            color=color,
+            inputs=new_inputs,
+            outputs=new_outputs,
+            properties=properties or {},
+            executor=func,
+            source_topping="built-in",
+        )
+        registry.register(new_node_def)
+
         # Add metadata to function
         func.node_metadata = metadata
-        
+
         @wraps(func)
         def wrapper(context: NodeContext) -> Any:
             return func(context)
-        
+
         return wrapper
-    
+
     return decorator
 
 

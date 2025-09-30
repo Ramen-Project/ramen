@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as http from 'http';
 import { RamenServerManager } from '../server/serverManager';
 import { WebSocketManager } from '../websocket/websocketManager';
+import { getOrCreateGlobalWebSocketClient } from '../api/GlobalWebSocketManager';
 
 export class RamenWebviewManager {
     private panels: Map<string, vscode.WebviewPanel> = new Map();
@@ -107,19 +108,20 @@ export class RamenWebviewManager {
 
     private async setupPanel(panel: vscode.WebviewPanel, uri: vscode.Uri, document?: vscode.TextDocument) {
         const graphPath = uri.fsPath;
-        
+
         // Store panel reference
         this.panels.set(graphPath, panel);
-        
+
         // Set panel icon
         panel.iconPath = {
             light: vscode.Uri.joinPath(this.context.extensionUri, 'resources', 'graph-light.svg'),
             dark: vscode.Uri.joinPath(this.context.extensionUri, 'resources', 'graph-dark.svg')
         };
-        
+
         // Handle panel disposal
         panel.onDidDispose(() => {
             this.panels.delete(graphPath);
+            console.log(`🍜 [WebviewManager] Panel closed for ${path.basename(graphPath)}`);
         });
         
         // Handle messages from webview
@@ -439,96 +441,44 @@ export class RamenWebviewManager {
     
     private async handleFetchNodes(panel: vscode.WebviewPanel) {
         try {
-            console.log('🍜 [WebviewManager] Starting node fetch process...');
-            
+            console.log('🍜 [WebviewManager] Starting node fetch process via global WebSocket...');
+
             // Ensure server is running
             const isServerRunning = await this.serverManager.ensureServerRunning();
             if (!isServerRunning) {
                 throw new Error('Failed to start Ramen server');
             }
-            
+
             const serverPort = this.serverManager.getPort();
-            console.log('🍜 [WebviewManager] Fetching nodes from server port:', serverPort);
-            
-            // First, verify server health
-            try {
-                const health = await this.serverManager.checkHealth();
-                console.log('🍜 [WebviewManager] Server health check:', health);
-                if (!health.healthy) {
-                    throw new Error(`Server is not healthy: ${JSON.stringify(health.details)}`);
-                }
-            } catch (healthError) {
-                console.error('🍜 [WebviewManager] Server health check failed:', healthError);
-            }
-            
-            const options = {
-                hostname: 'localhost',
-                port: serverPort,
-                path: '/api/nodes',
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'User-Agent': 'VSCode-Extension/1.0.0'
-                }
-            };
-            
-            console.log('🍜 [WebviewManager] Making HTTP request with options:', options);
-            
-            const data = await new Promise<string>((resolve, reject) => {
-                const req = http.request(options, (res: any) => {
-                    console.log('🍜 [WebviewManager] Response received - Status:', res.statusCode, 'Headers:', res.headers);
-                    let body = '';
-                    
-                    res.on('data', (chunk: string) => {
-                        body += chunk;
-                        console.log('🍜 [WebviewManager] Received data chunk:', chunk.length, 'bytes');
-                    });
-                    
-                    res.on('end', () => {
-                        console.log('🍜 [WebviewManager] Response complete - Body length:', body.length, 'bytes');
-                        console.log('🍜 [WebviewManager] Response status:', res.statusCode);
-                        if (res.statusCode === 200) {
-                            resolve(body);
-                        } else {
-                            reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage} - ${body}`));
-                        }
-                    });
-                });
-                
-                req.on('error', (error: Error) => {
-                    console.error('🍜 [WebviewManager] Request error:', error);
-                    reject(error);
-                });
-                
-                req.setTimeout(15000, () => {
-                    console.error('🍜 [WebviewManager] Request timeout after 15 seconds');
-                    req.destroy();
-                    reject(new Error('Request timeout after 15 seconds'));
-                });
-                
-                console.log('🍜 [WebviewManager] Sending HTTP request...');
-                req.end();
-            });
-            
-            console.log('🍜 [WebviewManager] Raw response data (first 500 chars):', data.substring(0, 500));
-            const parsedData = JSON.parse(data);
-            console.log('🍜 [WebviewManager] Successfully parsed response - Node count:', 
-                Object.values(parsedData.nodes || {}).reduce((acc: number, nodes: any) => acc + (nodes.length || 0), 0));
-            
+            const wsUrl = `ws://localhost:${serverPort}/ws`;
+
+            console.log('🍜 [WebviewManager] Connecting to global WebSocket...');
+
+            // 使用全域 WebSocket 連接
+            const wsClient = await getOrCreateGlobalWebSocketClient(wsUrl);
+
+            console.log('🍜 [WebviewManager] Fetching nodes via global WebSocket...');
+
+            // 使用全域連接獲取節點
+            const response = await wsClient.getNodes();
+
+            console.log('🍜 [WebviewManager] Successfully received nodes - Node count:',
+                Object.values(response.nodes || {}).reduce((acc: number, nodes: any) => acc + (nodes.length || 0), 0));
+
             // Send the result back to webview
             console.log('🍜 [WebviewManager] Sending nodes response to webview...');
             panel.webview.postMessage({
                 command: 'nodesResponse',
                 success: true,
-                data: parsedData
+                data: response
             });
             console.log('🍜 [WebviewManager] Nodes response sent successfully');
-            
+
         } catch (error) {
             console.error('🍜 [WebviewManager] Failed to fetch nodes:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             console.error('🍜 [WebviewManager] Sending error response to webview:', errorMessage);
-            
+
             panel.webview.postMessage({
                 command: 'nodesResponse',
                 success: false,

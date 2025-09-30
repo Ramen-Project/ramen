@@ -1,6 +1,10 @@
 """
 Git 整合 API 端點
 提供圖形檔案的版本控制功能
+
+⚠️  DEPRECATED: HTTP endpoints in this module are deprecated.
+All functionality has been migrated to WebSocket API.
+See: src/ramen/api/websocket_handler.py
 """
 
 from fastapi import APIRouter, HTTPException

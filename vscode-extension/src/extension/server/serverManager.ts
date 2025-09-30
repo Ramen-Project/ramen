@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { spawn, execSync, ChildProcess } from 'child_process';
 import * as net from 'net';
 import * as path from 'path';
+import { getOrCreateGlobalWebSocketClient, getGlobalWebSocketClient } from '../api/GlobalWebSocketManager';
 
 export class RamenServerManager {
     private serverProcess: ChildProcess | null = null;
@@ -40,22 +41,24 @@ export class RamenServerManager {
         // Check if port is available
         const portAvailable = await this.isPortAvailable(this.port);
         if (!portAvailable) {
-            // Try to connect to existing server first
+            // Try to connect to existing server first via WebSocket
             this.outputChannel.appendLine(`Port ${this.port} is already in use, checking if it's a Ramen server...`);
-            
+
             try {
-                const response = await this.sendRequest('GET', '/api/health');
-                if (response && typeof response === 'object' && 'status' in response && 
-                    (response as any).status === 'healthy') {
-                    // Existing server is responsive, use it
-                    this.outputChannel.appendLine('Found existing healthy Ramen server, connecting to it...');
-                    this.isServerRunning = true;
-                    this.startTime = Date.now();
-                    this._onDidChangeStatus.fire();
-                    this.isStarting = false;
-                    vscode.window.showInformationMessage('Connected to existing Ramen server');
-                    return true;
-                }
+                const wsUrl = `ws://localhost:${this.port}/ws`;
+                const wsClient = await getOrCreateGlobalWebSocketClient(wsUrl);
+
+                // Try to ping the server
+                await wsClient.ping();
+
+                // Existing server is responsive, use it
+                this.outputChannel.appendLine('Found existing healthy Ramen server, connecting to it...');
+                this.isServerRunning = true;
+                this.startTime = Date.now();
+                this._onDidChangeStatus.fire();
+                this.isStarting = false;
+                vscode.window.showInformationMessage('Connected to existing Ramen server');
+                return true;
             } catch (error) {
                 this.outputChannel.appendLine(`Existing server not responding: ${error}`);
             }
@@ -408,29 +411,32 @@ export class RamenServerManager {
     private async waitForServer(timeout: number = 10000): Promise<void> {
         const startTime = Date.now();
         let lastError: string = '';
-        
+
         while (Date.now() - startTime < timeout) {
             if (this.isServerRunning) {
                 return;
             }
-            
-            // Try to connect to server
+
+            // Try to connect to server via WebSocket (使用全域連接)
             try {
-                const response = await this.sendRequest('GET', '/api/health');
-                if (response && typeof response === 'object' && 'status' in response) {
-                    this.isServerRunning = true;
-                    this.startTime = Date.now();
-                    this._onDidChangeStatus.fire();
-                    return;
-                }
+                const wsUrl = `ws://localhost:${this.port}/ws`;
+                const wsClient = await getOrCreateGlobalWebSocketClient(wsUrl);
+
+                // Try to ping
+                await wsClient.ping();
+
+                this.isServerRunning = true;
+                this.startTime = Date.now();
+                this._onDidChangeStatus.fire();
+                return;
             } catch (error) {
                 lastError = String(error);
                 // Server not ready yet
             }
-            
+
             await new Promise(resolve => setTimeout(resolve, 500));
         }
-        
+
         throw new Error(`Server startup timeout. Last error: ${lastError}`);
     }
     
@@ -485,17 +491,40 @@ export class RamenServerManager {
         if (!this.isServerRunning) {
             return { healthy: false, details: { reason: 'Server not running' } };
         }
-        
+
         try {
-            const response = await this.sendRequest('GET', '/api/health') as any;
+            // 使用全域 WebSocket 連接進行 health check
+            const wsClient = getGlobalWebSocketClient();
+
+            if (!wsClient || !wsClient.isConnectedToServer()) {
+                // 如果全域連接不存在或已斷開，嘗試重新連接
+                const wsUrl = `ws://localhost:${this.port}/ws`;
+                await getOrCreateGlobalWebSocketClient(wsUrl);
+            }
+
+            // Try to ping the server
+            const client = getGlobalWebSocketClient();
+            if (client) {
+                await client.ping();
+            } else {
+                throw new Error('Failed to get WebSocket client');
+            }
+
             return {
-                healthy: response?.status === 'healthy',
-                details: response
+                healthy: true,
+                details: {
+                    status: 'healthy',
+                    method: 'websocket_heartbeat',
+                    port: this.port
+                }
             };
         } catch (error) {
             return {
                 healthy: false,
-                details: { error: String(error) }
+                details: {
+                    error: String(error),
+                    method: 'websocket_heartbeat'
+                }
             };
         }
     }

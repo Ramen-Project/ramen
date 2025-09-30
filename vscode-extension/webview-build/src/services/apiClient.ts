@@ -1,6 +1,8 @@
 /**
- * API Client for connecting to Ramen backend
+ * API Client for connecting to Ramen backend via WebSocket
  */
+
+import { getWebSocketClient, initializeWebSocketClient } from '../api/WebSocketClient';
 
 export interface RamenGraph {
   nodes: any[];
@@ -25,16 +27,17 @@ export interface ApiResponse<T = any> {
 }
 
 export class RamenApiClient {
-  private baseUrl: string;
-  
+  private port: number;
+
   constructor(port: number) {
-    this.baseUrl = `http://localhost:${port}/api`;
+    this.port = port;
   }
 
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/projects/health`);
-      return response.ok;
+      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+      const response = await wsClient.systemHealth();
+      return response.health_status === 'healthy';
     } catch (error) {
       console.error('Health check failed:', error);
       return false;
@@ -43,15 +46,14 @@ export class RamenApiClient {
 
   async executeGraph(graphData: RamenGraph): Promise<ApiResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/graphs/execute`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(graphData),
-      });
-      
-      return await response.json();
+      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+      const response = await wsClient.executeGraph({ graph: graphData });
+
+      return {
+        success: true,
+        message: 'Graph execution started',
+        data: response,
+      };
     } catch (error) {
       console.error('Execute graph failed:', error);
       return {
@@ -63,18 +65,17 @@ export class RamenApiClient {
 
   async saveGraph(filePath: string, graphData: RamenGraph): Promise<ApiResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/graphs/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          filePath,
-          graph: graphData,
-        }),
+      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+      const response = await wsClient.saveGraph({
+        path: filePath,
+        graph: graphData,
       });
-      
-      return await response.json();
+
+      return {
+        success: true,
+        message: response.message || 'Graph saved successfully',
+        data: response,
+      };
     } catch (error) {
       console.error('Save graph failed:', error);
       return {
@@ -86,8 +87,14 @@ export class RamenApiClient {
 
   async loadGraph(filePath: string): Promise<ApiResponse<RamenGraph>> {
     try {
-      const response = await fetch(`${this.baseUrl}/graphs/load?path=${encodeURIComponent(filePath)}`);
-      return await response.json();
+      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+      const response = await wsClient.loadGraph(filePath);
+
+      return {
+        success: true,
+        message: response.message || 'Graph loaded successfully',
+        data: response.graph,
+      };
     } catch (error) {
       console.error('Load graph failed:', error);
       return {
@@ -99,15 +106,14 @@ export class RamenApiClient {
 
   async validateGraph(graphData: RamenGraph): Promise<ApiResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/graphs/validate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(graphData),
-      });
-      
-      return await response.json();
+      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+      const response = await wsClient.gitValidate(graphData);
+
+      return {
+        success: response.valid,
+        message: response.valid ? 'Graph is valid' : 'Graph validation failed',
+        data: response,
+      };
     } catch (error) {
       console.error('Validate graph failed:', error);
       return {
@@ -118,105 +124,46 @@ export class RamenApiClient {
   }
 
   // Project management
+  // Note: These APIs are currently not implemented in the backend WebSocket API
+  // They will be added in a future update
   async createProject(name: string, description?: string, location?: string): Promise<ApiResponse<ProjectInfo>> {
-    try {
-      const response = await fetch(`${this.baseUrl}/projects/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          description,
-          location,
-        }),
-      });
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Create project failed:', error);
-      return {
-        success: false,
-        message: `Failed to create project: ${error}`,
-      };
-    }
+    console.warn('Project management APIs are not yet implemented via WebSocket');
+    return {
+      success: false,
+      message: 'Project management APIs are not yet available',
+    };
   }
 
   async loadProject(path: string): Promise<ApiResponse<ProjectInfo>> {
-    try {
-      const response = await fetch(`${this.baseUrl}/projects/load?path=${encodeURIComponent(path)}`);
-      return await response.json();
-    } catch (error) {
-      console.error('Load project failed:', error);
-      return {
-        success: false,
-        message: `Failed to load project: ${error}`,
-      };
-    }
+    console.warn('Project management APIs are not yet implemented via WebSocket');
+    return {
+      success: false,
+      message: 'Project management APIs are not yet available',
+    };
   }
 
   async saveProject(filePath: string, project: ProjectInfo): Promise<ApiResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/projects/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          filePath,
-          project,
-        }),
-      });
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Save project failed:', error);
-      return {
-        success: false,
-        message: `Failed to save project: ${error}`,
-      };
-    }
+    console.warn('Project management APIs are not yet implemented via WebSocket');
+    return {
+      success: false,
+      message: 'Project management APIs are not yet available',
+    };
   }
 
   async syncProject(projectPath: string): Promise<ApiResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/projects/sync`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          projectPath,
-        }),
-      });
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Sync project failed:', error);
-      return {
-        success: false,
-        message: `Failed to sync project: ${error}`,
-      };
-    }
+    console.warn('Project management APIs are not yet implemented via WebSocket');
+    return {
+      success: false,
+      message: 'Project management APIs are not yet available',
+    };
   }
 
   async listRecentProjects(): Promise<ApiResponse<ProjectInfo[]>> {
-    try {
-      const response = await fetch(`${this.baseUrl}/projects/list`);
-      const data = await response.json();
-      
-      return {
-        success: data.success,
-        message: data.success ? 'Projects loaded' : 'Failed to load projects',
-        data: data.projects,
-      };
-    } catch (error) {
-      console.error('List projects failed:', error);
-      return {
-        success: false,
-        message: `Failed to list projects: ${error}`,
-      };
-    }
+    console.warn('Project management APIs are not yet implemented via WebSocket');
+    return {
+      success: false,
+      message: 'Project management APIs are not yet available',
+    };
   }
 }
 
@@ -231,7 +178,6 @@ export function getApiClient(port?: number): RamenApiClient {
 }
 
 function getPortFromClient(client: RamenApiClient): number {
-  // Extract port from baseUrl
-  const match = (client as any).baseUrl.match(/:(\d+)\//);
-  return match ? parseInt(match[1]) : 8000;
+  // Get port from client
+  return (client as any).port || 8000;
 }

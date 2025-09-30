@@ -14,7 +14,8 @@ export type OpNodeProps = {
     namespace: string,
     brief?: string,
     inputs: Array<NodeIOProps>,
-    outputs: Array<NodeIOProps>
+    outputs: Array<NodeIOProps>,
+    color?: string
 }
 
 
@@ -26,7 +27,7 @@ const NAMESPACE_ICONS: Record<string, any> = {
     Math: FiHash,
     MachineLearning: FiBarChart,
     builtin: FiCpu,
-    
+
     // New namespaces
     core: FiHome,
     math: FiPlus,
@@ -38,35 +39,13 @@ const NAMESPACE_ICONS: Record<string, any> = {
     object: FiBox,
     debug: FiTool,
     ml: FiBarChart,
-    
+
     default: FiFileText
 };
-const NAMESPACE_COLORS: Record<string, string> = {
-    // Legacy namespaces
-    FileIO: '#3b82f6',
-    DataOps: '#f59e42',
-    Math: '#a259e6',
-    MachineLearning: '#ef4444',
-    builtin: '#10b981',
-    
-    // New namespaces
-    core: '#607D8B',        // Blue Grey - foundational
-    math: '#4CAF50',        // Green - calculations
-    collection: '#2196F3',  // Blue - data processing
-    logic: '#9C27B0',       // Purple - decision making
-    string: '#FF5722',      // Deep Orange - text processing
-    type: '#795548',        // Brown - type operations
-    flow: '#00BCD4',        // Cyan - control flow
-    object: '#FF9800',      // Orange - object operations
-    debug: '#F44336',       // Red - debugging
-    ml: '#ef4444',          // Red - machine learning (same as MachineLearning)
-    
-    default: '#bbb'
-};
 
-function NodeHeader({ nodeName, namespace }: { nodeName: string, namespace: string }) {
+function NodeHeader({ nodeName, namespace, color }: { nodeName: string, namespace: string, color?: string }) {
     const Icon = NAMESPACE_ICONS[namespace] || NAMESPACE_ICONS.default;
-    const color = NAMESPACE_COLORS[namespace] || NAMESPACE_COLORS.default;
+    const headerColor = color || '#666666'; // Use provided color or fallback
     return (
         <Box px="0" pt="4" pb="4"
             style={{
@@ -91,7 +70,7 @@ function NodeHeader({ nodeName, namespace }: { nodeName: string, namespace: stri
                 top: 0,
                 width: '72px',
                 height: '100%',
-                background: color,
+                background: headerColor,
                 clipPath: 'polygon(0 0, 100% 0, 80% 100%, 0% 100%)',
                 display: 'flex',
                 alignItems: 'center',
@@ -137,7 +116,7 @@ export default function OperatorNode({ data, id, selected }: NodeProps) {
                 }}>{nodeData.namespace}</Text>
         )}
         <NodeBody $selected={Boolean(selected)} $width={3} $height={1}>
-            <NodeHeader nodeName={nodeData.name} namespace={nodeData.namespace} />
+            <NodeHeader nodeName={nodeData.name} namespace={nodeData.namespace} color={nodeData.color} />
             <Box px="4" py="2">
                 <Text size="2" style={{
                     color: '#888',

@@ -1,6 +1,10 @@
 """
 執行 API
 提供圖形執行、會話管理和即時更新功能
+
+⚠️  DEPRECATED: HTTP endpoints in this module are deprecated.
+All functionality has been migrated to WebSocket API.
+See: src/ramen/api/websocket_handler.py
 """
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, BackgroundTasks

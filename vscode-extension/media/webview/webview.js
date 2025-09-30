@@ -62462,6 +62462,310 @@ template {
       clipRule: "evenodd"
     }));
   });
+  class WebSocketClient {
+    constructor(url = "ws://localhost:8000/ws") {
+      this.ws = null;
+      this.reconnectAttempts = 0;
+      this.maxReconnectAttempts = 5;
+      this.reconnectDelay = 1e3;
+      this.pendingRequests = /* @__PURE__ */ new Map();
+      this.messageHandlers = /* @__PURE__ */ new Map();
+      this.isConnected = false;
+      this.shouldReconnect = true;
+      this.requestIdCounter = 0;
+      this.url = url;
+    }
+    /**
+     * 連接到 WebSocket 伺服器
+     */
+    async connect() {
+      return new Promise((resolve, reject) => {
+        try {
+          this.ws = new WebSocket(this.url);
+          this.ws.onopen = () => {
+            console.log("🍜 [WebSocket] Connected to server");
+            this.isConnected = true;
+            this.reconnectAttempts = 0;
+          };
+          this.ws.onmessage = (event) => {
+            try {
+              const message = JSON.parse(event.data);
+              this.handleMessage(message);
+              if (message.type === "connected") {
+                resolve();
+              }
+            } catch (error) {
+              console.error("🍜 [WebSocket] Failed to parse message:", error);
+            }
+          };
+          this.ws.onerror = (error) => {
+            console.error("🍜 [WebSocket] Error:", error);
+            if (!this.isConnected) {
+              reject(error);
+            }
+          };
+          this.ws.onclose = () => {
+            console.log("🍜 [WebSocket] Connection closed");
+            this.isConnected = false;
+            if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+              this.reconnectAttempts++;
+              const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+              console.log(`🍜 [WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+              setTimeout(() => this.connect(), delay);
+            }
+          };
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }
+    /**
+     * 斷開連接
+     */
+    disconnect() {
+      this.shouldReconnect = false;
+      if (this.ws) {
+        this.ws.close();
+        this.ws = null;
+      }
+      this.isConnected = false;
+    }
+    /**
+     * 發送訊息並等待回應
+     */
+    async sendRequest(type2, data, timeout2 = 1e4) {
+      if (!this.isConnected || !this.ws) {
+        throw new Error("WebSocket not connected");
+      }
+      const requestId = this.generateRequestId();
+      return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          this.pendingRequests.delete(requestId);
+          reject(new Error(`Request timeout for ${type2}`));
+        }, timeout2);
+        const handler = (response) => {
+          clearTimeout(timeoutId);
+          this.pendingRequests.delete(requestId);
+          if (response.success) {
+            resolve(response.data);
+          } else {
+            reject(new Error(response.error || "Request failed"));
+          }
+        };
+        this.pendingRequests.set(requestId, handler);
+        const message = {
+          type: type2,
+          request_id: requestId,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+          data
+        };
+        this.ws.send(JSON.stringify(message));
+      });
+    }
+    /**
+     * 訂閱特定類型的訊息
+     */
+    subscribe(messageType, handler) {
+      if (!this.messageHandlers.has(messageType)) {
+        this.messageHandlers.set(messageType, /* @__PURE__ */ new Set());
+      }
+      this.messageHandlers.get(messageType).add(handler);
+      return () => {
+        const handlers = this.messageHandlers.get(messageType);
+        if (handlers) {
+          handlers.delete(handler);
+          if (handlers.size === 0) {
+            this.messageHandlers.delete(messageType);
+          }
+        }
+      };
+    }
+    /**
+     * 處理收到的訊息
+     */
+    handleMessage(message) {
+      if (message.request_id) {
+        const handler = this.pendingRequests.get(message.request_id);
+        if (handler) {
+          handler(message);
+          return;
+        }
+      }
+      const handlers = this.messageHandlers.get(message.type);
+      if (handlers) {
+        handlers.forEach((handler) => handler(message));
+      }
+    }
+    /**
+     * 生成請求 ID
+     */
+    generateRequestId() {
+      return `req-${++this.requestIdCounter}-${Date.now()}`;
+    }
+    /**
+     * 檢查連接狀態
+     */
+    isConnectedToServer() {
+      return this.isConnected && this.ws?.readyState === WebSocket.OPEN;
+    }
+    /**
+     * Ping 伺服器
+     */
+    async ping() {
+      await this.sendRequest(
+        "ping"
+        /* PING */
+      );
+    }
+    // ===== Nodes API =====
+    async getNodes() {
+      return this.sendRequest(
+        "get_nodes"
+        /* GET_NODES */
+      );
+    }
+    async getNodeMetadata(nodeType) {
+      return this.sendRequest("get_node_metadata", { node_type: nodeType });
+    }
+    async getToppings() {
+      return this.sendRequest(
+        "get_toppings"
+        /* GET_TOPPINGS */
+      );
+    }
+    // ===== Registry API =====
+    async registryGetNodes(filters) {
+      return this.sendRequest("registry_get_nodes", filters);
+    }
+    async registryGetNode(nodeId) {
+      return this.sendRequest("registry_get_node", { node_id: nodeId });
+    }
+    async registryGetCategories() {
+      return this.sendRequest(
+        "registry_get_categories"
+        /* REGISTRY_GET_CATEGORIES */
+      );
+    }
+    async registryGetNamespaces() {
+      return this.sendRequest(
+        "registry_get_namespaces"
+        /* REGISTRY_GET_NAMESPACES */
+      );
+    }
+    async registryGetStats() {
+      return this.sendRequest(
+        "registry_get_stats"
+        /* REGISTRY_GET_STATS */
+      );
+    }
+    // ===== Execution API =====
+    async executeGraph(data) {
+      return this.sendRequest("execute_graph", data);
+    }
+    async getExecutionStatus(sessionId) {
+      return this.sendRequest("get_execution_status", { session_id: sessionId });
+    }
+    async getExecutionResults(sessionId) {
+      return this.sendRequest("get_execution_results", { session_id: sessionId });
+    }
+    async cancelExecution(sessionId) {
+      return this.sendRequest("cancel_execution", { session_id: sessionId });
+    }
+    // ===== Session Management =====
+    async createSession(data) {
+      return this.sendRequest("create_session", data);
+    }
+    async getSession(sessionId) {
+      return this.sendRequest("get_session", { session_id: sessionId });
+    }
+    async closeSession(sessionId) {
+      return this.sendRequest("close_session", { session_id: sessionId });
+    }
+    async listSessions(data) {
+      return this.sendRequest("list_sessions", data);
+    }
+    // ===== Graph API =====
+    async loadGraph(path) {
+      return this.sendRequest("load_graph", { path });
+    }
+    async saveGraph(data) {
+      return this.sendRequest("save_graph", data);
+    }
+    async checkDependencies(graphPath) {
+      return this.sendRequest("check_dependencies", { graph_path: graphPath });
+    }
+    async listGraphs(directory = ".") {
+      return this.sendRequest("list_graphs", { directory });
+    }
+    // ===== System API =====
+    async getSystemStats() {
+      return this.sendRequest(
+        "get_system_stats"
+        /* GET_SYSTEM_STATS */
+      );
+    }
+    async systemCleanup() {
+      return this.sendRequest(
+        "system_cleanup"
+        /* SYSTEM_CLEANUP */
+      );
+    }
+    async systemHealth() {
+      return this.sendRequest(
+        "system_health"
+        /* SYSTEM_HEALTH */
+      );
+    }
+    // ===== Git API =====
+    async gitDiff(data) {
+      return this.sendRequest("git_diff", data);
+    }
+    async gitMerge(data) {
+      return this.sendRequest("git_merge", data);
+    }
+    async gitValidate(graph) {
+      return this.sendRequest("git_validate", { graph });
+    }
+    async gitHistory(data) {
+      return this.sendRequest("git_history", data);
+    }
+    async gitBranches() {
+      return this.sendRequest(
+        "git_branches"
+        /* GIT_BRANCHES */
+      );
+    }
+    // ===== Frontend Components API =====
+    async getComponentManifest() {
+      return this.sendRequest(
+        "get_component_manifest"
+        /* GET_COMPONENT_MANIFEST */
+      );
+    }
+    async discoverComponents() {
+      return this.sendRequest(
+        "discover_components"
+        /* DISCOVER_COMPONENTS */
+      );
+    }
+    async getComponentForNode(nodeType) {
+      return this.sendRequest("get_component_for_node", { node_type: nodeType });
+    }
+  }
+  let globalClient = null;
+  function getWebSocketClient(url) {
+    if (!globalClient) {
+      globalClient = new WebSocketClient(url);
+    }
+    return globalClient;
+  }
+  async function initializeWebSocketClient(url) {
+    const client2 = getWebSocketClient(url);
+    if (!client2.isConnectedToServer()) {
+      await client2.connect();
+    }
+    return client2;
+  }
   const CATEGORY_ICONS = {
     "Core": CubeIcon,
     "Math": PlusIcon,
@@ -62691,22 +62995,19 @@ template {
           }, 2e4);
         });
       } else {
-        console.log("🍜 [NodeStore] Non-VSCode environment, using direct fetch");
-        const apiUrl = "http://localhost:8000";
-        const response = await fetch(`${apiUrl}/api/nodes`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json"
+        console.log("🍜 [NodeStore] Non-VSCode environment, using WebSocket");
+        try {
+          const wsClient = await initializeWebSocketClient("ws://localhost:8000/ws");
+          const response = await wsClient.getNodes();
+          if (response && response.nodes) {
+            console.log("🍜 [NodeStore] Successfully received nodes via WebSocket");
+            return response.nodes;
+          } else {
+            throw new Error("Invalid response from WebSocket");
           }
-        });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch nodes: ${response.statusText}`);
-        }
-        const data = await response.json();
-        if (data.success && data.nodes) {
-          return data.nodes;
-        } else {
-          throw new Error(data.error || "Failed to fetch nodes");
+        } catch (error) {
+          console.error("🍜 [NodeStore] WebSocket request failed:", error);
+          throw error;
         }
       }
     } catch (error) {
@@ -70214,39 +70515,9 @@ template {
     ml: FiBarChart,
     default: FiFileText
   };
-  const NAMESPACE_COLORS$1 = {
-    // Legacy namespaces
-    FileIO: "#3b82f6",
-    DataOps: "#f59e42",
-    Math: "#a259e6",
-    MachineLearning: "#ef4444",
-    builtin: "#10b981",
-    // New namespaces
-    core: "#607D8B",
-    // Blue Grey - foundational
-    math: "#4CAF50",
-    // Green - calculations
-    collection: "#2196F3",
-    // Blue - data processing
-    logic: "#9C27B0",
-    // Purple - decision making
-    string: "#FF5722",
-    // Deep Orange - text processing
-    type: "#795548",
-    // Brown - type operations
-    flow: "#00BCD4",
-    // Cyan - control flow
-    object: "#FF9800",
-    // Orange - object operations
-    debug: "#F44336",
-    // Red - debugging
-    ml: "#ef4444",
-    // Red - machine learning (same as MachineLearning)
-    default: "#bbb"
-  };
-  function NodeHeader$1({ nodeName, namespace: namespace2 }) {
+  function NodeHeader$1({ nodeName, namespace: namespace2, color: color2 }) {
     const Icon = NAMESPACE_ICONS[namespace2] || NAMESPACE_ICONS.default;
-    const color2 = NAMESPACE_COLORS$1[namespace2] || NAMESPACE_COLORS$1.default;
+    const headerColor = color2 || "#666666";
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(
       p$5,
       {
@@ -70275,7 +70546,7 @@ template {
             top: 0,
             width: "72px",
             height: "100%",
-            background: color2,
+            background: headerColor,
             clipPath: "polygon(0 0, 100% 0, 80% 100%, 0% 100%)",
             display: "flex",
             alignItems: "center",
@@ -70322,7 +70593,7 @@ template {
         }
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(NodeBody, { $selected: Boolean(selected2), $width: 3, $height: 1, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(NodeHeader$1, { nodeName: nodeData.name, namespace: nodeData.namespace }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(NodeHeader$1, { nodeName: nodeData.name, namespace: nodeData.namespace, color: nodeData.color }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(p$5, { px: "4", py: "2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: {
           color: "#888",
           fontStyle: "italic",
@@ -72843,33 +73114,7 @@ template {
     builtin: FiCpu,
     default: FiCpu
   };
-  const PACKAGE_COLORS = {
-    // Main categories with consistent colors
-    Core: "#607D8B",
-    Math: "#2196F3",
-    Collection: "#f59e42",
-    Logic: "#FFC107",
-    String: "#06b6d4",
-    Type: "#00BCD4",
-    Flow: "#f59e0b",
-    Object: "#9C27B0",
-    Debug: "#ec4899",
-    // Also support lowercase versions
-    core: "#607D8B",
-    math: "#2196F3",
-    collection: "#f59e42",
-    logic: "#FFC107",
-    string: "#06b6d4",
-    type: "#00BCD4",
-    flow: "#f59e0b",
-    object: "#9C27B0",
-    debug: "#ec4899",
-    // Legacy support
-    FileIO: "#3b82f6",
-    DataOps: "#f59e42",
-    builtin: "#10b981",
-    default: "#6b7280"
-  };
+  const DEFAULT_NODE_COLOR = "#666666";
   const PreviewContainer = dt.div`
     transform: scale(${(props) => props.$scale});
     transform-origin: center;
@@ -72891,11 +73136,11 @@ template {
         transform: scale(${(props) => props.$scale * 1.05}) translateY(-3px);
     }
 `;
-  function NodeHeader({ nodeName, namespace: namespace2 }) {
+  function NodeHeader({ nodeName, namespace: namespace2, color: color2 }) {
     const packageName = namespace2.split(".")[0] || namespace2;
     const capitalizedPackage = packageName.charAt(0).toUpperCase() + packageName.slice(1);
     const Icon = PACKAGE_ICONS[capitalizedPackage] || PACKAGE_ICONS[packageName] || PACKAGE_ICONS.default;
-    const color2 = PACKAGE_COLORS[capitalizedPackage] || PACKAGE_COLORS[packageName] || PACKAGE_COLORS.default;
+    const headerColor = color2 || DEFAULT_NODE_COLOR;
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(
       p$5,
       {
@@ -72921,7 +73166,7 @@ template {
             top: 0,
             width: "72px",
             height: "100%",
-            background: color2,
+            background: headerColor,
             clipPath: "polygon(0 0, 100% 0, 80% 100%, 0% 100%)",
             display: "flex",
             alignItems: "center",
@@ -72961,7 +73206,7 @@ template {
         draggable,
         onDragStart,
         children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NodeBody, { $selected: false, $width: 3, $height: 1, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(NodeHeader, { nodeName: nodeData.name, namespace: nodeData.namespace }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(NodeHeader, { nodeName: nodeData.name, namespace: nodeData.namespace, color: nodeData.color }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(p$5, { px: "4", py: "2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: {
             color: "#888",
             fontStyle: "italic",
@@ -73126,7 +73371,9 @@ template {
       namespace: node2.namespace,
       brief: node2.description,
       inputs: node2.inputs || [],
-      outputs: node2.outputs || []
+      outputs: node2.outputs || [],
+      color: node2.color
+      // Pass through the color from backend
     }), []);
     reactExports.useEffect(() => {
       const heights = {};
@@ -75799,12 +76046,13 @@ template {
   }
   class RamenApiClient {
     constructor(port) {
-      this.baseUrl = `http://localhost:${port}/api`;
+      this.port = port;
     }
     async healthCheck() {
       try {
-        const response = await fetch(`${this.baseUrl}/projects/health`);
-        return response.ok;
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.systemHealth();
+        return response.health_status === "healthy";
       } catch (error) {
         console.error("Health check failed:", error);
         return false;
@@ -75812,14 +76060,13 @@ template {
     }
     async executeGraph(graphData) {
       try {
-        const response = await fetch(`${this.baseUrl}/graphs/execute`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(graphData)
-        });
-        return await response.json();
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.executeGraph({ graph: graphData });
+        return {
+          success: true,
+          message: "Graph execution started",
+          data: response
+        };
       } catch (error) {
         console.error("Execute graph failed:", error);
         return {
@@ -75830,17 +76077,16 @@ template {
     }
     async saveGraph(filePath, graphData) {
       try {
-        const response = await fetch(`${this.baseUrl}/graphs/save`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            filePath,
-            graph: graphData
-          })
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.saveGraph({
+          path: filePath,
+          graph: graphData
         });
-        return await response.json();
+        return {
+          success: true,
+          message: response.message || "Graph saved successfully",
+          data: response
+        };
       } catch (error) {
         console.error("Save graph failed:", error);
         return {
@@ -75851,8 +76097,13 @@ template {
     }
     async loadGraph(filePath) {
       try {
-        const response = await fetch(`${this.baseUrl}/graphs/load?path=${encodeURIComponent(filePath)}`);
-        return await response.json();
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.loadGraph(filePath);
+        return {
+          success: true,
+          message: response.message || "Graph loaded successfully",
+          data: response.graph
+        };
       } catch (error) {
         console.error("Load graph failed:", error);
         return {
@@ -75863,14 +76114,13 @@ template {
     }
     async validateGraph(graphData) {
       try {
-        const response = await fetch(`${this.baseUrl}/graphs/validate`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(graphData)
-        });
-        return await response.json();
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.gitValidate(graphData);
+        return {
+          success: response.valid,
+          message: response.valid ? "Graph is valid" : "Graph validation failed",
+          data: response
+        };
       } catch (error) {
         console.error("Validate graph failed:", error);
         return {
@@ -75880,97 +76130,42 @@ template {
       }
     }
     // Project management
+    // Note: These APIs are currently not implemented in the backend WebSocket API
+    // They will be added in a future update
     async createProject(name, description, location) {
-      try {
-        const response = await fetch(`${this.baseUrl}/projects/create`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            name,
-            description,
-            location
-          })
-        });
-        return await response.json();
-      } catch (error) {
-        console.error("Create project failed:", error);
-        return {
-          success: false,
-          message: `Failed to create project: ${error}`
-        };
-      }
+      console.warn("Project management APIs are not yet implemented via WebSocket");
+      return {
+        success: false,
+        message: "Project management APIs are not yet available"
+      };
     }
     async loadProject(path) {
-      try {
-        const response = await fetch(`${this.baseUrl}/projects/load?path=${encodeURIComponent(path)}`);
-        return await response.json();
-      } catch (error) {
-        console.error("Load project failed:", error);
-        return {
-          success: false,
-          message: `Failed to load project: ${error}`
-        };
-      }
+      console.warn("Project management APIs are not yet implemented via WebSocket");
+      return {
+        success: false,
+        message: "Project management APIs are not yet available"
+      };
     }
     async saveProject(filePath, project) {
-      try {
-        const response = await fetch(`${this.baseUrl}/projects/save`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            filePath,
-            project
-          })
-        });
-        return await response.json();
-      } catch (error) {
-        console.error("Save project failed:", error);
-        return {
-          success: false,
-          message: `Failed to save project: ${error}`
-        };
-      }
+      console.warn("Project management APIs are not yet implemented via WebSocket");
+      return {
+        success: false,
+        message: "Project management APIs are not yet available"
+      };
     }
     async syncProject(projectPath) {
-      try {
-        const response = await fetch(`${this.baseUrl}/projects/sync`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            projectPath
-          })
-        });
-        return await response.json();
-      } catch (error) {
-        console.error("Sync project failed:", error);
-        return {
-          success: false,
-          message: `Failed to sync project: ${error}`
-        };
-      }
+      console.warn("Project management APIs are not yet implemented via WebSocket");
+      return {
+        success: false,
+        message: "Project management APIs are not yet available"
+      };
     }
     async listRecentProjects() {
-      try {
-        const response = await fetch(`${this.baseUrl}/projects/list`);
-        const data = await response.json();
-        return {
-          success: data.success,
-          message: data.success ? "Projects loaded" : "Failed to load projects",
-          data: data.projects
-        };
-      } catch (error) {
-        console.error("List projects failed:", error);
-        return {
-          success: false,
-          message: `Failed to list projects: ${error}`
-        };
-      }
+      console.warn("Project management APIs are not yet implemented via WebSocket");
+      return {
+        success: false,
+        message: "Project management APIs are not yet available"
+      };
     }
   }
   let apiClient = null;
@@ -75981,8 +76176,7 @@ template {
     return apiClient;
   }
   function getPortFromClient(client2) {
-    const match2 = client2.baseUrl.match(/:(\d+)\//);
-    return match2 ? parseInt(match2[1]) : 8e3;
+    return client2.port || 8e3;
   }
   const ANIMATION_DURATION = "0.3s";
   const DEFAULT_NODE_LIBRARY_WIDTH = 360;

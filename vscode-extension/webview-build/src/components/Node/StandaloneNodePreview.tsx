@@ -16,7 +16,8 @@ export type OpNodeProps = {
     namespace: string,
     brief?: string,
     inputs: Array<NodeIOProps>,
-    outputs: Array<NodeIOProps>
+    outputs: Array<NodeIOProps>,
+    color?: string
 }
 
 // Package/Category icons (not namespace)
@@ -51,37 +52,8 @@ const PACKAGE_ICONS: Record<string, any> = {
     default: FiCpu
 };
 
-// Package/Category colors (not namespace)
-const PACKAGE_COLORS: Record<string, string> = {
-    // Main categories with consistent colors
-    Core: '#607D8B',
-    Math: '#2196F3',
-    Collection: '#f59e42',
-    Logic: '#FFC107',
-    String: '#06b6d4',
-    Type: '#00BCD4',
-    Flow: '#f59e0b',
-    Object: '#9C27B0',
-    Debug: '#ec4899',
-    
-    // Also support lowercase versions
-    core: '#607D8B',
-    math: '#2196F3',
-    collection: '#f59e42',
-    logic: '#FFC107',
-    string: '#06b6d4',
-    type: '#00BCD4',
-    flow: '#f59e0b',
-    object: '#9C27B0',
-    debug: '#ec4899',
-    
-    // Legacy support
-    FileIO: '#3b82f6',
-    DataOps: '#f59e42',
-    builtin: '#10b981',
-    
-    default: '#6b7280'
-};
+// Default fallback color if node doesn't have a color defined
+const DEFAULT_NODE_COLOR = '#666666';
 
 const PreviewContainer = styled.div<{ $scale: number }>`
     transform: scale(${props => props.$scale});
@@ -105,13 +77,13 @@ const PreviewContainer = styled.div<{ $scale: number }>`
     }
 `;
 
-function NodeHeader({ nodeName, namespace }: { nodeName: string, namespace: string }) {
+function NodeHeader({ nodeName, namespace, color }: { nodeName: string, namespace: string, color?: string }) {
     // Extract package/category from namespace (e.g., "core.io" -> "core")
     const packageName = namespace.split('.')[0] || namespace;
     const capitalizedPackage = packageName.charAt(0).toUpperCase() + packageName.slice(1);
-    
+
     const Icon = PACKAGE_ICONS[capitalizedPackage] || PACKAGE_ICONS[packageName] || PACKAGE_ICONS.default;
-    const color = PACKAGE_COLORS[capitalizedPackage] || PACKAGE_COLORS[packageName] || PACKAGE_COLORS.default;
+    const headerColor = color || DEFAULT_NODE_COLOR;
     return (
         <Box px="0" pt="4" pb="4"
             style={{
@@ -132,7 +104,7 @@ function NodeHeader({ nodeName, namespace }: { nodeName: string, namespace: stri
                 top: 0,
                 width: '72px',
                 height: '100%',
-                background: color,
+                background: headerColor,
                 clipPath: 'polygon(0 0, 100% 0, 80% 100%, 0% 100%)',
                 display: 'flex',
                 alignItems: 'center',
@@ -183,7 +155,7 @@ export default function StandaloneNodePreview({
             onDragStart={onDragStart}
         >
             <NodeBody $selected={false} $width={3} $height={1}>
-                <NodeHeader nodeName={nodeData.name} namespace={nodeData.namespace} />
+                <NodeHeader nodeName={nodeData.name} namespace={nodeData.namespace} color={nodeData.color} />
                 <Box px="4" py="2">
                     <Text size="2" style={{
                         color: '#888',

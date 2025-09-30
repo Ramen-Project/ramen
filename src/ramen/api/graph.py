@@ -1,6 +1,10 @@
 """
 圖形管理 API
 提供圖形檔案的載入、保存、查詢等功能
+
+⚠️  DEPRECATED: HTTP endpoints in this module are deprecated.
+All functionality has been migrated to WebSocket API.
+See: src/ramen/api/websocket_handler.py
 """
 
 from fastapi import APIRouter, HTTPException

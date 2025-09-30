@@ -68,7 +68,8 @@ export default function VerticalNodeList({
     namespace: node.namespace,
     brief: node.description,
     inputs: node.inputs || [],
-    outputs: node.outputs || []
+    outputs: node.outputs || [],
+    color: node.color  // Pass through the color from backend
   }), []);
 
   return (

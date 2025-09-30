@@ -198,7 +198,8 @@ export default function NodeLibrary() {
                   namespace: nodeDefinition.namespace,
                   brief: nodeDefinition.description,
                   inputs: nodeDefinition.inputs,
-                  outputs: nodeDefinition.outputs
+                  outputs: nodeDefinition.outputs,
+                  color: nodeDefinition.color  // Pass through the color from backend
                 };
                 
                 return (
