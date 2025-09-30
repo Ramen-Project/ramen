@@ -8,7 +8,7 @@ import styled from 'styled-components';
 
 export type NodeIOProps = {
     name: string,
-    typeId: string
+    type: string  // Backend sends 'type', not 'typeId'
 }
 
 export type OpNodeProps = {
@@ -173,9 +173,9 @@ export default function StandaloneNodePreview({
                     <Flex direction="row" justify="between" style={{gap: '1em'}}>
                         <Flex direction="column" align="start" style={{gap: '0.5em'}}>
                             {nodeData.inputs.map((input, idx) => {
-                                const IOType = typeReg.typesRegistries[input.typeId] || typeReg.typesRegistries['unknown'];
+                                const IOType = typeReg.typesRegistries[input.type] || typeReg.typesRegistries['unknown'];
                                 return (
-                                    <PreviewPort key={input.name + idx} portId={`input${idx}`} typeId={input.typeId} isInput portName={input.name}>
+                                    <PreviewPort key={input.name + idx} portId={`input${idx}`} typeId={input.type} isInput portName={input.name}>
                                         <Text size="2" style={{color: IOType.color, fontWeight: 500}}>{IOType.name}</Text>
                                     </PreviewPort>
                                 );
@@ -183,10 +183,10 @@ export default function StandaloneNodePreview({
                         </Flex>
                         <Flex direction="column" align="end" style={{gap: '0.5em'}}>
                             {nodeData.outputs.map((output, idx) => {
-                                const IOType = typeReg.typesRegistries[output.typeId] || typeReg.typesRegistries['unknown'];
+                                const IOType = typeReg.typesRegistries[output.type] || typeReg.typesRegistries['unknown'];
                                 const portId = `output${idx}`;
                                 return (
-                                    <PreviewPort key={output.name + idx} portId={portId} typeId={output.typeId} portName={output.name}>
+                                    <PreviewPort key={output.name + idx} portId={portId} typeId={output.type} portName={output.name}>
                                         <Text size="2" style={{color: IOType.color, fontWeight: 500}}>{IOType.name}</Text>
                                     </PreviewPort>
                                 );

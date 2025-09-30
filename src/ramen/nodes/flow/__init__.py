@@ -1,8 +1,8 @@
 """Flow control namespace - Pipeline and control flow operations."""
 
-from .pipeline import *
-from .control import *
-from .async_flow import *
+from ramen.nodes.flow.pipeline import *
+from ramen.nodes.flow.control import *
+from ramen.nodes.flow.async_flow import *
 
 __all__ = [
     # Pipeline operations

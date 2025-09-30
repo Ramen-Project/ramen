@@ -149,6 +149,7 @@ export class NodeWebSocketClient {
         this.ws.on('message', (data: WebSocket.Data) => {
           try {
             const message: WebSocketResponse = JSON.parse(data.toString());
+            console.log(`🍜 [WebSocket:${this.clientId}] ⬅️  Received:`, JSON.stringify(message, null, 2));
             this.handleMessage(message);
 
             // 連接成功後 resolve
@@ -158,6 +159,7 @@ export class NodeWebSocketClient {
             }
           } catch (error) {
             console.error(`🍜 [WebSocket:${this.clientId}] Failed to parse message:`, error);
+            console.error(`🍜 [WebSocket:${this.clientId}] Raw data:`, data.toString());
           }
         });
 
@@ -170,16 +172,30 @@ export class NodeWebSocketClient {
           }
         });
 
-        this.ws.on('close', () => {
-          console.log(`🍜 [WebSocket:${this.clientId}] Connection closed`);
+        this.ws.on('close', (code, reason) => {
+          console.log(`🍜 [WebSocket:${this.clientId}] Connection closed (code: ${code})`);
           this.isConnected = false;
           this.connectPromise = null;
+
+          // 清理所有待處理的請求
+          this.pendingRequests.forEach((handler, requestId) => {
+            handler({
+              type: MessageType.ERROR,
+              request_id: requestId,
+              success: false,
+              error: 'Connection closed',
+              timestamp: new Date().toISOString()
+            });
+          });
+          this.pendingRequests.clear();
 
           if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
             const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
             console.log(`🍜 [WebSocket:${this.clientId}] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-            setTimeout(() => this.connect(), delay);
+            setTimeout(() => this.connect().catch(err => {
+              console.error(`🍜 [WebSocket:${this.clientId}] Reconnection failed:`, err);
+            }), delay);
           }
         });
       } catch (error) {
@@ -241,6 +257,7 @@ export class NodeWebSocketClient {
         data
       };
 
+      console.log(`🍜 [WebSocket:${this.clientId}] ➡️  Sending:`, JSON.stringify(message, null, 2));
       this.ws!.send(JSON.stringify(message));
     });
   }
@@ -253,14 +270,19 @@ export class NodeWebSocketClient {
     if (message.request_id) {
       const handler = this.pendingRequests.get(message.request_id);
       if (handler) {
+        console.log(`🍜 [WebSocket:${this.clientId}] ✅ Matched pending request: ${message.request_id}`);
         handler(message);
         return;
+      } else {
+        console.warn(`🍜 [WebSocket:${this.clientId}] ⚠️  No handler found for request: ${message.request_id}`);
+        console.warn(`🍜 [WebSocket:${this.clientId}] Pending requests:`, Array.from(this.pendingRequests.keys()));
       }
     }
 
     // 處理訂閱的訊息
     const handlers = this.messageHandlers.get(message.type);
     if (handlers) {
+      console.log(`🍜 [WebSocket:${this.clientId}] 📢 Broadcasting to ${handlers.size} subscribers for type: ${message.type}`);
       handlers.forEach(handler => handler(message));
     }
   }

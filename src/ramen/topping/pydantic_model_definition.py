@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
-from .class_definition import (
+from ramen.topping.class_definition import (
     ClassDefinitionNode, ClassMetadata, ClassType,
     PropertyDefinition, MethodDefinition, PortDefinition, PortType,
     NodeContext, NodeMetadata

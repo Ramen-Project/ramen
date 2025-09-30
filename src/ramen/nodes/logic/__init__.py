@@ -1,8 +1,8 @@
 """Logic operations namespace - Boolean and comparison operations."""
 
-from .boolean import *
-from .comparison import *
-from .conditional import *
+from ramen.nodes.logic.boolean import *
+from ramen.nodes.logic.comparison import *
+from ramen.nodes.logic.conditional import *
 
 __all__ = [
     # Boolean operations

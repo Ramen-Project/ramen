@@ -1,7 +1,7 @@
 """Async flow operations (simplified implementations)."""
 
 from typing import Any
-from ..base import node, NodeContext, Port, PortType
+from ramen.nodes.base import node, NodeContext, Port, PortType
 
 
 @node(

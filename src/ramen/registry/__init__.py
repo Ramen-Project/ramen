@@ -1,6 +1,6 @@
 """Node Registry System for Ramen."""
 
-from .node_registry import (
+from ramen.registry.node_registry import (
     NodeRegistry,
     get_global_registry,
     register_node,

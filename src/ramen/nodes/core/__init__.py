@@ -2,8 +2,8 @@
 Core nodes for basic operations.
 """
 
-from .io import *
-from .variables import *
+from ramen.nodes.core.io import *
+from ramen.nodes.core.variables import *
 
 __all__ = [
     # IO nodes

@@ -1,8 +1,8 @@
 """Built-in Nodes Topping - Contains all core functionality."""
 
 from typing import Dict, Any, List, Callable
-from ..topping.topping_base import ToppingBase, NodeFunction, NodeMetadata, NodeContext, PortDefinition, PortType
-from ..nodes.base import NODE_REGISTRY, NODE_METADATA
+from ramen.topping.topping_base import ToppingBase, NodeFunction, NodeMetadata, NodeContext, PortDefinition, PortType
+from ramen.nodes.base import NODE_REGISTRY, NODE_METADATA
 
 
 class BuiltinTopping(ToppingBase):

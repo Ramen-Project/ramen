@@ -14,8 +14,8 @@ import types
 from pathlib import Path
 from datetime import datetime
 
-from ..core.models import RamenGraph, RamenNode, RamenEdge
-from .errors import CompilationError
+from ramen.core.models import RamenGraph, RamenNode, RamenEdge
+from ramen.engine.errors import CompilationError
 
 
 @dataclass

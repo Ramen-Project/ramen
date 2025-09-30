@@ -3,7 +3,7 @@
  * 整個 Extension 共用一個 WebSocket 連接
  */
 
-import { NodeWebSocketClient, createWebSocketClient } from './WebSocketClient';
+import { NodeWebSocketClient, createWebSocketClient, MessageType } from './WebSocketClient';
 
 class GlobalWebSocketManager {
   private static instance: GlobalWebSocketManager | null = null;
@@ -31,13 +31,11 @@ class GlobalWebSocketManager {
   async connect(serverUrl: string): Promise<NodeWebSocketClient> {
     // 如果 URL 相同且已經有連接，直接返回
     if (this.serverUrl === serverUrl && this.wsClient?.isConnectedToServer()) {
-      console.log('🍜 [GlobalWS] Using existing connection');
       return this.wsClient;
     }
 
     // 如果正在連接中，等待現有的連接完成
     if (this.connectionPromise) {
-      console.log('🍜 [GlobalWS] Connection in progress, waiting...');
       return this.connectionPromise;
     }
 
@@ -49,18 +47,23 @@ class GlobalWebSocketManager {
     }
 
     // 建立新連接
-    console.log(`🍜 [GlobalWS] Creating new connection to ${serverUrl}`);
     this.serverUrl = serverUrl;
 
-    this.connectionPromise = createWebSocketClient(serverUrl, 'global-extension-client');
+    this.connectionPromise = (async () => {
+      try {
+        this.wsClient = await createWebSocketClient(serverUrl, 'global-extension-client');
+        return this.wsClient;
+      } catch (error) {
+        // 連接失敗，清理狀態
+        this.wsClient = null;
+        this.serverUrl = null;
+        throw error;
+      } finally {
+        this.connectionPromise = null;
+      }
+    })();
 
-    try {
-      this.wsClient = await this.connectionPromise;
-      console.log('🍜 [GlobalWS] Connection established successfully');
-      return this.wsClient;
-    } finally {
-      this.connectionPromise = null;
-    }
+    return this.connectionPromise;
   }
 
   /**
@@ -75,6 +78,16 @@ class GlobalWebSocketManager {
    */
   isConnected(): boolean {
     return this.wsClient?.isConnectedToServer() ?? false;
+  }
+
+  /**
+   * 發送 WebSocket 請求
+   */
+  async sendRequest<T = any>(type: string | MessageType, data?: any, timeout?: number): Promise<T> {
+    if (!this.wsClient) {
+      throw new Error('WebSocket client not initialized. Call connect() first.');
+    }
+    return this.wsClient.sendRequest<T>(type, data, timeout);
   }
 
   /**

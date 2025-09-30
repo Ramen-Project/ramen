@@ -1,19 +1,17 @@
 import * as vscode from 'vscode';
 import { RamenWebviewManager } from '../webview/webviewManager';
 import { RamenServerManager } from '../server/serverManager';
-import { WebSocketManager } from '../websocket/websocketManager';
 
 /**
  * Custom editor provider for .ramen files
  * This makes Ramen graphs open in the visual editor by default
  */
 export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvider {
-    
+
     constructor(
         private context: vscode.ExtensionContext,
         private webviewManager: RamenWebviewManager,
-        private serverManager: RamenServerManager,
-        private websocketManager?: WebSocketManager
+        private serverManager: RamenServerManager
     ) {}
 
     /**

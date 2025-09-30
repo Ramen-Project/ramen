@@ -2,10 +2,10 @@
 Collection nodes for functional-style data processing.
 """
 
-from .transform import *
-from .query import *
-from .operations import *
-from .sort import *
+from ramen.nodes.collection.transform import *
+from ramen.nodes.collection.query import *
+from ramen.nodes.collection.operations import *
+from ramen.nodes.collection.sort import *
 
 __all__ = [
     # Transform operations (functional style)

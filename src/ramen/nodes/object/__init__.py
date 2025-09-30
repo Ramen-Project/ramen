@@ -1,8 +1,8 @@
 """Object manipulation namespace - Dictionary and object operations."""
 
-from .access import *
-from .transform import *
-from .utility import *
+from ramen.nodes.object.access import *
+from ramen.nodes.object.transform import *
+from ramen.nodes.object.utility import *
 
 __all__ = [
     # Object access

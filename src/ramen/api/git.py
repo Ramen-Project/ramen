@@ -12,9 +12,9 @@ from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 import json
 
-from ..core.models import RamenGraph, GraphDeserializer
-from ..git.diff import GraphDiffer, GraphDiffResult, format_diff_summary
-from ..git.merge import GraphMerger, ConflictResolution
+from ramen.core.models import RamenGraph, GraphDeserializer
+from ramen.git.diff import GraphDiffer, GraphDiffResult, format_diff_summary
+from ramen.git.merge import GraphMerger, ConflictResolution
 
 router = APIRouter(prefix="/git", tags=["git"])
 

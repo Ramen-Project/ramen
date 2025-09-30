@@ -8,7 +8,7 @@ import ast
 import inspect
 import textwrap
 
-from .topping_base import NodeFunction, NodeMetadata, NodeContext, PortDefinition, PortType
+from ramen.topping.topping_base import NodeFunction, NodeMetadata, NodeContext, PortDefinition, PortType
 
 
 class ClassType(Enum):

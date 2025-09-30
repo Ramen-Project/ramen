@@ -1,6 +1,6 @@
 """Topping system for Ramen."""
 
-from .topping_base import (
+from ramen.topping.topping_base import (
     ToppingBase,
     NodeFunction,
     NodeMetadata,
@@ -11,13 +11,13 @@ from .topping_base import (
     Node,
     on
 )
-from .decorators import (
+from ramen.topping.decorators import (
     ramen_node,
     input_port,
     output_port,
     get_simple_node_metadata
 )
-from .loader import (
+from ramen.topping.loader import (
     ToppingLoader,
     ToppingRegistry,
     REGISTRY,

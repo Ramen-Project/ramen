@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Any
 import json
 import logging
 
-from .topping_base import FrontendComponent
+from ramen.topping.topping_base import FrontendComponent
 
 logger = logging.getLogger(__name__)
 

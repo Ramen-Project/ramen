@@ -1,7 +1,7 @@
 """Debug validation and testing tools."""
 
 from typing import Any, Callable
-from ..base import node, NodeContext, Port, PortType
+from ramen.nodes.base import node, NodeContext, Port, PortType
 
 
 @node(

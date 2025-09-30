@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-from ..topping.frontend_components import get_component_discovery
+from ramen.topping.frontend_components import get_component_discovery
 
 logger = logging.getLogger(__name__)
 

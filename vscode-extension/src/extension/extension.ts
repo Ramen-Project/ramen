@@ -5,7 +5,7 @@ import { RamenServerProvider } from './providers/serverProvider';
 import { RamenDependenciesProvider } from './providers/dependenciesProvider';
 import { RamenWebviewManager } from './webview/webviewManager';
 import { RamenServerManager } from './server/serverManager';
-import { WebSocketManager } from './websocket/websocketManager';
+import { getGlobalWebSocketManager } from './api/GlobalWebSocketManager';
 import { RamenLanguageServer } from './language/languageServer';
 import { RamenCommands } from './commands';
 import { RamenFileSystemProvider } from './filesystem/fileSystemProvider';
@@ -18,7 +18,6 @@ import { registerGitCommands } from './commands/gitCommands';
 
 let serverManager: RamenServerManager;
 let webviewManager: RamenWebviewManager;
-let websocketManager: WebSocketManager;
 let languageServer: RamenLanguageServer;
 let fileSystemProvider: RamenFileSystemProvider;
 let fileWatcher: RamenFileWatcher;
@@ -35,15 +34,12 @@ export async function activate(context: vscode.ExtensionContext) {
     // Initialize core services
     stateManager = StateManager.getInstance(context);
     errorHandler = ErrorHandler.getInstance();
-    
+
     // Initialize server manager
     serverManager = new RamenServerManager(context);
-    
-    // Initialize WebSocket manager
-    websocketManager = new WebSocketManager(serverManager, context);
-    
-    // Initialize webview manager with WebSocket support
-    webviewManager = new RamenWebviewManager(context, serverManager, websocketManager);
+
+    // Initialize webview manager (will use GlobalWebSocketManager internally)
+    webviewManager = new RamenWebviewManager(context, serverManager);
     
     // Initialize language server
     const config = vscode.workspace.getConfiguration('ramen');
@@ -88,19 +84,19 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     // Register custom editor provider for .ramen files
-    const customEditorProvider = new RamenCustomEditorProvider(context, webviewManager, serverManager, websocketManager);
+    const customEditorProvider = new RamenCustomEditorProvider(context, webviewManager, serverManager);
     context.subscriptions.push(
         vscode.window.registerCustomEditorProvider('ramen.graphEditor', customEditorProvider)
     );
 
     // Initialize command registry
     commandRegistry = new CommandRegistry(context, stateManager, errorHandler);
-    
+
     // Register all commands using the new registry
     commandRegistry.registerBatch(allCommands);
-    
+
     // Register legacy commands for backward compatibility (only those not in new command registry)
-    const commands = new RamenCommands(serverManager, webviewManager, websocketManager, undefined, variablesProvider, serverProvider, dependenciesProvider);
+    const commands = new RamenCommands(serverManager, webviewManager, variablesProvider, serverProvider, dependenciesProvider);
     
     context.subscriptions.push(
         
@@ -172,48 +168,94 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
     console.log('Ramen extension is deactivating...');
-    
-    try {
-        // Stop language server first
+
+    const cleanup = async () => {
+        const cleanupTasks: Promise<void>[] = [];
+
+        // 1. Disconnect global WebSocket first to stop new requests
+        try {
+            const wsManager = getGlobalWebSocketManager();
+            wsManager.disconnect();
+            console.log('WebSocket disconnected');
+        } catch (error) {
+            console.error('Error disconnecting WebSocket:', error);
+        }
+
+        // 2. Dispose webview manager to close all panels
+        try {
+            if (webviewManager) {
+                webviewManager.disposeAll();
+                console.log('Webview manager disposed');
+            }
+        } catch (error) {
+            console.error('Error disposing webview manager:', error);
+        }
+
+        // 3. Stop language server
         if (languageServer) {
-            await languageServer.stop();
+            cleanupTasks.push(
+                languageServer.stop().catch((error) => {
+                    console.error('Error stopping language server:', error);
+                })
+            );
         }
-        
-        // Dispose WebSocket manager
-        if (websocketManager) {
-            websocketManager.dispose();
-        }
-        
-        // Stop server manager (most important)
+
+        // 4. Stop server manager (most critical)
         if (serverManager) {
-            await serverManager.stop();
+            cleanupTasks.push(
+                serverManager.stop().catch((error) => {
+                    console.error('Error stopping server manager:', error);
+                })
+            );
         }
-        
-        // Dispose webview manager
-        if (webviewManager) {
-            webviewManager.disposeAll();
+
+        // 5. Clean up file watcher
+        try {
+            if (fileWatcher) {
+                fileWatcher.dispose();
+            }
+        } catch (error) {
+            console.error('Error disposing file watcher:', error);
         }
-        
-        // Clean up other resources
-        if (fileWatcher) {
-            fileWatcher.dispose();
+
+        // Wait for all cleanup tasks with timeout
+        try {
+            await Promise.race([
+                Promise.all(cleanupTasks),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Cleanup timeout')), 5000)
+                )
+            ]);
+        } catch (error) {
+            console.warn('Cleanup timeout or error:', error);
         }
-        
-        // ErrorHandler cleanup is automatic
-        
+    };
+
+    try {
+        await cleanup();
         console.log('Ramen extension deactivated successfully');
     } catch (error) {
         console.error('Error during extension deactivation:', error);
-        // Even if there's an error, we should still try to force-stop the server
+    } finally {
+        // Final fallback: force-kill server process if still running
         if (serverManager) {
             try {
                 const processId = serverManager.getProcessId();
                 if (processId) {
-                    process.kill(processId, 'SIGKILL');
-                    console.log('Force-killed server process:', processId);
+                    if (process.platform === 'win32') {
+                        // Windows
+                        const { execSync } = require('child_process');
+                        execSync(`taskkill /F /PID ${processId}`, { stdio: 'ignore' });
+                        console.log('Force-killed server process (Windows):', processId);
+                    } else {
+                        // Unix/Linux/macOS
+                        process.kill(processId, 'SIGKILL');
+                        console.log('Force-killed server process:', processId);
+                    }
                 }
             } catch (killError) {
-                console.error('Failed to force-kill server process:', killError);
+                // Ignore errors here - process might already be dead
+                console.log('Server process cleanup:', killError);
             }
         }
     }

@@ -14,8 +14,8 @@ from datetime import datetime
 import json
 import asyncio
 
-from ..core.models import RamenGraph, GraphDeserializer
-from ..engine import (
+from ramen.core.models import RamenGraph, GraphDeserializer
+from ramen.engine import (
     GraphExecutor,
     GraphCompiler,
     ExecutionSession,

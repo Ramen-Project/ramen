@@ -9,8 +9,8 @@ from enum import Enum
 import json
 from datetime import datetime
 
-from ..core.models import RamenGraph, RamenNode, RamenEdge, GraphMetadata
-from .diff import GraphDiffer, GraphDiffResult, DiffType
+from ramen.core.models import RamenGraph, RamenNode, RamenEdge, GraphMetadata
+from ramen.git.diff import GraphDiffer, GraphDiffResult, DiffType
 
 
 class ConflictType(Enum):

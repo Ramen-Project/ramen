@@ -3,21 +3,21 @@ Node library for Ramen - Comprehensive node collection.
 """
 
 from typing import Dict, Any, Callable, Optional
-from .base import NODE_REGISTRY, NODE_METADATA, NodeContext, NodeMetadata
+from ramen.nodes.base import NODE_REGISTRY, NODE_METADATA, NodeContext, NodeMetadata
 
 # Import all node modules to register them
-from . import core
-from . import math  
-from . import collection
-from . import logic
-from . import string
-from . import type
-from . import flow
-from . import object
-from . import debug
+from ramen.nodes import core
+from ramen.nodes import math
+from ramen.nodes import collection
+from ramen.nodes import logic
+from ramen.nodes import string
+from ramen.nodes import type
+from ramen.nodes import flow
+from ramen.nodes import object
+from ramen.nodes import debug
 
 # Legacy imports for backward compatibility
-from ..engine.context import NodeContext as LegacyNodeContext
+from ramen.engine.context import NodeContext as LegacyNodeContext
 
 
 def register_node(namespace: str, node_type: str):

@@ -10,8 +10,8 @@ from typing import Dict, List, Optional, Union, Any
 import importlib.util
 import json
 
-from .core.models import RamenGraph, GraphDeserializer, GraphDependencies
-from .engine import GraphExecutor, ExecutionContext
+from ramen.core.models import RamenGraph, GraphDeserializer, GraphDependencies
+from ramen.engine import GraphExecutor, ExecutionContext
 
 
 class GraphLoader:

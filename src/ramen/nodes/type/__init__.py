@@ -1,8 +1,8 @@
 """Type operations namespace - Type conversion and checking."""
 
-from .conversion import *
-from .checking import *
-from .validation import *
+from ramen.nodes.type.conversion import *
+from ramen.nodes.type.checking import *
+from ramen.nodes.type.validation import *
 
 __all__ = [
     # Type conversion

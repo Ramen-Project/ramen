@@ -64,16 +64,34 @@ export class RamenServerManager {
             }
             
             // Existing server not responding or not a Ramen server
-            const useAnyway = await vscode.window.showWarningMessage(
-                `Port ${this.port} is already in use by another process. What would you like to do?`,
+            const action = await vscode.window.showWarningMessage(
+                `Port ${this.port} is already in use. This might be a leftover Ramen server process.`,
+                'Kill Process & Restart',
                 'Use Different Port',
                 'Cancel'
             );
-            
-            if (useAnyway === 'Cancel') {
+
+            if (action === 'Cancel') {
                 this.isStarting = false;
                 return false;
-            } else if (useAnyway === 'Use Different Port') {
+            } else if (action === 'Kill Process & Restart') {
+                // Try to kill the process using the port
+                try {
+                    this.outputChannel.appendLine(`Attempting to kill process on port ${this.port}...`);
+                    await this.killProcessOnPort(this.port);
+                    this.outputChannel.appendLine('Process killed successfully');
+
+                    // Wait a bit for the port to be released
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    // Continue with server start
+                } catch (killError) {
+                    this.outputChannel.appendLine(`Failed to kill process: ${killError}`);
+                    vscode.window.showErrorMessage(`Failed to kill process on port ${this.port}. Try using a different port.`);
+                    this.isStarting = false;
+                    return false;
+                }
+            } else if (action === 'Use Different Port') {
                 const newPort = await vscode.window.showInputBox({
                     prompt: 'Enter new port number',
                     value: String(this.port + 1),
@@ -85,7 +103,7 @@ export class RamenServerManager {
                         return null;
                     }
                 });
-                
+
                 if (newPort) {
                     this.port = parseInt(newPort);
                     // Update configuration
@@ -213,37 +231,72 @@ export class RamenServerManager {
     async stop(): Promise<void> {
         if (this.serverProcess) {
             this.outputChannel.appendLine('Stopping Ramen server...');
-            
-            // First, try graceful shutdown
-            this.serverProcess.kill('SIGTERM');
-            
-            // Wait for process to exit gracefully
-            const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
-            const processExit = new Promise((resolve) => {
-                this.serverProcess?.on('exit', resolve);
-            });
-            
-            try {
-                await Promise.race([processExit, timeout]);
-                
-                // If process is still running after timeout, force kill
-                if (this.serverProcess && !this.serverProcess.killed) {
-                    this.outputChannel.appendLine('Server not responding to SIGTERM, force killing...');
-                    this.serverProcess.kill('SIGKILL');
-                    
-                    // Wait a bit more for force kill
-                    await Promise.race([
-                        new Promise((resolve) => this.serverProcess?.on('exit', resolve)),
-                        new Promise((resolve) => setTimeout(resolve, 2000))
-                    ]);
+
+            const pid = this.serverProcess.pid;
+
+            // On Windows, use taskkill for more reliable termination
+            if (process.platform === 'win32' && pid) {
+                try {
+                    // First try graceful shutdown
+                    this.outputChannel.appendLine(`Sending shutdown signal to process ${pid}...`);
+                    execSync(`taskkill /PID ${pid}`, {
+                        encoding: 'utf8',
+                        stdio: 'ignore'
+                    });
+
+                    // Wait for process to exit
+                    const exitPromise = new Promise<void>((resolve) => {
+                        this.serverProcess?.on('exit', () => resolve());
+                    });
+                    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 3000));
+
+                    await Promise.race([exitPromise, timeout]);
+
+                    // Force kill if still running
+                    if (this.serverProcess && !this.serverProcess.killed) {
+                        this.outputChannel.appendLine('Server not responding, force killing...');
+                        execSync(`taskkill /F /PID ${pid}`, {
+                            encoding: 'utf8',
+                            stdio: 'ignore'
+                        });
+                        await new Promise((resolve) => setTimeout(resolve, 1000));
+                    }
+                } catch (error) {
+                    this.outputChannel.appendLine(`Error stopping server: ${error}`);
+                    // Try direct kill as last resort
+                    try {
+                        this.serverProcess.kill('SIGKILL');
+                    } catch (killError) {
+                        this.outputChannel.appendLine(`Failed to kill process: ${killError}`);
+                    }
                 }
-            } catch (error) {
-                this.outputChannel.appendLine(`Error during server shutdown: ${error}`);
+            } else {
+                // Unix/Linux/macOS
+                this.serverProcess.kill('SIGTERM');
+
+                // Wait for process to exit gracefully
+                const exitPromise = new Promise<void>((resolve) => {
+                    this.serverProcess?.on('exit', () => resolve());
+                });
+                const timeout = new Promise<void>((resolve) => setTimeout(resolve, 5000));
+
+                try {
+                    await Promise.race([exitPromise, timeout]);
+
+                    // If process is still running after timeout, force kill
+                    if (this.serverProcess && !this.serverProcess.killed) {
+                        this.outputChannel.appendLine('Server not responding to SIGTERM, force killing...');
+                        this.serverProcess.kill('SIGKILL');
+                        await new Promise((resolve) => setTimeout(resolve, 1000));
+                    }
+                } catch (error) {
+                    this.outputChannel.appendLine(`Error during server shutdown: ${error}`);
+                }
             }
-            
+
             this.serverProcess = null;
             this.isServerRunning = false;
-            this.isStarting = false; // Reset starting flag when stopping
+            this.isStarting = false;
             this.startTime = null;
             this._onDidChangeStatus.fire();
             this.outputChannel.appendLine('Ramen server stopped.');
@@ -408,36 +461,71 @@ export class RamenServerManager {
         });
     }
     
-    private async waitForServer(timeout: number = 10000): Promise<void> {
+    private async waitForServer(timeout: number = 15000): Promise<void> {
         const startTime = Date.now();
         let lastError: string = '';
+        let attempts = 0;
+        const maxAttempts = Math.ceil(timeout / 1000);
+        let connectionEstablished = false;
 
         while (Date.now() - startTime < timeout) {
             if (this.isServerRunning) {
                 return;
             }
 
+            attempts++;
+
             // Try to connect to server via WebSocket (使用全域連接)
             try {
                 const wsUrl = `ws://localhost:${this.port}/ws`;
                 const wsClient = await getOrCreateGlobalWebSocketClient(wsUrl);
 
-                // Try to ping
-                await wsClient.ping();
+                // Check if connection is established
+                if (wsClient.isConnectedToServer()) {
+                    if (!connectionEstablished) {
+                        connectionEstablished = true;
+                        console.log(`🍜 [ServerManager] WebSocket connected, waiting for server to be fully ready...`);
+                        // Give server a bit more time to initialize after connection
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
 
-                this.isServerRunning = true;
-                this.startTime = Date.now();
-                this._onDidChangeStatus.fire();
-                return;
+                    // Try a simple ping first (lighter than health check)
+                    try {
+                        await Promise.race([
+                            wsClient.ping(),
+                            new Promise((_, reject) =>
+                                setTimeout(() => reject(new Error('Ping timeout')), 3000)
+                            )
+                        ]);
+
+                        // Ping successful, server is ready
+                        this.isServerRunning = true;
+                        this.startTime = Date.now();
+                        this._onDidChangeStatus.fire();
+                        console.log(`🍜 [ServerManager] Server ready after ${attempts} attempts`);
+                        return;
+                    } catch (pingError) {
+                        lastError = `Ping failed: ${pingError}`;
+                        // Connection exists but server not responding to ping yet
+                        // Continue waiting
+                    }
+                } else {
+                    lastError = 'WebSocket not connected';
+                }
             } catch (error) {
                 lastError = String(error);
-                // Server not ready yet
+                // Server not ready yet - only log every few attempts to reduce noise
+                if (attempts % 5 === 0) {
+                    console.log(`🍜 [ServerManager] Waiting for server... (attempt ${attempts}/${maxAttempts})`);
+                }
             }
 
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // 使用退避策略
+            const delay = connectionEstablished ? 500 : Math.min(1000, 300 + attempts * 50);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
 
-        throw new Error(`Server startup timeout. Last error: ${lastError}`);
+        throw new Error(`Server startup timeout after ${attempts} attempts. Last error: ${lastError}`);
     }
     
     private async sendRequest(method: string, path: string, body?: unknown): Promise<unknown> {
@@ -475,7 +563,65 @@ export class RamenServerManager {
     getProcessId(): number | null {
         return this.serverProcess?.pid || null;
     }
-    
+
+    /**
+     * Kill process using a specific port
+     */
+    private async killProcessOnPort(port: number): Promise<void> {
+        if (process.platform === 'win32') {
+            // Windows: use netstat to find PID, then taskkill
+            try {
+                const netstatOutput = execSync(`netstat -ano | findstr :${port}`, {
+                    encoding: 'utf8'
+                });
+
+                // Parse output to find PID
+                const lines = netstatOutput.split('\n');
+                const pids = new Set<number>();
+
+                for (const line of lines) {
+                    const match = line.match(/LISTENING\s+(\d+)/);
+                    if (match) {
+                        pids.add(parseInt(match[1]));
+                    }
+                }
+
+                if (pids.size === 0) {
+                    throw new Error('No process found on port');
+                }
+
+                // Kill all PIDs found
+                for (const pid of pids) {
+                    this.outputChannel.appendLine(`Killing process ${pid} on port ${port}...`);
+                    execSync(`taskkill /F /PID ${pid}`, {
+                        encoding: 'utf8',
+                        stdio: 'ignore'
+                    });
+                }
+            } catch (error) {
+                throw new Error(`Failed to kill process on port ${port}: ${error}`);
+            }
+        } else {
+            // Unix/Linux/macOS: use lsof
+            try {
+                const lsofOutput = execSync(`lsof -ti:${port}`, {
+                    encoding: 'utf8'
+                });
+
+                const pids = lsofOutput.trim().split('\n').map(pid => parseInt(pid));
+
+                for (const pid of pids) {
+                    if (!isNaN(pid)) {
+                        this.outputChannel.appendLine(`Killing process ${pid} on port ${port}...`);
+                        process.kill(pid, 'SIGKILL');
+                    }
+                }
+            } catch (error) {
+                throw new Error(`Failed to kill process on port ${port}: ${error}`);
+            }
+        }
+    }
+
     getUptime(): number | null {
         if (!this.isServerRunning || !this.startTime) {
             return null;

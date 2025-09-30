@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional, Callable, Union
 from functools import wraps
-from .topping_base import PortDefinition, PortType, NodeMetadata
+from ramen.topping.topping_base import PortDefinition, PortType, NodeMetadata
 
 
 class SimpleNodeBuilder:

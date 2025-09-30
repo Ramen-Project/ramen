@@ -2,9 +2,9 @@
 Math nodes for mathematical operations.
 """
 
-from .basic import *
-from .advanced import *
-from .random import *
+from ramen.nodes.math.basic import *
+from ramen.nodes.math.advanced import *
+from ramen.nodes.math.random import *
 
 __all__ = [
     # Basic math

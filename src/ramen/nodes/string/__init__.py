@@ -1,9 +1,9 @@
 """String processing namespace - Text manipulation operations."""
 
-from .basic import *
-from .format import *
-from .search import *
-from .transform import *
+from ramen.nodes.string.basic import *
+from ramen.nodes.string.format import *
+from ramen.nodes.string.search import *
+from ramen.nodes.string.transform import *
 
 __all__ = [
     # Basic string operations

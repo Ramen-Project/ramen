@@ -6,9 +6,9 @@
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from ..engine.context import NodeContext
-from ..loader import GraphLoader
-from ..engine import GraphExecutor, ExecutionContext
+from ramen.engine.context import NodeContext
+from ramen.loader import GraphLoader
+from ramen.engine import GraphExecutor, ExecutionContext
 
 
 def subgraph_node(context: NodeContext) -> Any:

@@ -9,18 +9,18 @@ from typing import Dict, Any, Optional
 from fastapi import WebSocket
 from datetime import datetime
 
-from .websocket_protocol import (
+from ramen.api.websocket_protocol import (
     MessageType, WebSocketMessage, WebSocketResponse, WebSocketError
 )
-from ..registry import get_global_registry
-from ..core.models import RamenGraph, GraphDeserializer, GraphSerializer
-from ..core.models import RamenGraphFile, RamenFileHeader, GRAPH_FORMAT_VERSION, GraphDependencies
-from ..loader import GraphLoader
-from ..engine import SessionManager, GraphCompiler
-from ..topping.performance import get_system_stats, cleanup_memory
-from ..topping.frontend_components import get_component_discovery
-from ..git.diff import GraphDiffer, format_diff_summary
-from ..git.merge import GraphMerger, ConflictResolution
+from ramen.registry import get_global_registry
+from ramen.core.models import RamenGraph, GraphDeserializer, GraphSerializer
+from ramen.core.models import RamenGraphFile, RamenFileHeader, GRAPH_FORMAT_VERSION, GraphDependencies
+from ramen.loader import GraphLoader
+from ramen.engine import SessionManager, GraphCompiler
+from ramen.topping.performance import get_system_stats, cleanup_memory
+from ramen.topping.frontend_components import get_component_discovery
+from ramen.git.diff import GraphDiffer, format_diff_summary
+from ramen.git.merge import GraphMerger, ConflictResolution
 from pathlib import Path
 
 logger = logging.getLogger(__name__)

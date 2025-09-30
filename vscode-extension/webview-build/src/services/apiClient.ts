@@ -1,8 +1,9 @@
 /**
- * API Client for connecting to Ramen backend via WebSocket
+ * API Client for connecting to Ramen backend
+ * Uses VSCode message passing when in VSCode environment, WebSocket otherwise
  */
 
-import { getWebSocketClient, initializeWebSocketClient } from '../api/WebSocketClient';
+import { initializeWebSocketClient, MessageType } from '../api/WebSocketClient';
 
 export interface RamenGraph {
   nodes: any[];
@@ -26,6 +27,59 @@ export interface ApiResponse<T = any> {
   data?: T;
 }
 
+// Check if we're in VSCode webview environment
+function isVSCodeEnvironment(): boolean {
+  return typeof window !== 'undefined' && !!(window as any).vscode;
+}
+
+// Send WebSocket request through VSCode message passing
+async function sendVSCodeWebSocketRequest<T = any>(
+  messageType: string,
+  data?: any,
+  timeout: number = 10000
+): Promise<T> {
+  if (!isVSCodeEnvironment()) {
+    throw new Error('Not in VSCode environment');
+  }
+
+  const vscode = (window as any).vscode;
+  const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  return new Promise((resolve, reject) => {
+    let timeoutId: number;
+
+    const handleMessage = (event: MessageEvent) => {
+      const message = event.data;
+
+      if (message.type === 'websocket-response' && message.id === requestId) {
+        window.removeEventListener('message', handleMessage);
+        clearTimeout(timeoutId);
+        resolve(message.data as T);
+      } else if (message.type === 'websocket-error' && message.id === requestId) {
+        window.removeEventListener('message', handleMessage);
+        clearTimeout(timeoutId);
+        reject(new Error(message.error || 'WebSocket request failed'));
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Send request to extension
+    vscode.postMessage({
+      command: 'websocket-request',
+      id: requestId,
+      type: messageType,
+      data
+    });
+
+    // Timeout handling
+    timeoutId = window.setTimeout(() => {
+      window.removeEventListener('message', handleMessage);
+      reject(new Error(`Request timeout for ${messageType}`));
+    }, timeout);
+  });
+}
+
 export class RamenApiClient {
   private port: number;
 
@@ -35,9 +89,14 @@ export class RamenApiClient {
 
   async healthCheck(): Promise<boolean> {
     try {
-      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-      const response = await wsClient.systemHealth();
-      return response.health_status === 'healthy';
+      if (isVSCodeEnvironment()) {
+        const response = await sendVSCodeWebSocketRequest(MessageType.SYSTEM_HEALTH);
+        return response.health_status === 'healthy';
+      } else {
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.systemHealth();
+        return response.health_status === 'healthy';
+      }
     } catch (error) {
       console.error('Health check failed:', error);
       return false;
@@ -46,14 +105,24 @@ export class RamenApiClient {
 
   async executeGraph(graphData: RamenGraph): Promise<ApiResponse> {
     try {
-      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-      const response = await wsClient.executeGraph({ graph: graphData });
-
-      return {
-        success: true,
-        message: 'Graph execution started',
-        data: response,
-      };
+      if (isVSCodeEnvironment()) {
+        const response = await sendVSCodeWebSocketRequest(MessageType.EXECUTE_GRAPH, {
+          graph: graphData
+        });
+        return {
+          success: true,
+          message: 'Graph execution started',
+          data: response,
+        };
+      } else {
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.executeGraph({ graph: graphData });
+        return {
+          success: true,
+          message: 'Graph execution started',
+          data: response,
+        };
+      }
     } catch (error) {
       console.error('Execute graph failed:', error);
       return {
@@ -65,17 +134,28 @@ export class RamenApiClient {
 
   async saveGraph(filePath: string, graphData: RamenGraph): Promise<ApiResponse> {
     try {
-      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-      const response = await wsClient.saveGraph({
-        path: filePath,
-        graph: graphData,
-      });
-
-      return {
-        success: true,
-        message: response.message || 'Graph saved successfully',
-        data: response,
-      };
+      if (isVSCodeEnvironment()) {
+        const response = await sendVSCodeWebSocketRequest(MessageType.SAVE_GRAPH, {
+          path: filePath,
+          graph: graphData,
+        });
+        return {
+          success: true,
+          message: response.message || 'Graph saved successfully',
+          data: response,
+        };
+      } else {
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.saveGraph({
+          path: filePath,
+          graph: graphData,
+        });
+        return {
+          success: true,
+          message: response.message || 'Graph saved successfully',
+          data: response,
+        };
+      }
     } catch (error) {
       console.error('Save graph failed:', error);
       return {
@@ -87,14 +167,24 @@ export class RamenApiClient {
 
   async loadGraph(filePath: string): Promise<ApiResponse<RamenGraph>> {
     try {
-      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-      const response = await wsClient.loadGraph(filePath);
-
-      return {
-        success: true,
-        message: response.message || 'Graph loaded successfully',
-        data: response.graph,
-      };
+      if (isVSCodeEnvironment()) {
+        const response = await sendVSCodeWebSocketRequest(MessageType.LOAD_GRAPH, {
+          path: filePath
+        });
+        return {
+          success: true,
+          message: response.message || 'Graph loaded successfully',
+          data: response.graph,
+        };
+      } else {
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.loadGraph(filePath);
+        return {
+          success: true,
+          message: response.message || 'Graph loaded successfully',
+          data: response.graph,
+        };
+      }
     } catch (error) {
       console.error('Load graph failed:', error);
       return {
@@ -106,14 +196,24 @@ export class RamenApiClient {
 
   async validateGraph(graphData: RamenGraph): Promise<ApiResponse> {
     try {
-      const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-      const response = await wsClient.gitValidate(graphData);
-
-      return {
-        success: response.valid,
-        message: response.valid ? 'Graph is valid' : 'Graph validation failed',
-        data: response,
-      };
+      if (isVSCodeEnvironment()) {
+        const response = await sendVSCodeWebSocketRequest(MessageType.GIT_VALIDATE, {
+          graph: graphData
+        });
+        return {
+          success: response.valid,
+          message: response.valid ? 'Graph is valid' : 'Graph validation failed',
+          data: response,
+        };
+      } else {
+        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+        const response = await wsClient.gitValidate(graphData);
+        return {
+          success: response.valid,
+          message: response.valid ? 'Graph is valid' : 'Graph validation failed',
+          data: response,
+        };
+      }
     } catch (error) {
       console.error('Validate graph failed:', error);
       return {

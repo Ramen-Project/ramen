@@ -143,8 +143,8 @@ function connectionCheck(connection: Connection | Edge, nodes: Node[]): boolean 
   }
   
   // Check if port types are compatible
-  if (sourcePort.typeId !== targetPort.typeId) {
-    console.warn(`Port type mismatch: ${sourcePort.typeId} -> ${targetPort.typeId}`);
+  if (sourcePort.type !== targetPort.type) {
+    console.warn(`Port type mismatch: ${sourcePort.type} -> ${targetPort.type}`);
     return false;
   }
   
@@ -501,9 +501,10 @@ export default function Graph({
         type: 'operator',
         position,
         data: {
-          name: nodeDefinition.name,
+          name: nodeDefinition.displayName,
           namespace: nodeDefinition.namespace,
           brief: nodeDefinition.description,
+          color: nodeDefinition.color,
           inputs: nodeDefinition.inputs,
           outputs: nodeDefinition.outputs
         },

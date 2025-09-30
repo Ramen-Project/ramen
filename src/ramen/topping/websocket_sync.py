@@ -9,7 +9,7 @@ from datetime import datetime
 import uuid
 import logging
 
-from .performance import (
+from ramen.topping.performance import (
     get_node_registry, get_state_batcher, get_performance_monitor,
     performance_timer
 )

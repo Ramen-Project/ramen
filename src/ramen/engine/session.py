@@ -12,12 +12,12 @@ import uuid
 import asyncio
 import logging
 
-from ..core.models import RamenGraph, ExecutionMode
-from .context import ExecutionContext, ExecutionState
-from .executor import GraphExecutor, ExecutionResult
-from .compiler import GraphCompiler, CompiledGraph
-from .errors import SessionError
-from .kernel import KernelManager, KernelConfig, KernelState
+from ramen.core.models import RamenGraph, ExecutionMode
+from ramen.engine.context import ExecutionContext, ExecutionState
+from ramen.engine.executor import GraphExecutor, ExecutionResult
+from ramen.engine.compiler import GraphCompiler, CompiledGraph
+from ramen.engine.errors import SessionError
+from ramen.engine.kernel import KernelManager, KernelConfig, KernelState
 
 logger = logging.getLogger(__name__)
 

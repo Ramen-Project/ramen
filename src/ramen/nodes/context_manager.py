@@ -9,7 +9,7 @@ import time
 import threading
 from pathlib import Path
 
-from ..engine.context import NodeContext
+from ramen.engine.context import NodeContext
 
 
 # ============================================================================

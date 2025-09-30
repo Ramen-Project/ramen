@@ -8,8 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import json
 import uuid
 from datetime import datetime
-from .topping.loader import load_toppings
-from .api.websocket_handler import get_message_handler
+from ramen.topping.loader import load_toppings
+from ramen.api.websocket_handler import get_message_handler
 
 # Create FastAPI app
 app = FastAPI(

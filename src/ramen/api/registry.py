@@ -9,7 +9,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Query, HTTPException
 
-from ..registry import get_global_registry
+from ramen.registry import get_global_registry
 
 logger = logging.getLogger(__name__)
 

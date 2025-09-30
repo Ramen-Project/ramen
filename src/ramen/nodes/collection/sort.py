@@ -4,7 +4,7 @@ Sorting and grouping operations for collections.
 
 from typing import Any, Dict, List
 from collections import defaultdict
-from ..base import node, NodeContext, Port, PortType
+from ramen.nodes.base import node, NodeContext, Port, PortType
 
 
 @node(

@@ -2,40 +2,18 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as http from 'http';
 import { RamenServerManager } from '../server/serverManager';
-import { WebSocketManager } from '../websocket/websocketManager';
-import { getOrCreateGlobalWebSocketClient } from '../api/GlobalWebSocketManager';
+import { getGlobalWebSocketManager, getOrCreateGlobalWebSocketClient } from '../api/GlobalWebSocketManager';
 
 export class RamenWebviewManager {
     private panels: Map<string, vscode.WebviewPanel> = new Map();
     private graphStates: Map<string, any> = new Map();
-    
+
     constructor(
         private context: vscode.ExtensionContext,
-        private serverManager: RamenServerManager,
-        private websocketManager?: WebSocketManager
+        private serverManager: RamenServerManager
     ) {
-        // Subscribe to WebSocket messages if available
-        if (this.websocketManager) {
-            this.websocketManager.onMessage((message) => {
-                // Forward relevant messages to all active webviews
-                this.panels.forEach((panel, graphPath) => {
-                    panel.webview.postMessage({
-                        type: 'websocket',
-                        data: message
-                    });
-                });
-            });
-            
-            this.websocketManager.onConnectionChange((connected) => {
-                // Notify all webviews of connection status change
-                this.panels.forEach((panel) => {
-                    panel.webview.postMessage({
-                        type: 'websocket-status',
-                        connected: connected
-                    });
-                });
-            });
-        }
+        // WebSocket connection is managed globally by GlobalWebSocketManager
+        // No need for separate WebSocketManager instance
     }
 
     async openGraph(uri: vscode.Uri) {
@@ -86,10 +64,16 @@ export class RamenWebviewManager {
         if (!serverStarted) {
             vscode.window.showWarningMessage('Ramen server is not running. Some features may be unavailable.');
         }
-        
-        // Ensure WebSocket connection if available
-        if (this.websocketManager && serverStarted) {
-            await this.websocketManager.connect();
+
+        // Ensure WebSocket connection via GlobalWebSocketManager
+        if (serverStarted) {
+            const port = this.serverManager.getPort();
+            const wsUrl = `ws://localhost:${port}/ws`;
+            try {
+                await getOrCreateGlobalWebSocketClient(wsUrl);
+            } catch (error) {
+                console.error('Failed to establish WebSocket connection:', error);
+            }
         }
         
         // Configure the webview
@@ -324,47 +308,48 @@ export class RamenWebviewManager {
                 console.log('[Webview]', message.message);
                 break;
                 
-            case 'websocket-send':
-                // Forward WebSocket messages from webview to server
-                if (this.websocketManager) {
-                    this.websocketManager.sendMessage(
-                        message.type as string,
-                        message.data,
-                        message.id as string
-                    );
-                }
-                break;
-                
             case 'websocket-request':
                 // Handle WebSocket request/response pattern
-                if (this.websocketManager) {
-                    try {
-                        const response = await this.websocketManager.sendRequest(
-                            message.type as string,
-                            message.data
-                        );
-                        panel.webview.postMessage({
-                            type: 'websocket-response',
-                            id: message.id,
-                            data: response
-                        });
-                    } catch (error) {
-                        panel.webview.postMessage({
-                            type: 'websocket-error',
-                            id: message.id,
-                            error: String(error)
-                        });
-                    }
+                // This allows webview to make any WebSocket API call through the extension
+                try {
+                    console.log(`🍜 [WebviewManager] Handling websocket-request: ${message.type}`);
+                    const wsManager = getGlobalWebSocketManager();
+                    const response = await wsManager.sendRequest(
+                        message.type as string,
+                        message.data
+                    );
+                    console.log(`🍜 [WebviewManager] WebSocket request succeeded: ${message.type}`);
+                    panel.webview.postMessage({
+                        type: 'websocket-response',
+                        id: message.id,
+                        data: response
+                    });
+                } catch (error) {
+                    console.error(`🍜 [WebviewManager] WebSocket request failed: ${message.type}`, error);
+                    panel.webview.postMessage({
+                        type: 'websocket-error',
+                        id: message.id,
+                        error: String(error)
+                    });
                 }
                 break;
-                
+
             case 'websocket-connect':
-                // Ensure WebSocket connection
-                if (this.websocketManager) {
-                    await this.websocketManager.connect();
+                // Ensure WebSocket connection via GlobalWebSocketManager
+                try {
+                    const port = this.serverManager.getPort();
+                    const wsUrl = `ws://localhost:${port}/ws`;
+                    await getOrCreateGlobalWebSocketClient(wsUrl);
+                    const wsManager = getGlobalWebSocketManager();
                     panel.webview.postMessage({
                         type: 'websocket-status',
-                        connected: this.websocketManager.isConnected()
+                        connected: wsManager.isConnected()
+                    });
+                } catch (error) {
+                    console.error('Failed to connect WebSocket:', error);
+                    panel.webview.postMessage({
+                        type: 'websocket-status',
+                        connected: false
                     });
                 }
                 break;
@@ -439,45 +424,74 @@ export class RamenWebviewManager {
         vscode.commands.executeCommand('ramen.executeGraph', vscode.Uri.file(graphPath));
     }
     
+    private pendingNodeFetches: Map<string, Promise<any>> = new Map();
+
     private async handleFetchNodes(panel: vscode.WebviewPanel) {
-        try {
-            console.log('🍜 [WebviewManager] Starting node fetch process via global WebSocket...');
+        const panelKey = 'global'; // 使用全域 key 因為節點列表是共享的
 
-            // Ensure server is running
-            const isServerRunning = await this.serverManager.ensureServerRunning();
-            if (!isServerRunning) {
-                throw new Error('Failed to start Ramen server');
+        // 如果已經有進行中的請求，等待它完成
+        const existingFetch = this.pendingNodeFetches.get(panelKey);
+        if (existingFetch) {
+            try {
+                const response = await existingFetch;
+                panel.webview.postMessage({
+                    command: 'nodesResponse',
+                    success: true,
+                    data: response
+                });
+                return;
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                panel.webview.postMessage({
+                    command: 'nodesResponse',
+                    success: false,
+                    error: errorMessage
+                });
+                return;
             }
+        }
 
-            const serverPort = this.serverManager.getPort();
-            const wsUrl = `ws://localhost:${serverPort}/ws`;
+        // 創建新的請求 promise
+        const fetchPromise = (async () => {
+            try {
+                // Ensure server is running
+                const isServerRunning = await this.serverManager.ensureServerRunning();
+                if (!isServerRunning) {
+                    throw new Error('Failed to start Ramen server');
+                }
 
-            console.log('🍜 [WebviewManager] Connecting to global WebSocket...');
+                const serverPort = this.serverManager.getPort();
+                const wsUrl = `ws://localhost:${serverPort}/ws`;
 
-            // 使用全域 WebSocket 連接
-            const wsClient = await getOrCreateGlobalWebSocketClient(wsUrl);
+                // 使用全域 WebSocket 連接
+                const wsClient = await getOrCreateGlobalWebSocketClient(wsUrl);
 
-            console.log('🍜 [WebviewManager] Fetching nodes via global WebSocket...');
+                // 使用全域連接獲取節點
+                const response = await wsClient.getNodes();
 
-            // 使用全域連接獲取節點
-            const response = await wsClient.getNodes();
+                return response;
+            } finally {
+                // 請求完成後清理
+                this.pendingNodeFetches.delete(panelKey);
+            }
+        })();
 
-            console.log('🍜 [WebviewManager] Successfully received nodes - Node count:',
-                Object.values(response.nodes || {}).reduce((acc: number, nodes: any) => acc + (nodes.length || 0), 0));
+        // 記錄進行中的請求
+        this.pendingNodeFetches.set(panelKey, fetchPromise);
+
+        try {
+            const response = await fetchPromise;
 
             // Send the result back to webview
-            console.log('🍜 [WebviewManager] Sending nodes response to webview...');
             panel.webview.postMessage({
                 command: 'nodesResponse',
                 success: true,
                 data: response
             });
-            console.log('🍜 [WebviewManager] Nodes response sent successfully');
 
         } catch (error) {
             console.error('🍜 [WebviewManager] Failed to fetch nodes:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            console.error('🍜 [WebviewManager] Sending error response to webview:', errorMessage);
 
             panel.webview.postMessage({
                 command: 'nodesResponse',

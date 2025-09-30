@@ -6,7 +6,7 @@ import { useTypeStore } from "../../stores";
 
 export type NodeIOProps = {
     name: string,
-    typeId: string
+    type: string  // Backend sends 'type', not 'typeId'
 }
 
 export type OpNodeProps = {
@@ -84,7 +84,7 @@ function NodeHeader({ nodeName, namespace, color }: { nodeName: string, namespac
             <Heading size="5" trim="both" style={{
                 fontWeight: 700,
                 fontFamily: 'Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif',
-                color: 'var(--gray-12)',
+                color: '#fff',
                 letterSpacing: '0.01em',
                 margin: 0,
                 flex: 1,
@@ -134,9 +134,9 @@ export default function OperatorNode({ data, id, selected }: NodeProps) {
                 <Flex direction="row" justify="between" style={{gap: '1em'}}>
                     <Flex direction="column" align="start" style={{gap: '0.5em'}}>
                         {nodeData.inputs.map((input, idx) => {
-                            const IOType = typeReg.typesRegistries[input.typeId] || typeReg.typesRegistries['unknown'];
+                            const IOType = typeReg.typesRegistries[input.type] || typeReg.typesRegistries['unknown'];
                             return (
-                                <Port key={input.name + idx} portId={`input${idx}`} typeId={input.typeId} isInput>
+                                <Port key={input.name + idx} portId={`input${idx}`} typeId={input.type} isInput>
                                     <Text size="2" style={{color: IOType.color, fontWeight: 500}}>{input.name}</Text>
                                 </Port>
                             );
@@ -144,11 +144,11 @@ export default function OperatorNode({ data, id, selected }: NodeProps) {
                     </Flex>
                     <Flex direction="column" align="end" style={{gap: '0.5em'}}>
                         {nodeData.outputs.map((output, idx) => {
-                            const IOType = typeReg.typesRegistries[output.typeId] || typeReg.typesRegistries['unknown'];
+                            const IOType = typeReg.typesRegistries[output.type] || typeReg.typesRegistries['unknown'];
                             const portId = `output${idx}`;
                             const connected = edges.some(e => e.source === id && e.sourceHandle === portId);
                             return (
-                                <Port key={output.name + idx} portId={portId} typeId={output.typeId} connected={connected}>
+                                <Port key={output.name + idx} portId={portId} typeId={output.type} connected={connected}>
                                     <Text size="2" style={{color: IOType.color, fontWeight: 500}}>{output.name}</Text>
                                 </Port>
                             );

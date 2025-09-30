@@ -4,7 +4,7 @@ Random number generation nodes.
 
 import random
 from typing import Any, List
-from ..base import node, NodeContext, Port, PortType
+from ramen.nodes.base import node, NodeContext, Port, PortType
 
 
 @node(

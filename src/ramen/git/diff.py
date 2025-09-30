@@ -9,7 +9,7 @@ from enum import Enum
 import json
 from datetime import datetime
 
-from ..core.models import RamenGraph, RamenNode, RamenEdge, GraphMetadata
+from ramen.core.models import RamenGraph, RamenNode, RamenEdge, GraphMetadata
 
 
 class DiffType(Enum):

@@ -1,7 +1,7 @@
 """Conditional operations."""
 
 from typing import Any, Dict
-from ..base import node, NodeContext, Port, PortType
+from ramen.nodes.base import node, NodeContext, Port, PortType
 
 
 @node(

@@ -1,8 +1,8 @@
 """Debug namespace - Debugging and inspection tools."""
 
-from .inspect import *
-from .measure import *
-from .validate import *
+from ramen.nodes.debug.inspect import *
+from ramen.nodes.debug.measure import *
+from ramen.nodes.debug.validate import *
 
 __all__ = [
     # Inspection tools

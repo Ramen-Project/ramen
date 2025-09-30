@@ -10,7 +10,7 @@ from enum import Enum
 from datetime import datetime
 import re
 
-from .models import GRAPH_FORMAT_VERSION
+from ramen.core.models import GRAPH_FORMAT_VERSION
 
 class VersionComparison(Enum):
     """版本比較結果"""

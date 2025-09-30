@@ -9,7 +9,7 @@ import logging
 from typing import Dict, Any
 from fastapi import APIRouter
 
-from ..topping.performance import get_system_stats, cleanup_memory
+from ramen.topping.performance import get_system_stats, cleanup_memory
 
 logger = logging.getLogger(__name__)
 

@@ -133,7 +133,7 @@ class NodeContext:
 
 
 # Import new registry system
-from ..registry.node_registry import (
+from ramen.registry.node_registry import (
     get_global_registry,
     NodeDefinition as NewNodeDefinition,
     PortDefinition as NewPortDefinition,

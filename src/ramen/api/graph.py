@@ -14,12 +14,12 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 import json
 
-from ..core.models import (
+from ramen.core.models import (
     RamenGraph, GraphSerializer, GraphDeserializer,
     RamenGraphFile, RamenFileHeader, GRAPH_FORMAT_VERSION,
     GraphMetadata, GraphDependencies
 )
-from ..loader import GraphLoader
+from ramen.loader import GraphLoader
 
 router = APIRouter(prefix="/api/graphs", tags=["graphs"])
 

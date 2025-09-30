@@ -4,7 +4,7 @@ Functional transformation operations for collections.
 
 from typing import Any, Callable, List
 from functools import reduce as func_reduce
-from ..base import node, NodeContext, Port, PortType
+from ramen.nodes.base import node, NodeContext, Port, PortType
 
 
 @node(

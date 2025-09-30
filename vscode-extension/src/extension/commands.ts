@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { RamenServerManager } from './server/serverManager';
 import { RamenWebviewManager } from './webview/webviewManager';
-import { WebSocketManager } from './websocket/websocketManager';
 import { RamenVariablesProvider } from './providers/variablesProvider';
 import { RamenServerProvider } from './providers/serverProvider';
 import { RamenDependenciesProvider } from './providers/dependenciesProvider';
@@ -11,8 +10,6 @@ export class RamenCommands {
     constructor(
         private serverManager: RamenServerManager,
         private webviewManager: RamenWebviewManager,
-        private websocketManager?: WebSocketManager,
-        private _unusedGraphProvider?: any, // Keep parameter for backward compatibility
         private variablesProvider?: RamenVariablesProvider,
         private serverProvider?: RamenServerProvider,
         private dependenciesProvider?: RamenDependenciesProvider
@@ -240,34 +237,24 @@ export class RamenCommands {
         if (this.serverProvider) {
             this.serverProvider.refresh();
         }
-        
-        // Disconnect WebSocket if connected
-        if (this.websocketManager && this.websocketManager.isConnected()) {
-            this.websocketManager.disconnect();
-        }
+
+        // WebSocket will be disconnected automatically when server stops
+        // GlobalWebSocketManager handles connection lifecycle
     }
 
     async restartServer() {
         vscode.window.showInformationMessage('Restarting Ramen server...');
-        
+
         await this.serverManager.restart();
-        
+
         // Refresh server provider to show updated status
         if (this.serverProvider) {
             this.serverProvider.refresh();
         }
-        
-        // Reconnect WebSocket if it was connected before
-        if (this.websocketManager) {
-            try {
-                await this.websocketManager.connect();
-                vscode.window.showInformationMessage('Ramen server restarted successfully');
-            } catch (error) {
-                vscode.window.showWarningMessage('Server restarted but WebSocket connection failed');
-            }
-        } else {
-            vscode.window.showInformationMessage('Ramen server restarted successfully');
-        }
+
+        // WebSocket will reconnect automatically when needed
+        // GlobalWebSocketManager handles reconnection
+        vscode.window.showInformationMessage('Ramen server restarted successfully');
     }
 
     // refreshGraphs method removed - graph provider no longer exists

@@ -10,7 +10,7 @@ import logging
 from typing import List, Dict, Any
 from fastapi import APIRouter
 
-from ..registry import get_global_registry
+from ramen.registry import get_global_registry
 
 logger = logging.getLogger(__name__)
 

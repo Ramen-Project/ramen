@@ -16,7 +16,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from ..core.models import ExecutionMode, RamenGraph
+from ramen.core.models import ExecutionMode, RamenGraph
 
 logger = logging.getLogger(__name__)
 

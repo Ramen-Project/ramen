@@ -6,7 +6,7 @@ import logging
 from typing import Dict, List, Optional, Type, Any
 from pathlib import Path
 
-from .topping_base import ToppingBase, NodeFunction, NodeMetadata, NodeContext
+from ramen.topping.topping_base import ToppingBase, NodeFunction, NodeMetadata, NodeContext
 
 
 logger = logging.getLogger(__name__)

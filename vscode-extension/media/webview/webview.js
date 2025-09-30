@@ -61763,7 +61763,17 @@ template {
       "list": { name: "List", color: "rgb(255, 128, 192)" },
       "exception": { name: "Exception", color: "#ff4444" },
       "dict": { name: "Dictionary", color: "#00cc88" },
-      "count": { name: "Count", color: "#ffaa00" }
+      "count": { name: "Count", color: "#ffaa00" },
+      // Backend PortType enum (from ramen/nodes/base.py PortType)
+      "any": { name: "Any", color: "#9E9E9E" },
+      "number": { name: "Number", color: "#4287f5" },
+      "string": { name: "String", color: "#C3A492" },
+      "boolean": { name: "Boolean", color: "#96ef3c" },
+      "array": { name: "Array", color: "rgb(255, 128, 192)" },
+      "object": { name: "Object", color: "#00cc88" },
+      "function": { name: "Function", color: "#AF47D2" },
+      "null": { name: "Null", color: "#666666" },
+      "undefined": { name: "Undefined", color: "#777777" }
     }
   }));
   const urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
@@ -62462,6 +62472,68 @@ template {
       clipRule: "evenodd"
     }));
   });
+  var MessageType = /* @__PURE__ */ ((MessageType2) => {
+    MessageType2["CONNECT"] = "connect";
+    MessageType2["CONNECTED"] = "connected";
+    MessageType2["DISCONNECT"] = "disconnect";
+    MessageType2["PING"] = "ping";
+    MessageType2["PONG"] = "pong";
+    MessageType2["ERROR"] = "error";
+    MessageType2["GET_NODES"] = "get_nodes";
+    MessageType2["GET_NODE_METADATA"] = "get_node_metadata";
+    MessageType2["GET_TOPPINGS"] = "get_toppings";
+    MessageType2["NODES_RESPONSE"] = "nodes_response";
+    MessageType2["NODE_METADATA_RESPONSE"] = "node_metadata_response";
+    MessageType2["TOPPINGS_RESPONSE"] = "toppings_response";
+    MessageType2["REGISTRY_GET_NODES"] = "registry_get_nodes";
+    MessageType2["REGISTRY_GET_NODE"] = "registry_get_node";
+    MessageType2["REGISTRY_GET_CATEGORIES"] = "registry_get_categories";
+    MessageType2["REGISTRY_GET_NAMESPACES"] = "registry_get_namespaces";
+    MessageType2["REGISTRY_GET_STATS"] = "registry_get_stats";
+    MessageType2["REGISTRY_RELOAD"] = "registry_reload";
+    MessageType2["REGISTRY_RESPONSE"] = "registry_response";
+    MessageType2["EXECUTE_GRAPH"] = "execute_graph";
+    MessageType2["GET_EXECUTION_STATUS"] = "get_execution_status";
+    MessageType2["GET_EXECUTION_RESULTS"] = "get_execution_results";
+    MessageType2["CANCEL_EXECUTION"] = "cancel_execution";
+    MessageType2["EXECUTION_STARTED"] = "execution_started";
+    MessageType2["EXECUTION_COMPLETED"] = "execution_completed";
+    MessageType2["EXECUTION_ERROR"] = "execution_error";
+    MessageType2["EXECUTION_CANCELLED"] = "execution_cancelled";
+    MessageType2["EXECUTION_STATUS_RESPONSE"] = "execution_status_response";
+    MessageType2["EXECUTION_RESULTS_RESPONSE"] = "execution_results_response";
+    MessageType2["CREATE_SESSION"] = "create_session";
+    MessageType2["GET_SESSION"] = "get_session";
+    MessageType2["CLOSE_SESSION"] = "close_session";
+    MessageType2["LIST_SESSIONS"] = "list_sessions";
+    MessageType2["SESSION_RESPONSE"] = "session_response";
+    MessageType2["SESSIONS_RESPONSE"] = "sessions_response";
+    MessageType2["LOAD_GRAPH"] = "load_graph";
+    MessageType2["SAVE_GRAPH"] = "save_graph";
+    MessageType2["CHECK_DEPENDENCIES"] = "check_dependencies";
+    MessageType2["LIST_GRAPHS"] = "list_graphs";
+    MessageType2["GRAPH_RESPONSE"] = "graph_response";
+    MessageType2["GRAPHS_RESPONSE"] = "graphs_response";
+    MessageType2["GET_SYSTEM_STATS"] = "get_system_stats";
+    MessageType2["SYSTEM_CLEANUP"] = "system_cleanup";
+    MessageType2["SYSTEM_HEALTH"] = "system_health";
+    MessageType2["SYSTEM_RESPONSE"] = "system_response";
+    MessageType2["GIT_DIFF"] = "git_diff";
+    MessageType2["GIT_MERGE"] = "git_merge";
+    MessageType2["GIT_VALIDATE"] = "git_validate";
+    MessageType2["GIT_HISTORY"] = "git_history";
+    MessageType2["GIT_BRANCHES"] = "git_branches";
+    MessageType2["GIT_RESOLVE_CONFLICT"] = "git_resolve_conflict";
+    MessageType2["GIT_RESPONSE"] = "git_response";
+    MessageType2["GET_COMPONENT_MANIFEST"] = "get_component_manifest";
+    MessageType2["DISCOVER_COMPONENTS"] = "discover_components";
+    MessageType2["GET_COMPONENT_FOR_NODE"] = "get_component_for_node";
+    MessageType2["FRONTEND_RESPONSE"] = "frontend_response";
+    MessageType2["SUBSCRIBE_NODE"] = "subscribe_node";
+    MessageType2["UNSUBSCRIBE_NODE"] = "unsubscribe_node";
+    MessageType2["NODE_EVENT"] = "node_event";
+    return MessageType2;
+  })(MessageType || {});
   class WebSocketClient {
     constructor(url = "ws://localhost:8000/ws") {
       this.ws = null;
@@ -70558,7 +70630,7 @@ template {
           /* @__PURE__ */ jsxRuntimeExports.jsx(r$8, { size: "5", trim: "both", style: {
             fontWeight: 700,
             fontFamily: "Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif",
-            color: "var(--gray-12)",
+            color: "#fff",
             letterSpacing: "0.01em",
             margin: 0,
             flex: 1,
@@ -70607,14 +70679,14 @@ template {
         }, children: nodeData.brief }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(p, { mx: "4", mb: "4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(p$2, { direction: "row", justify: "between", style: { gap: "1em" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(p$2, { direction: "column", align: "start", style: { gap: "0.5em" }, children: nodeData.inputs.map((input2, idx) => {
-            const IOType = typeReg.typesRegistries[input2.typeId] || typeReg.typesRegistries["unknown"];
-            return /* @__PURE__ */ jsxRuntimeExports.jsx(Port, { portId: `input${idx}`, typeId: input2.typeId, isInput: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: { color: IOType.color, fontWeight: 500 }, children: input2.name }) }, input2.name + idx);
+            const IOType = typeReg.typesRegistries[input2.type] || typeReg.typesRegistries["unknown"];
+            return /* @__PURE__ */ jsxRuntimeExports.jsx(Port, { portId: `input${idx}`, typeId: input2.type, isInput: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: { color: IOType.color, fontWeight: 500 }, children: input2.name }) }, input2.name + idx);
           }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(p$2, { direction: "column", align: "end", style: { gap: "0.5em" }, children: nodeData.outputs.map((output, idx) => {
-            const IOType = typeReg.typesRegistries[output.typeId] || typeReg.typesRegistries["unknown"];
+            const IOType = typeReg.typesRegistries[output.type] || typeReg.typesRegistries["unknown"];
             const portId = `output${idx}`;
             const connected = edges.some((e2) => e2.source === id2 && e2.sourceHandle === portId);
-            return /* @__PURE__ */ jsxRuntimeExports.jsx(Port, { portId, typeId: output.typeId, connected, children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: { color: IOType.color, fontWeight: 500 }, children: output.name }) }, output.name + idx);
+            return /* @__PURE__ */ jsxRuntimeExports.jsx(Port, { portId, typeId: output.type, connected, children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: { color: IOType.color, fontWeight: 500 }, children: output.name }) }, output.name + idx);
           }) })
         ] }) })
       ] })
@@ -72187,8 +72259,8 @@ template {
     if (!sourcePort || !targetPort) {
       return false;
     }
-    if (sourcePort.typeId !== targetPort.typeId) {
-      console.warn(`Port type mismatch: ${sourcePort.typeId} -> ${targetPort.typeId}`);
+    if (sourcePort.type !== targetPort.type) {
+      console.warn(`Port type mismatch: ${sourcePort.type} -> ${targetPort.type}`);
       return false;
     }
     return true;
@@ -72389,9 +72461,10 @@ template {
           type: "operator",
           position: position2,
           data: {
-            name: nodeDefinition.name,
+            name: nodeDefinition.displayName,
             namespace: nodeDefinition.namespace,
             brief: nodeDefinition.description,
+            color: nodeDefinition.color,
             inputs: nodeDefinition.inputs,
             outputs: nodeDefinition.outputs
           }
@@ -73220,13 +73293,13 @@ template {
           }, children: nodeData.brief }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(p, { mx: "4", mb: "4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(p$2, { direction: "row", justify: "between", style: { gap: "1em" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(p$2, { direction: "column", align: "start", style: { gap: "0.5em" }, children: nodeData.inputs.map((input2, idx) => {
-              const IOType = typeReg.typesRegistries[input2.typeId] || typeReg.typesRegistries["unknown"];
-              return /* @__PURE__ */ jsxRuntimeExports.jsx(PreviewPort, { portId: `input${idx}`, typeId: input2.typeId, isInput: true, portName: input2.name, children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: { color: IOType.color, fontWeight: 500 }, children: IOType.name }) }, input2.name + idx);
+              const IOType = typeReg.typesRegistries[input2.type] || typeReg.typesRegistries["unknown"];
+              return /* @__PURE__ */ jsxRuntimeExports.jsx(PreviewPort, { portId: `input${idx}`, typeId: input2.type, isInput: true, portName: input2.name, children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: { color: IOType.color, fontWeight: 500 }, children: IOType.name }) }, input2.name + idx);
             }) }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(p$2, { direction: "column", align: "end", style: { gap: "0.5em" }, children: nodeData.outputs.map((output, idx) => {
-              const IOType = typeReg.typesRegistries[output.typeId] || typeReg.typesRegistries["unknown"];
+              const IOType = typeReg.typesRegistries[output.type] || typeReg.typesRegistries["unknown"];
               const portId = `output${idx}`;
-              return /* @__PURE__ */ jsxRuntimeExports.jsx(PreviewPort, { portId, typeId: output.typeId, portName: output.name, children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: { color: IOType.color, fontWeight: 500 }, children: IOType.name }) }, output.name + idx);
+              return /* @__PURE__ */ jsxRuntimeExports.jsx(PreviewPort, { portId, typeId: output.type, portName: output.name, children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", style: { color: IOType.color, fontWeight: 500 }, children: IOType.name }) }, output.name + idx);
             }) })
           ] }) })
         ] })
@@ -76044,15 +76117,56 @@ template {
   function useCtrlHotkey(key, callback, deps = []) {
     return useHotkeys({ key, ctrl: true, preventDefault: true }, callback, deps);
   }
+  function isVSCodeEnvironment() {
+    return typeof window !== "undefined" && !!window.vscode;
+  }
+  async function sendVSCodeWebSocketRequest(messageType, data, timeout2 = 1e4) {
+    if (!isVSCodeEnvironment()) {
+      throw new Error("Not in VSCode environment");
+    }
+    const vscode2 = window.vscode;
+    const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return new Promise((resolve, reject) => {
+      let timeoutId;
+      const handleMessage = (event) => {
+        const message = event.data;
+        if (message.type === "websocket-response" && message.id === requestId) {
+          window.removeEventListener("message", handleMessage);
+          clearTimeout(timeoutId);
+          resolve(message.data);
+        } else if (message.type === "websocket-error" && message.id === requestId) {
+          window.removeEventListener("message", handleMessage);
+          clearTimeout(timeoutId);
+          reject(new Error(message.error || "WebSocket request failed"));
+        }
+      };
+      window.addEventListener("message", handleMessage);
+      vscode2.postMessage({
+        command: "websocket-request",
+        id: requestId,
+        type: messageType,
+        data
+      });
+      timeoutId = window.setTimeout(() => {
+        window.removeEventListener("message", handleMessage);
+        reject(new Error(`Request timeout for ${messageType}`));
+      }, timeout2);
+    });
+  }
   class RamenApiClient {
     constructor(port) {
       this.port = port;
     }
     async healthCheck() {
       try {
-        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-        const response = await wsClient.systemHealth();
-        return response.health_status === "healthy";
+        if (isVSCodeEnvironment()) {
+          const response = await sendVSCodeWebSocketRequest(MessageType.SYSTEM_HEALTH);
+          return response.health_status === "healthy";
+        } else {
+          const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+          const response = await wsClient.systemHealth();
+          return response.health_status === "healthy";
+        }
       } catch (error) {
         console.error("Health check failed:", error);
         return false;
@@ -76060,13 +76174,24 @@ template {
     }
     async executeGraph(graphData) {
       try {
-        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-        const response = await wsClient.executeGraph({ graph: graphData });
-        return {
-          success: true,
-          message: "Graph execution started",
-          data: response
-        };
+        if (isVSCodeEnvironment()) {
+          const response = await sendVSCodeWebSocketRequest(MessageType.EXECUTE_GRAPH, {
+            graph: graphData
+          });
+          return {
+            success: true,
+            message: "Graph execution started",
+            data: response
+          };
+        } else {
+          const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+          const response = await wsClient.executeGraph({ graph: graphData });
+          return {
+            success: true,
+            message: "Graph execution started",
+            data: response
+          };
+        }
       } catch (error) {
         console.error("Execute graph failed:", error);
         return {
@@ -76077,16 +76202,28 @@ template {
     }
     async saveGraph(filePath, graphData) {
       try {
-        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-        const response = await wsClient.saveGraph({
-          path: filePath,
-          graph: graphData
-        });
-        return {
-          success: true,
-          message: response.message || "Graph saved successfully",
-          data: response
-        };
+        if (isVSCodeEnvironment()) {
+          const response = await sendVSCodeWebSocketRequest(MessageType.SAVE_GRAPH, {
+            path: filePath,
+            graph: graphData
+          });
+          return {
+            success: true,
+            message: response.message || "Graph saved successfully",
+            data: response
+          };
+        } else {
+          const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+          const response = await wsClient.saveGraph({
+            path: filePath,
+            graph: graphData
+          });
+          return {
+            success: true,
+            message: response.message || "Graph saved successfully",
+            data: response
+          };
+        }
       } catch (error) {
         console.error("Save graph failed:", error);
         return {
@@ -76097,13 +76234,24 @@ template {
     }
     async loadGraph(filePath) {
       try {
-        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-        const response = await wsClient.loadGraph(filePath);
-        return {
-          success: true,
-          message: response.message || "Graph loaded successfully",
-          data: response.graph
-        };
+        if (isVSCodeEnvironment()) {
+          const response = await sendVSCodeWebSocketRequest(MessageType.LOAD_GRAPH, {
+            path: filePath
+          });
+          return {
+            success: true,
+            message: response.message || "Graph loaded successfully",
+            data: response.graph
+          };
+        } else {
+          const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+          const response = await wsClient.loadGraph(filePath);
+          return {
+            success: true,
+            message: response.message || "Graph loaded successfully",
+            data: response.graph
+          };
+        }
       } catch (error) {
         console.error("Load graph failed:", error);
         return {
@@ -76114,13 +76262,24 @@ template {
     }
     async validateGraph(graphData) {
       try {
-        const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
-        const response = await wsClient.gitValidate(graphData);
-        return {
-          success: response.valid,
-          message: response.valid ? "Graph is valid" : "Graph validation failed",
-          data: response
-        };
+        if (isVSCodeEnvironment()) {
+          const response = await sendVSCodeWebSocketRequest(MessageType.GIT_VALIDATE, {
+            graph: graphData
+          });
+          return {
+            success: response.valid,
+            message: response.valid ? "Graph is valid" : "Graph validation failed",
+            data: response
+          };
+        } else {
+          const wsClient = await initializeWebSocketClient(`ws://localhost:${this.port}/ws`);
+          const response = await wsClient.gitValidate(graphData);
+          return {
+            success: response.valid,
+            message: response.valid ? "Graph is valid" : "Graph validation failed",
+            data: response
+          };
+        }
       } catch (error) {
         console.error("Validate graph failed:", error);
         return {

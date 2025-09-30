@@ -16,17 +16,12 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 # Import execution components
-from .compiler import GraphCompiler
-from .context import ExecutionContext
-from .executor import GraphExecutor
-from ..core.models import ExecutionMode, RamenGraph
-from ..topping import ToppingLoader, get_registry
+from ramen.engine.compiler import GraphCompiler
+from ramen.engine.context import ExecutionContext
+from ramen.engine.executor import GraphExecutor
+from ramen.core.models import ExecutionMode, RamenGraph
+from ramen.topping import ToppingLoader, get_registry
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
 
 
