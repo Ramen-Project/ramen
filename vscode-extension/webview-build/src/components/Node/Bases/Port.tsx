@@ -23,7 +23,8 @@ const StyledHandle = styled(Handle) <{ $isInput?: boolean, $color: string }>`
 export function Port({portId, typeId, isInput, children}: {portId: string, typeId: string, isInput?: boolean, connected?: boolean, children: ReactNode}) {
     const typeReg = useTypeStore();
     const IOType = typeReg.typesRegistries[typeId] || typeReg.typesRegistries['unknown'];
-    // For output: [name] [port] [type] (type only if not connected)
+    // For input: [port] [name]
+    // For output: [name] [port]
     if (isInput) {
         return (
             <Flex position="relative" left="-10px" align="center">
@@ -37,7 +38,6 @@ export function Port({portId, typeId, isInput, children}: {portId: string, typeI
                     />
                 </Tooltip>
                 <Flex direction="column" align="start">
-                    <Text weight="bold" size="5">{portId}</Text>
                     {children}
                 </Flex>
             </Flex>
@@ -55,7 +55,6 @@ export function Port({portId, typeId, isInput, children}: {portId: string, typeI
                     />
                 </Tooltip>
                 <Flex direction="column" align="end" style={{marginRight: 4}}>
-                    <Text weight="bold" size="5">{portId}</Text>
                     {children}
                 </Flex>
             </Flex>

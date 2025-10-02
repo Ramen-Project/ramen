@@ -733,33 +733,101 @@ class WebSocketMessageHandler:
         request_id: Optional[str],
         websocket: WebSocket
     ) -> WebSocketResponse:
-        """處理載入圖形"""
+        """處理載入圖形 - 支援簡化的 .ramen 格式"""
         try:
+            import json
+            from pathlib import Path
+            from ramen.registry import get_global_registry
+
             path = data.get("path")
             if not path:
                 return self._error_response("Missing path", request_id)
 
-            loader = GraphLoader()
-            graph = loader.load_graph(path)
+            # 直接讀取 JSON 檔案
+            with open(path, 'r', encoding='utf-8') as f:
+                ramen_file = json.load(f)
 
-            graph_dict = GraphSerializer.to_dict(graph)
+            graph_data = ramen_file.get('graph', {})
+            registry = get_global_registry()
 
-            dependencies = None
-            if hasattr(graph, 'dependencies') and graph.dependencies:
-                dependencies = GraphSerializer.to_dict(graph.dependencies)
+            # 擴充節點資料：從 registry 獲取完整定義
+            enriched_nodes = []
+            invalid_nodes = []
+
+            for node in graph_data.get('nodes', []):
+                node_type = node.get('type')
+                if not node_type:
+                    invalid_nodes.append({
+                        'node_id': node.get('id', 'unknown'),
+                        'node_type': 'missing',
+                        'error': 'Node has no type field'
+                    })
+                    continue
+
+                # 從 registry 獲取節點定義
+                node_def = registry.get(node_type)
+                if node_def is None:
+                    invalid_nodes.append({
+                        'node_id': node.get('id'),
+                        'node_type': node_type,
+                        'error': f'Node type {node_type} not found in registry'
+                    })
+                    continue
+
+                # 合併節點定義和實例資料
+                enriched_node = {
+                    'id': node.get('id'),
+                    'type': node_type,
+                    'position': node.get('position', {'x': 0, 'y': 0}),
+                    'data': node.get('data', {}),
+                    'metadata': {
+                        'type': node_type,
+                        'name': node_def.display_name,
+                        'namespace': node_def.namespace,
+                        'description': node_def.description,
+                        'icon': node_def.icon,
+                        'color': node_def.color,
+                        'category': node_def.category,
+                    },
+                    'inputs': [port.to_dict() for port in node_def.inputs],
+                    'outputs': [port.to_dict() for port in node_def.outputs],
+                }
+                enriched_nodes.append(enriched_node)
+
+            # 如果有無效的節點類型，返回錯誤
+            if invalid_nodes:
+                error_msg = f"Found {len(invalid_nodes)} node(s) with unregistered types: "
+                error_msg += ", ".join([f"{n['node_id']} (type: {n['node_type']})" for n in invalid_nodes[:5]])
+                if len(invalid_nodes) > 5:
+                    error_msg += f" and {len(invalid_nodes) - 5} more..."
+                return self._error_response(error_msg, request_id)
+
+            # 組裝完整的圖形資料
+            enriched_graph = {
+                'id': graph_data.get('id'),
+                'metadata': graph_data.get('metadata', {}),
+                'nodes': enriched_nodes,
+                'edges': graph_data.get('edges', []),
+                'variables': graph_data.get('variables', [])
+            }
 
             return self._success_response(
                 MessageType.GRAPH_RESPONSE,
                 {
-                    "message": f"Successfully loaded graph: {graph.metadata.name}",
-                    "graph": graph_dict,
-                    "dependencies": dependencies
+                    "message": f"Successfully loaded graph: {graph_data.get('metadata', {}).get('name', 'Untitled')}",
+                    "graph": enriched_graph,
+                    "dependencies": None
                 },
                 request_id
             )
         except FileNotFoundError as e:
             return self._error_response(f"File not found: {e}", request_id)
+        except json.JSONDecodeError as e:
+            return self._error_response(f"Invalid JSON format: {e}", request_id)
         except Exception as e:
+            import traceback
+            error_detail = traceback.format_exc()
+            logger.error(f"Failed to load graph: {error_detail}")
             return self._error_response(f"Failed to load graph: {e}", request_id)
 
     async def _handle_save_graph(
@@ -768,48 +836,67 @@ class WebSocketMessageHandler:
         request_id: Optional[str],
         websocket: WebSocket
     ) -> WebSocketResponse:
-        """處理保存圖形"""
+        """處理保存圖形 - 儲存簡化格式"""
         try:
+            import json
+            from pathlib import Path
+            from datetime import datetime
+
             path = data.get("path")
             graph_data = data.get("graph")
-            dependencies_data = data.get("dependencies")
 
             if not path or not graph_data:
                 return self._error_response("Missing path or graph data", request_id)
 
-            # 反序列化圖形
-            graph = GraphDeserializer.from_dict(graph_data, RamenGraph)
+            # 簡化節點資料：只保留必要欄位
+            simplified_nodes = []
+            for node in graph_data.get('nodes', []):
+                simplified_node = {
+                    'id': node.get('id'),
+                    'type': node.get('metadata', {}).get('type') or node.get('type'),
+                    'position': node.get('position', {'x': 0, 'y': 0}),
+                    'data': node.get('data', {})
+                }
+                simplified_nodes.append(simplified_node)
 
-            # 處理依賴
-            dependencies = None
-            if dependencies_data:
-                dependencies = GraphDeserializer.from_dict(
-                    dependencies_data,
-                    GraphDependencies
-                )
+            # 簡化邊資料
+            simplified_edges = []
+            for edge in graph_data.get('edges', []):
+                simplified_edge = {
+                    'id': edge.get('id'),
+                    'source': edge.get('source'),
+                    'sourceHandle': edge.get('sourceHandle'),
+                    'target': edge.get('target'),
+                    'targetHandle': edge.get('targetHandle')
+                }
+                simplified_edges.append(simplified_edge)
 
-            # 建立完整的檔案結構
-            graph_file = RamenGraphFile(
-                header=RamenFileHeader(
-                    format="ramen-graph",
-                    version=GRAPH_FORMAT_VERSION,
-                ),
-                graph=graph,
-                metadata=graph.metadata,
-                dependencies=dependencies
-            )
+            # 組裝簡化的 .ramen 檔案
+            ramen_file = {
+                'header': {
+                    'format': 'ramen-graph',
+                    'version': '1.0.0',
+                    'created_at': datetime.now().isoformat()
+                },
+                'graph': {
+                    'id': graph_data.get('id'),
+                    'metadata': graph_data.get('metadata', {}),
+                    'nodes': simplified_nodes,
+                    'edges': simplified_edges,
+                    'variables': graph_data.get('variables', [])
+                }
+            }
 
-            # 序列化並保存
+            # 更新 last_modified 時間
+            if 'metadata' in ramen_file['graph']:
+                ramen_file['graph']['metadata']['last_modified'] = datetime.now().isoformat()
+
+            # 保存檔案
             file_path = Path(path)
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
             with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(
-                    GraphSerializer.to_dict(graph_file),
-                    f,
-                    indent=2,
-                    ensure_ascii=False
-                )
+                json.dump(ramen_file, f, indent=2, ensure_ascii=False)
 
             return self._success_response(
                 MessageType.GRAPH_RESPONSE,
@@ -817,6 +904,9 @@ class WebSocketMessageHandler:
                 request_id
             )
         except Exception as e:
+            import traceback
+            error_detail = traceback.format_exc()
+            logger.error(f"Failed to save graph: {error_detail}")
             return self._error_response(f"Failed to save graph: {e}", request_id)
 
     async def _handle_check_dependencies(

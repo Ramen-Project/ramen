@@ -30,6 +30,70 @@ import { getApiClient, RamenApiClient } from './services/apiClient';
 // VSCode webview API - use global variable set by the host HTML
 const vscode = (window as any).vscode;
 
+/**
+ * Convert .ramen file node format to ReactFlow Node format
+ */
+function convertRamenNodeToReactFlowNode(ramenNode: any): Node {
+  // Determine ReactFlow node type based on metadata
+  // Most Ramen nodes are 'operator' type in ReactFlow
+  let reactFlowType = 'operator';
+
+  // Special cases for other ReactFlow node types
+  if (ramenNode.metadata?.type === 'reference') {
+    reactFlowType = 'reference';
+  } else if (ramenNode.metadata?.type === 'group') {
+    reactFlowType = 'group';
+  } else if (ramenNode.metadata?.type === 'contextManager') {
+    reactFlowType = 'contextManager';
+  }
+
+  // Convert inputs/outputs to the format expected by OperatorNode
+  // Server format: {id, name, type_id, ...}
+  // Expected format: {name, type}
+  const inputs = (ramenNode.inputs || []).map((input: any) => ({
+    name: input.name,
+    type: input.type_id || input.type || 'any'
+  }));
+
+  const outputs = (ramenNode.outputs || []).map((output: any) => ({
+    name: output.name,
+    type: output.type_id || output.type || 'any'
+  }));
+
+  return {
+    id: ramenNode.id,
+    type: reactFlowType,  // ReactFlow node type
+    position: ramenNode.position || { x: 0, y: 0 },
+    data: {
+      // OpNodeProps structure expected by OperatorNode
+      name: ramenNode.metadata?.name || ramenNode.id,
+      namespace: ramenNode.metadata?.namespace || 'builtin',
+      brief: ramenNode.metadata?.description || '',
+      inputs: inputs,
+      outputs: outputs,
+      color: ramenNode.metadata?.color,
+      // Keep original data for compatibility
+      ...ramenNode.data,
+      metadata: ramenNode.metadata,
+    },
+  };
+}
+
+/**
+ * Convert .ramen file edge format to ReactFlow Edge format
+ */
+function convertRamenEdgeToReactFlowEdge(ramenEdge: any): Edge {
+  return {
+    id: ramenEdge.id,
+    source: ramenEdge.source_node_id || ramenEdge.source,
+    target: ramenEdge.target_node_id || ramenEdge.target,
+    sourceHandle: ramenEdge.source_port_id || ramenEdge.sourceHandle,
+    targetHandle: ramenEdge.target_port_id || ramenEdge.targetHandle,
+    type: ramenEdge.type || 'default',
+    data: ramenEdge.data || {},
+  };
+}
+
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +102,10 @@ export default function App() {
   const [isNodeLibraryVisible, setIsNodeLibraryVisible] = useState(true);
   const [nodeLibraryWidth, setNodeLibraryWidth] = useState(DEFAULT_NODE_LIBRARY_WIDTH);
   const [shouldRenderNodeLibrary, setShouldRenderNodeLibrary] = useState(true);
-  
-  console.log('🍜 App render - isLoading:', isLoading, 'error:', error);
+
+  console.log('🍜 [DEBUG] App component rendering');
+  console.log('🍜 [DEBUG] window.ramenConfig:', window.ramenConfig);
+  console.log('🍜 [DEBUG] isLoading:', isLoading, 'error:', error);
   
   // Fallback timeout to prevent infinite loading
   useEffect(() => {
@@ -93,17 +159,27 @@ export default function App() {
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
       console.log('Received message from VSCode:', message);
-      
+
       switch (message.command || message.type) {
         case 'graphUpdate':
           try {
-            const parsed = typeof message.data === 'string' 
-              ? JSON.parse(message.data) 
+            const parsed = typeof message.data === 'string'
+              ? JSON.parse(message.data)
               : message.data;
-            
+
+            // Convert nodes and edges if needed
+            let nodes = parsed.nodes || [];
+            let edges = parsed.edges || [];
+
+            // Check if nodes need conversion (has metadata field)
+            if (nodes.length > 0 && nodes[0].metadata) {
+              nodes = nodes.map(convertRamenNodeToReactFlowNode);
+              edges = edges.map(convertRamenEdgeToReactFlowEdge);
+            }
+
             // Update graph data in store
-            if (activeGraphId && parsed.nodes && parsed.edges) {
-              updateGraphData(activeGraphId, parsed.nodes, parsed.edges);
+            if (activeGraphId && nodes && edges) {
+              updateGraphData(activeGraphId, nodes, edges);
             }
             setIsLoading(false);
           } catch (err) {
@@ -111,13 +187,42 @@ export default function App() {
             setIsLoading(false);
           }
           break;
+
+        case 'websocket-response':
+          // Handle WebSocket response from extension
+          if (message.id && message.id.startsWith('save-')) {
+            console.log('🍜 Save operation completed successfully');
+            setError(null);
+          } else if (message.id && message.id.startsWith('init-session-')) {
+            console.log('🍜 [Session] Session created:', message.data);
+            // Session created, we'll wait for load_graph response
+          } else if (message.id && message.id.startsWith('load-graph-')) {
+            console.log('🍜 [Session] Graph loaded from server:', message.data);
+            handleServerGraphData(message.data);
+          }
+          break;
+
+        case 'websocket-error':
+          // Handle WebSocket errors from extension
+          if (message.id && message.id.startsWith('save-')) {
+            console.error('🍜 Save operation failed:', message.error);
+            setError(`Failed to save: ${message.error}`);
+          } else if (message.id && message.id.startsWith('load-graph-')) {
+            console.error('🍜 Graph loading failed:', message.error);
+            setError(`Failed to load graph: ${message.error}`);
+            setIsLoading(false);
+          }
+          break;
+
         case 'error':
           setError(message.message);
           setIsLoading(false);
           break;
+
         case 'updateTheme':
           document.body.dataset.theme = message.theme;
           break;
+
         case 'serverRestarted':
           // Re-initialize API client when server restarts
           initApiClient();
@@ -132,66 +237,196 @@ export default function App() {
     };
   }, []); // Run only once on mount
 
-  // Separate effect for graph initialization
-  useEffect(() => {
-    console.log('🍜 Graph init effect - ramenConfig:', !!window.ramenConfig, 'graphData:', !!window.ramenConfig?.graphData, 'graphs.length:', graphs.length);
-    
-    // Only initialize graph data once when we have the config
-    if (window.ramenConfig?.graphData && graphs.length === 0) {
-      console.log('🍜 Initializing with graph data');
-      try {
-        const parsed = typeof window.ramenConfig.graphData === 'string' 
-          ? JSON.parse(window.ramenConfig.graphData) 
-          : window.ramenConfig.graphData;
-        
-        // Create initial graph from VSCode data
-        const graphId = `vscode-graph-${nanoid()}`;
-        const graphName = window.ramenConfig.graphPath?.split(/[\\\\/]/).pop() || 'Untitled';
-        
-        addGraph(graphId, graphName);
-        setActiveGraph(graphId);
-        
-        if (parsed.nodes && parsed.edges) {
-          updateGraphData(graphId, parsed.nodes, parsed.edges);
-        }
-        
-        console.log('🍜 Graph initialized successfully');
-        setIsLoading(false);
-      } catch (err) {
-        console.error('🍜 Failed to parse graph data:', err);
-        setError(`Failed to parse initial graph data: ${err}`);
-        setIsLoading(false);
+  // NEW: Session-based initialization (defined before useEffect)
+  const initializeSessionBasedGraph = async () => {
+    try {
+      const graphPath = window.ramenConfig!.graphPath!;
+      const graphName = graphPath.split(/[\\\\/]/).pop() || 'Untitled';
+      const graphId = `vscode-graph-${nanoid()}`;
+
+      console.log('🍜 [Session] Step 1: Creating graph entry');
+      addGraph(graphId, graphName);
+      setActiveGraph(graphId);
+
+      console.log('🍜 [Session] Step 2: Requesting session from server');
+      console.log('🍜 [Session] Graph path:', graphPath);
+
+      // Request session creation + graph loading from server
+      if (vscode) {
+        vscode.postMessage({
+          command: 'websocket-request',
+          type: 'create_session',
+          id: `init-session-${Date.now()}`,
+          data: {
+            graph_id: graphId,
+            user_id: 'vscode-user'
+          }
+        });
+
+        // Then load the graph into the session
+        vscode.postMessage({
+          command: 'websocket-request',
+          type: 'load_graph',
+          id: `load-graph-${Date.now()}`,
+          data: {
+            path: graphPath
+          }
+        });
       }
-    } else if (!window.ramenConfig?.graphData && graphs.length === 0) {
+
+      // Loading state will be cleared when we receive the graph data
+      console.log('🍜 [Session] Waiting for server response...');
+    } catch (err) {
+      console.error('🍜 [Session] Failed to initialize session:', err);
+      setError(`Failed to initialize session: ${err}`);
+      setIsLoading(false);
+    }
+  };
+
+  // Handle graph data from server (session-based loading)
+  const handleServerGraphData = (serverData: any) => {
+    try {
+      console.log('🍜 [Session] Processing server graph data');
+
+      // Server response format: { message, graph: {...}, dependencies }
+      const graphData = serverData.graph || serverData;
+
+      let rawNodes: any[] = [];
+      let rawEdges: any[] = [];
+
+      // Extract nodes and edges from server response
+      if (graphData.nodes && graphData.edges) {
+        rawNodes = graphData.nodes;
+        rawEdges = graphData.edges;
+      } else {
+        console.error('🍜 [Session] Invalid graph data structure:', graphData);
+        setError('Invalid graph data received from server');
+        setIsLoading(false);
+        return;
+      }
+
+      // Convert to ReactFlow format
+      const nodes: Node[] = rawNodes.map(convertRamenNodeToReactFlowNode);
+      const edges: Edge[] = rawEdges.map(convertRamenEdgeToReactFlowEdge);
+
+      console.log(`🍜 [Session] Loaded ${nodes.length} nodes, ${edges.length} edges`);
+      console.log('🍜 [Session] Converted nodes:', nodes);
+      console.log('🍜 [Session] First node data:', nodes[0]?.data);
+      console.log('🍜 [Session] First node inputs:', nodes[0]?.data?.inputs);
+      console.log('🍜 [Session] First node outputs:', nodes[0]?.data?.outputs);
+      console.log('🍜 [Session] Converted edges:', edges);
+
+      // Update the active graph - use the current activeGraphId from store
+      const currentActiveId = useGraphStore.getState().activeGraphId;
+      console.log('🍜 [Session] Updating graph:', currentActiveId);
+
+      if (currentActiveId) {
+        updateGraphData(currentActiveId, nodes, edges);
+      } else {
+        console.error('🍜 [Session] No active graph ID found!');
+      }
+
+      setIsLoading(false);
+    } catch (err) {
+      console.error('🍜 [Session] Failed to process server graph data:', err);
+      setError(`Failed to process graph data: ${err}`);
+      setIsLoading(false);
+    }
+  };
+
+  // LEGACY: Direct graph data initialization
+  const initializeLegacyGraph = () => {
+    try {
+      const parsed = typeof window.ramenConfig!.graphData === 'string'
+        ? JSON.parse(window.ramenConfig!.graphData)
+        : window.ramenConfig!.graphData;
+
+      console.log('🍜 [Legacy] Parsed data structure:', Object.keys(parsed));
+
+      const graphId = `vscode-graph-${nanoid()}`;
+      const graphName = window.ramenConfig?.graphPath?.split(/[\\\\/]/).pop() || 'Untitled';
+
+      addGraph(graphId, graphName);
+      setActiveGraph(graphId);
+
+      // Handle .ramen file format
+      let rawNodes: any[] = [];
+      let rawEdges: any[] = [];
+
+      if (parsed.graph) {
+        rawNodes = parsed.graph.nodes || [];
+        rawEdges = parsed.graph.edges || [];
+        console.log('🍜 [Legacy] Loaded from new format (.ramen file)');
+      } else if (parsed.nodes && parsed.edges) {
+        rawNodes = parsed.nodes;
+        rawEdges = parsed.edges;
+        console.log('🍜 [Legacy] Loaded from legacy format');
+      }
+
+      // Convert .ramen format to ReactFlow format
+      const nodes: Node[] = rawNodes.map(convertRamenNodeToReactFlowNode);
+      const edges: Edge[] = rawEdges.map(convertRamenEdgeToReactFlowEdge);
+
+      console.log('🍜 [Legacy] Converted:', nodes.length, 'nodes,', edges.length, 'edges');
+
+      if (nodes.length > 0 || edges.length > 0) {
+        updateGraphData(graphId, nodes, edges);
+      }
+
+      setIsLoading(false);
+    } catch (err) {
+      console.error('🍜 [Legacy] Failed to parse graph data:', err);
+      setError(`Failed to parse initial graph data: ${err}`);
+      setIsLoading(false);
+    }
+  };
+
+  // Graph initialization effect (runs after functions are defined)
+  useEffect(() => {
+    console.log('🍜 [DEBUG] ========== useEffect RUNNING ==========');
+    console.log('🍜 [DEBUG] graphs.length:', graphs.length);
+    console.log('🍜 [DEBUG] window.ramenConfig exists:', !!window.ramenConfig);
+    console.log('🍜 [DEBUG] window.ramenConfig:', window.ramenConfig);
+    console.log('🍜 [DEBUG] useSessionBasedLoading:', window.ramenConfig?.useSessionBasedLoading);
+    console.log('🍜 [DEBUG] graphPath:', window.ramenConfig?.graphPath);
+    console.log('🍜 [DEBUG] graphData exists:', !!window.ramenConfig?.graphData);
+
+    // Only initialize once
+    if (graphs.length > 0) {
+      console.log('🍜 [DEBUG] Graph already initialized, skipping');
+      setIsLoading(false);
+      return;
+    }
+
+    // Check if we should use session-based loading
+    if (window.ramenConfig?.useSessionBasedLoading && window.ramenConfig?.graphPath) {
+      // NEW APPROACH: Session-based loading
+      console.log('🍜 [DEBUG] ====> Entering session-based initialization');
+      console.log('🍜 [Session-based] Initializing session for:', window.ramenConfig.graphPath);
+      initializeSessionBasedGraph();
+    } else if (window.ramenConfig?.graphData) {
+      // LEGACY APPROACH: Direct graph data (for backward compatibility)
+      console.log('🍜 [DEBUG] ====> Entering legacy initialization');
+      console.log('🍜 [Legacy] Initializing with embedded graph data');
+      initializeLegacyGraph();
+    } else {
+      // Empty graph
+      console.log('🍜 [DEBUG] ====> Creating empty graph');
       console.log('🍜 Creating empty graph');
-      // Create empty graph if no data
       const graphId = `vscode-graph-${nanoid()}`;
       addGraph(graphId, 'Untitled');
       setActiveGraph(graphId);
-      console.log('🍜 Empty graph created');
       setIsLoading(false);
-    } else {
-      console.log('🍜 Skipping graph init - condition not met');
-      // Force stop loading if we have graphs already
-      if (graphs.length > 0) {
-        console.log('🍜 Graphs exist, stopping loading state');
-        setIsLoading(false);
-      }
     }
-  }, [addGraph, setActiveGraph, updateGraphData, graphs.length]);
+  }, [graphs.length, activeGraphId, addGraph, setActiveGraph, updateGraphData, setError, setIsLoading]);
 
   // Handle graph data changes from GraphEditor
   const handleGraphDataChange = (nodes: Node[], edges: Edge[]) => {
     if (activeGraphId) {
       updateGraphData(activeGraphId, nodes, edges);
-      
-      // Save to VSCode
-      if (vscode) {
-        vscode.postMessage({
-          type: 'saveGraph',
-          data: JSON.stringify({ nodes, edges }, null, 2)
-        });
-      }
+
+      // Note: Auto-save is disabled to prevent excessive saves
+      // Users should use Ctrl+S to save manually
     }
   };
 
@@ -243,35 +478,55 @@ export default function App() {
 
   const handleSave = async () => {
     if (!activeGraphId) return;
-    
+
     const activeGraph = graphs.find(g => g.id === activeGraphId);
     if (!activeGraph) return;
 
-    const graphData = {
+    // Build complete RamenGraph object matching backend schema
+    const ramenGraph = {
+      id: activeGraphId,
+      metadata: {
+        name: activeGraph.name,
+        description: '',
+        version: '1.0.0'
+      },
       nodes: activeGraph.nodes,
       edges: activeGraph.edges,
-      version: "1.0"
+      variables: []
     };
 
-    // Save via VSCode
-    if (vscode) {
-      vscode.postMessage({
-        type: 'saveGraph',
-        data: JSON.stringify(graphData, null, 2)
-      });
-    }
-
-    // Also save via API if server is available
-    if (apiClient && isServerHealthy && window.ramenConfig?.graphPath) {
+    // Save via VSCode using WebSocket through message passing
+    if (vscode && window.ramenConfig?.graphPath) {
       try {
-        const result = await apiClient.saveGraph(window.ramenConfig.graphPath, graphData);
+        // Use the VSCode webview message passing to trigger WebSocket save
+        vscode.postMessage({
+          command: 'websocket-request',
+          type: 'save_graph',
+          id: `save-${Date.now()}`,
+          data: {
+            path: window.ramenConfig.graphPath,
+            graph: ramenGraph
+          }
+        });
+
+        console.log('🍜 Save request sent via VSCode WebSocket');
+      } catch (error) {
+        console.error('🍜 Failed to send save request:', error);
+        setError(`Failed to save: ${error}`);
+      }
+    } else if (apiClient && isServerHealthy && window.ramenConfig?.graphPath) {
+      // Fallback: Direct API save if not in VSCode environment
+      try {
+        const result = await apiClient.saveGraph(window.ramenConfig.graphPath, ramenGraph);
         if (result.success) {
-          console.log('Graph saved successfully via API');
+          console.log('🍜 Graph saved successfully via API');
         } else {
-          console.warn('API save failed:', result.message);
+          console.warn('🍜 API save failed:', result.message);
+          setError(`Save failed: ${result.message}`);
         }
       } catch (error) {
-        console.error('Failed to save via API:', error);
+        console.error('🍜 Failed to save via API:', error);
+        setError(`Failed to save: ${error}`);
       }
     }
   };

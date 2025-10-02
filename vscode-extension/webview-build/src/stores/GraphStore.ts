@@ -29,13 +29,9 @@ interface GraphState {
 }
 
 export const useGraphStore = create<GraphState>()((set, get) => {
-  const initialGraphId = `graph-${nanoid()}`;
-  
   return {
-    graphs: [
-      { id: initialGraphId, name: 'Graph 1', nodes: [], edges: [] }
-    ],
-    activeGraphId: initialGraphId,
+    graphs: [],  // Start with empty graphs array - App.tsx will initialize
+    activeGraphId: null,  // No active graph initially
     varRegistries: {
       '1': {name: 'SampleVar1', typeId: 'bool'}
     },

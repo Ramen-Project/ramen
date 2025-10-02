@@ -137,7 +137,8 @@ export default function OperatorNode({ data, id, selected }: NodeProps) {
                             const IOType = typeReg.typesRegistries[input.type] || typeReg.typesRegistries['unknown'];
                             return (
                                 <Port key={input.name + idx} portId={`input${idx}`} typeId={input.type} isInput>
-                                    <Text size="2" style={{color: IOType.color, fontWeight: 500}}>{input.name}</Text>
+                                    <Text size="2" weight="bold">{input.name}</Text>
+                                    <Text size="1" style={{color: IOType.color, opacity: 0.8}}>{IOType.name}</Text>
                                 </Port>
                             );
                         })}
@@ -149,7 +150,8 @@ export default function OperatorNode({ data, id, selected }: NodeProps) {
                             const connected = edges.some(e => e.source === id && e.sourceHandle === portId);
                             return (
                                 <Port key={output.name + idx} portId={portId} typeId={output.type} connected={connected}>
-                                    <Text size="2" style={{color: IOType.color, fontWeight: 500}}>{output.name}</Text>
+                                    <Text size="2" weight="bold">{output.name}</Text>
+                                    <Text size="1" style={{color: IOType.color, opacity: 0.8}}>{IOType.name}</Text>
                                 </Port>
                             );
                         })}

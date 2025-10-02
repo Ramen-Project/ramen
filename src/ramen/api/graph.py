@@ -50,17 +50,49 @@ class DependencyCheckResponse(BaseModel):
 async def load_graph(request: LoadGraphRequest) -> GraphResponse:
     """載入圖形檔案"""
     try:
+        from ramen.registry.node_registry import get_global_registry
+
         loader = GraphLoader()
         graph = loader.load_graph(request.path)
-        
+
+        # 驗證所有節點類型是否存在於 registry 中
+        registry = get_global_registry()
+        invalid_nodes = []
+
+        for node in graph.nodes:
+            node_type = node.metadata.type if hasattr(node.metadata, 'type') else None
+            if node_type:
+                # 檢查節點類型是否在 registry 中註冊
+                node_def = registry.get(node_type)
+                if node_def is None:
+                    # 嘗試使用 namespace.type 格式
+                    namespace = node.metadata.namespace if hasattr(node.metadata, 'namespace') else 'builtin'
+                    full_type = f"{namespace}.{node_type}"
+                    node_def = registry.get(full_type)
+
+                    if node_def is None:
+                        invalid_nodes.append({
+                            'node_id': node.id,
+                            'node_type': node_type,
+                            'full_type': full_type
+                        })
+
+        # 如果有無效的節點類型，返回錯誤
+        if invalid_nodes:
+            error_msg = f"Found {len(invalid_nodes)} node(s) with unregistered types: "
+            error_msg += ", ".join([f"{n['node_id']} (type: {n['node_type']})" for n in invalid_nodes[:5]])
+            if len(invalid_nodes) > 5:
+                error_msg += f" and {len(invalid_nodes) - 5} more..."
+            raise HTTPException(status_code=400, detail=error_msg)
+
         # 序列化為字典
         graph_dict = GraphSerializer.to_dict(graph)
-        
+
         # 檢查是否有依賴
         dependencies = None
         if hasattr(graph, 'dependencies') and graph.dependencies:
             dependencies = GraphSerializer.to_dict(graph.dependencies)
-        
+
         return GraphResponse(
             success=True,
             message=f"Successfully loaded graph: {graph.metadata.name}",
@@ -71,6 +103,8 @@ async def load_graph(request: LoadGraphRequest) -> GraphResponse:
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load graph: {e}")
 

@@ -40,6 +40,27 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Initialize webview manager (will use GlobalWebSocketManager internally)
     webviewManager = new RamenWebviewManager(context, serverManager);
+
+    // Set initial theme based on current VSCode theme
+    const currentTheme = vscode.window.activeColorTheme;
+    let initialTheme: string;
+    switch (currentTheme.kind) {
+        case vscode.ColorThemeKind.Light:
+            initialTheme = 'light';
+            break;
+        case vscode.ColorThemeKind.Dark:
+            initialTheme = 'dark';
+            break;
+        case vscode.ColorThemeKind.HighContrast:
+            initialTheme = 'high-contrast';
+            break;
+        case vscode.ColorThemeKind.HighContrastLight:
+            initialTheme = 'high-contrast-light';
+            break;
+        default:
+            initialTheme = 'dark';
+    }
+    console.log(`🍜 Initial VSCode theme: ${initialTheme}`);
     
     // Initialize language server
     const config = vscode.workspace.getConfiguration('ramen');
@@ -139,6 +160,33 @@ export async function activate(context: vscode.ExtensionContext) {
             if (e.affectsConfiguration('ramen')) {
                 handleConfigurationChange();
             }
+        })
+    );
+
+    // Handle VSCode theme changes
+    context.subscriptions.push(
+        vscode.window.onDidChangeActiveColorTheme((theme) => {
+            // Determine theme type: light, dark, or high-contrast
+            let themeKind: string;
+            switch (theme.kind) {
+                case vscode.ColorThemeKind.Light:
+                    themeKind = 'light';
+                    break;
+                case vscode.ColorThemeKind.Dark:
+                    themeKind = 'dark';
+                    break;
+                case vscode.ColorThemeKind.HighContrast:
+                    themeKind = 'high-contrast';
+                    break;
+                case vscode.ColorThemeKind.HighContrastLight:
+                    themeKind = 'high-contrast-light';
+                    break;
+                default:
+                    themeKind = 'dark';
+            }
+
+            console.log(`🍜 VSCode theme changed to: ${themeKind}`);
+            webviewManager.updateTheme(themeKind);
         })
     );
 

@@ -140,8 +140,26 @@ export class RamenWebviewManager {
 
     private async getWebviewContent(webview: vscode.Webview, graphPath: string): Promise<string> {
         const serverPort = this.serverManager.getPort();
-        const config = vscode.workspace.getConfiguration('ramen');
-        const theme = config.get<string>('theme', 'auto');
+
+        // Detect current VSCode theme
+        const currentTheme = vscode.window.activeColorTheme;
+        let theme: string;
+        switch (currentTheme.kind) {
+            case vscode.ColorThemeKind.Light:
+                theme = 'light';
+                break;
+            case vscode.ColorThemeKind.Dark:
+                theme = 'dark';
+                break;
+            case vscode.ColorThemeKind.HighContrast:
+                theme = 'high-contrast';
+                break;
+            case vscode.ColorThemeKind.HighContrastLight:
+                theme = 'high-contrast-light';
+                break;
+            default:
+                theme = 'dark';
+        }
         
         // Get URIs for resources
         const scriptUri = webview.asWebviewUri(
@@ -156,21 +174,21 @@ export class RamenWebviewManager {
             vscode.Uri.joinPath(this.context.extensionUri, 'media', 'vscode.css')
         );
         
-        // Read graph content
-        const graphContent = await vscode.workspace.fs.readFile(vscode.Uri.file(graphPath));
-        const graphData = graphContent.toString();
-        
+        // NEW APPROACH: Session-based loading
+        // Don't read file content here - let the server handle it
+        console.log('🍜 [WebviewManager] Using session-based loading for:', graphPath);
+
         // Generate nonce for CSP
         const nonce = this.getNonce();
-        
+
         return `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; 
-                img-src ${webview.cspSource} data: https:; 
-                script-src 'unsafe-eval' 'unsafe-inline' ${webview.cspSource}; 
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none';
+                img-src ${webview.cspSource} data: https:;
+                script-src 'unsafe-eval' 'unsafe-inline' ${webview.cspSource};
                 style-src ${webview.cspSource} 'unsafe-inline';
                 connect-src ws://localhost:${serverPort} http://localhost:${serverPort};">
             <link href="${vscodeStyleUri}" rel="stylesheet">
@@ -194,25 +212,28 @@ export class RamenWebviewManager {
         <body data-theme="${theme}">
             <div id="root"></div>
             <script>
+                console.log('🍜 [HTML] Inline script executing - this proves HTML is loaded');
+
                 // VSCode API
                 const vscode = acquireVsCodeApi();
-                
+
                 // Make VSCode API available globally for the React app
                 window.vscode = vscode;
-                
-                // Initial configuration for the React app
+
+                // Initial configuration for the React app (Session-based approach)
                 window.ramenConfig = {
                     graphPath: '${graphPath.replace(/\\/g, '\\\\')}',
                     serverPort: ${serverPort},
                     theme: '${theme}',
-                    graphData: ${JSON.stringify(graphData)},
+                    useSessionBasedLoading: true,  // NEW: Flag to use session-based loading
                     isVSCode: true
                 };
+
+                console.log('🍜 [HTML] window.ramenConfig set to:', window.ramenConfig);
                 
                 // Save initial state
                 vscode.setState({
-                    graphPath: '${graphPath.replace(/\\/g, '\\\\')}',
-                    graphData: window.ramenConfig.graphData
+                    graphPath: '${graphPath.replace(/\\/g, '\\\\')}'
                 });
                 
                 // Handle messages from extension
@@ -234,11 +255,8 @@ export class RamenWebviewManager {
                     }
                 });
                 
-                // Restore state if available
-                const previousState = vscode.getState();
-                if (previousState && previousState.graphData) {
-                    window.ramenConfig.graphData = previousState.graphData;
-                }
+                // No need to restore graphData in session-based loading
+                // The frontend will request session from server
             </script>
             <script type="module" src="${scriptUri}"></script>
         </body>
@@ -326,10 +344,31 @@ export class RamenWebviewManager {
                     });
                 } catch (error) {
                     console.error(`🍜 [WebviewManager] WebSocket request failed: ${message.type}`, error);
+
+                    // Show VSCode notification for critical errors
+                    const errorMessage = String(error);
+
+                    console.log(`🍜 [WebviewManager] DEBUG - Checking notification conditions:`, {
+                        messageType: message.type,
+                        isLoadGraph: message.type === 'load_graph',
+                        errorMessage,
+                        errorType: typeof error,
+                        fullError: error
+                    });
+
+                    if (message.type === 'load_graph') {
+                        console.log(`🍜 [WebviewManager] ⚠️ SHOWING VSCode notification for load_graph error`);
+                        vscode.window.showErrorMessage(
+                            `Failed to load graph: ${errorMessage}`,
+                            'OK'
+                        );
+                        console.log(`🍜 [WebviewManager] ✅ showErrorMessage called`);
+                    }
+
                     panel.webview.postMessage({
                         type: 'websocket-error',
                         id: message.id,
-                        error: String(error)
+                        error: errorMessage
                     });
                 }
                 break;

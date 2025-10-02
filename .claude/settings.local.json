@@ -7,7 +7,11 @@
       "Bash(code --version)",
       "Bash(npm run lint)",
       "Bash(python:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(awk:*)",
+      "Bash(uv run:*)",
+      "Bash(xargs kill:*)",
+      "Bash(lsof:*)"
     ],
     "deny": [],
     "ask": []
