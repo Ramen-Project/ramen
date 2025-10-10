@@ -1,0 +1,41 @@
+{
+  "header": {
+    "format": "ramen-graph",
+    "version": "1.0.0",
+    "created_at": "2025-10-02T12:00:00"
+  },
+  "graph": {
+    "id": "import-export-example",
+    "metadata": {
+      "name": "Import Export Example",
+      "description": "Simple example showing Import and Export nodes",
+      "created_at": "2025-10-02T12:00:00",
+      "last_modified": "2025-10-02T12:00:00",
+      "version": "1.0.0"
+    },
+    "nodes": [
+      {
+        "id": "import1",
+        "type": "graph.import",
+        "position": {"x": 100, "y": 150},
+        "data": {"import_name": "input_value"}
+      },
+      {
+        "id": "export1",
+        "type": "graph.export",
+        "position": {"x": 500, "y": 150},
+        "data": {"export_name": "output_value"}
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge1",
+        "source": "import1",
+        "sourceHandle": "output0",
+        "target": "export1",
+        "targetHandle": "input0"
+      }
+    ],
+    "variables": []
+  }
+}

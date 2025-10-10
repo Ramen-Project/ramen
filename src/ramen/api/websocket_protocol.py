@@ -61,6 +61,7 @@ class MessageType(str, Enum):
     SAVE_GRAPH = "save_graph"
     CHECK_DEPENDENCIES = "check_dependencies"
     LIST_GRAPHS = "list_graphs"
+    EXPORT_GRAPH_TO_PYTHON = "export_graph_to_python"
     GRAPH_RESPONSE = "graph_response"
     GRAPHS_RESPONSE = "graphs_response"
 
@@ -84,6 +85,10 @@ class MessageType(str, Enum):
     DISCOVER_COMPONENTS = "discover_components"
     GET_COMPONENT_FOR_NODE = "get_component_for_node"
     FRONTEND_RESPONSE = "frontend_response"
+
+    # Type Converter API
+    GET_TYPE_CONVERTERS = "get_type_converters"
+    TYPE_CONVERTERS_RESPONSE = "type_converters_response"
 
     # State Sync
     SUBSCRIBE_NODE = "subscribe_node"
@@ -258,6 +263,15 @@ class ListGraphsRequest(BaseModel):
     """列出圖形請求"""
     type: MessageType = MessageType.LIST_GRAPHS
     directory: str = "."
+
+
+class ExportGraphToPythonRequest(BaseModel):
+    """匯出圖形為 Python 腳本請求"""
+    type: MessageType = MessageType.EXPORT_GRAPH_TO_PYTHON
+    graph: Dict[str, Any]
+    output_path: str
+    include_imports: bool = True
+    include_main: bool = True
 
 
 # ============= System API 訊息格式 =============

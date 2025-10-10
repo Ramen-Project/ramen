@@ -231,4 +231,14 @@ uv add ramen-topping-numpy ramen-topping-pandas
 - **API Integration**: Fully functional with VSCode extension
 - **No Dependencies**: Core system has minimal external dependencies
 
-When working on this project, remember that toppings are now external packages that users install separately. The core system should always function without any external toppings installed.
+### Group Node Architecture (New Design)
+- **Group Nodes**: Visual scope containers using ReactFlow parent-child hierarchy
+- **Collection Groups**: Map/Filter/Reduce as expandable group nodes (not function parameter nodes)
+- **Embedded Graphs**: Subgraphs within groups define iteration/transformation logic
+- **Design Philosophy**: Visual scope = Logical scope, no hidden behavior
+- **See**: `docs/technical-design/GroupNodes.md` for complete design
+
+When working on this project, remember:
+- Toppings are external packages that users install separately
+- Control flow is expressed through Group Nodes, not traditional control flow nodes
+- Functions are defined as embedded subgraphs, not passed as parameters

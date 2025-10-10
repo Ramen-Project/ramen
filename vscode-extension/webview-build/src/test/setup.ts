@@ -17,14 +17,14 @@ global.fetch = vi.fn(() =>
       success: true,
       nodes: [
         {
-          nodeType: 'ReadFile',
+          nodeTemplate: 'ReadFile',
           category: 'File Operations',
           description: 'Read file content',
           inputs: [{ name: 'path', type: 'string' }],
           outputs: [{ name: 'content', type: 'string' }]
         },
         {
-          nodeType: 'WriteFile', 
+          nodeTemplate: 'WriteFile',
           category: 'File Operations',
           description: 'Write content to file',
           inputs: [

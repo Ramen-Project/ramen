@@ -10,8 +10,10 @@ interface ServerInfo {
 }
 
 export class RamenServerProvider implements vscode.TreeDataProvider<ServerInfo> {
-    private _onDidChangeTreeData: vscode.EventEmitter<ServerInfo | undefined | null | void> = new vscode.EventEmitter<ServerInfo | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<ServerInfo | undefined | null | void> = this._onDidChangeTreeData.event;
+    private _onDidChangeTreeData: vscode.EventEmitter<ServerInfo | undefined | null | void> =
+        new vscode.EventEmitter<ServerInfo | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<ServerInfo | undefined | null | void> =
+        this._onDidChangeTreeData.event;
 
     constructor(
         private context: vscode.ExtensionContext,
@@ -19,7 +21,7 @@ export class RamenServerProvider implements vscode.TreeDataProvider<ServerInfo> 
     ) {
         // Set initial context
         this.updateContext();
-        
+
         // Listen to server status changes
         this.serverManager.onDidChangeStatus(() => {
             this.refresh();
@@ -37,10 +39,7 @@ export class RamenServerProvider implements vscode.TreeDataProvider<ServerInfo> 
     }
 
     getTreeItem(element: ServerInfo): vscode.TreeItem {
-        const item = new vscode.TreeItem(
-            element.label,
-            vscode.TreeItemCollapsibleState.None
-        );
+        const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
 
         item.description = element.value;
         item.tooltip = element.description || `${element.label}: ${element.value}`;
@@ -51,9 +50,9 @@ export class RamenServerProvider implements vscode.TreeDataProvider<ServerInfo> 
             case 'status':
                 item.iconPath = new vscode.ThemeIcon(
                     this.serverManager.isRunning() ? 'circle-filled' : 'circle-outline',
-                    this.serverManager.isRunning() ? 
-                        new vscode.ThemeColor('charts.green') : 
-                        new vscode.ThemeColor('charts.red')
+                    this.serverManager.isRunning()
+                        ? new vscode.ThemeColor('charts.green')
+                        : new vscode.ThemeColor('charts.red')
                 );
                 break;
             case 'port':
@@ -95,15 +94,15 @@ export class RamenServerProvider implements vscode.TreeDataProvider<ServerInfo> 
                 label: 'Status',
                 value: isRunning ? 'Running' : 'Stopped',
                 description: isRunning ? 'Server is running' : 'Server is stopped',
-                contextValue: 'serverStatus'
+                contextValue: 'serverStatus',
             },
             {
                 id: 'port',
                 label: 'Port',
                 value: port.toString(),
                 description: `Server listening on port ${port}`,
-                contextValue: 'serverPort'
-            }
+                contextValue: 'serverPort',
+            },
         ];
 
         if (isRunning) {
@@ -113,7 +112,7 @@ export class RamenServerProvider implements vscode.TreeDataProvider<ServerInfo> 
                     label: 'Process ID',
                     value: pid.toString(),
                     description: `Server process ID: ${pid}`,
-                    contextValue: 'serverPid'
+                    contextValue: 'serverPid',
                 });
             }
 
@@ -123,7 +122,7 @@ export class RamenServerProvider implements vscode.TreeDataProvider<ServerInfo> 
                     label: 'Uptime',
                     value: this.formatUptime(uptime),
                     description: `Server has been running for ${this.formatUptime(uptime)}`,
-                    contextValue: 'serverUptime'
+                    contextValue: 'serverUptime',
                 });
             }
         }
@@ -134,7 +133,7 @@ export class RamenServerProvider implements vscode.TreeDataProvider<ServerInfo> 
                 label: 'Python',
                 value: this.getShortPath(pythonPath),
                 description: `Using Python: ${pythonPath}`,
-                contextValue: 'serverPython'
+                contextValue: 'serverPython',
             });
         }
 

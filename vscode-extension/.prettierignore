@@ -1,0 +1,22 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Build outputs
+out
+dist
+*.vsix
+
+# Test coverage
+coverage
+.nyc_output
+
+# IDE
+.vscode-test
+
+# Logs
+*.log
+
+# Old/backup files
+*.old.ts
+*.backup.ts

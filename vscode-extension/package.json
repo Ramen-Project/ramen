@@ -107,6 +107,136 @@
         "command": "ramen.git.mergeHead",
         "title": "Ramen: Git Merge HEAD",
         "icon": "$(git-pull-request)"
+      },
+      {
+        "command": "ramen.git.installHooks",
+        "title": "Ramen: Install Git Hooks",
+        "icon": "$(check)"
+      },
+      {
+        "command": "ramen.git.uninstallHooks",
+        "title": "Ramen: Uninstall Git Hooks",
+        "icon": "$(x)"
+      },
+      {
+        "command": "ramen.git.checkHooks",
+        "title": "Ramen: Check Git Hooks Status",
+        "icon": "$(info)"
+      },
+      {
+        "command": "ramen.toggleDebugMode",
+        "title": "Ramen: Toggle Debug Mode",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "ramen.uv.showEnvironmentInfo",
+        "title": "Ramen: Show Python Environment Info",
+        "icon": "$(info)"
+      },
+      {
+        "command": "ramen.uv.listToppings",
+        "title": "Ramen: List Toppings",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "ramen.uv.installTopping",
+        "title": "Ramen: Install Topping",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "ramen.uv.uninstallTopping",
+        "title": "Ramen: Uninstall Topping",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "ramen.uv.syncEnvironment",
+        "title": "Ramen: Sync UV Environment",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "ramen.uv.checkMissingDependencies",
+        "title": "Ramen: Check Missing Dependencies",
+        "icon": "$(search)"
+      },
+      {
+        "command": "ramen.debug.toggleBreakpoint",
+        "title": "Ramen: Toggle Breakpoint",
+        "icon": "$(debug-breakpoint)"
+      },
+      {
+        "command": "ramen.debug.setConditionalBreakpoint",
+        "title": "Ramen: Set Conditional Breakpoint",
+        "icon": "$(debug-breakpoint-conditional)"
+      },
+      {
+        "command": "ramen.debug.removeAllBreakpoints",
+        "title": "Ramen: Remove All Breakpoints",
+        "icon": "$(close-all)"
+      },
+      {
+        "command": "ramen.debug.listBreakpoints",
+        "title": "Ramen: List Breakpoints",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "ramen.debug.continue",
+        "title": "Ramen: Continue Execution",
+        "icon": "$(debug-continue)"
+      },
+      {
+        "command": "ramen.debug.stepOver",
+        "title": "Ramen: Step Over",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "ramen.debug.stepInto",
+        "title": "Ramen: Step Into",
+        "icon": "$(debug-step-into)"
+      },
+      {
+        "command": "ramen.debug.stop",
+        "title": "Ramen: Stop Execution",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "ramen.debug.showExecutionStats",
+        "title": "Ramen: Show Execution Statistics",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "ramen.debug.showNodeVariables",
+        "title": "Ramen: Show Node Variables",
+        "icon": "$(symbol-variable)"
+      },
+      {
+        "command": "ramen.debug.inspectNodeExecution",
+        "title": "Ramen: Inspect Node Execution",
+        "icon": "$(search-details)"
+      },
+      {
+        "command": "ramen.version.createTag",
+        "title": "Ramen: Create Version Tag",
+        "icon": "$(tag)"
+      },
+      {
+        "command": "ramen.version.listTags",
+        "title": "Ramen: List Version Tags",
+        "icon": "$(tag)"
+      },
+      {
+        "command": "ramen.version.compareVersions",
+        "title": "Ramen: Compare Versions",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "ramen.version.compareWithCurrent",
+        "title": "Ramen: Compare with Current Version",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "ramen.version.checkoutVersion",
+        "title": "Ramen: Checkout Version",
+        "icon": "$(arrow-left)"
       }
     ],
     "menus": {
@@ -114,6 +244,11 @@
         {
           "when": "resourceExtname == .ramen",
           "command": "ramen.executeGraph",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .ramen",
+          "command": "ramen.toggleDebugMode",
           "group": "navigation"
         },
         {
@@ -233,6 +368,12 @@
     "views": {
       "ramen": [
         {
+          "id": "ramenProjectExplorer",
+          "name": "Graphs",
+          "icon": "$(graph)",
+          "contextualTitle": "Ramen Graphs"
+        },
+        {
           "id": "ramenVariables",
           "name": "Variables",
           "icon": "$(symbol-variable)",
@@ -285,26 +426,38 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
     "test": "./scripts/validate-extension.sh",
     "test:vscode": "node ./out/test/runTest.js",
     "test:all": "npm run test:webview && npm run test:vscode",
     "validate": "./scripts/validate-extension.sh",
     "clean": "rm -rf out && cd webview-build && rm -rf ../media/webview",
     "package": "npm run build:all && vsce package",
-    "publish": "npm run build:all && vsce publish"
+    "publish": "npm run build:all && vsce publish",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@types/chai": "^5.2.2",
     "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.6",
+    "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/sinon": "^17.0.4",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^2.32.0",
+    "chai": "^6.2.0",
     "eslint": "^8.56.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "glob": "^8.1.0",
-    "mocha": "^10.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.3",
+    "mocha": "^10.8.2",
+    "prettier": "^3.6.2",
+    "sinon": "^21.0.0",
     "typescript": "^5.3.3"
   },
   "dependencies": {
@@ -320,5 +473,14 @@
     "url": "https://github.com/yourusername/ramen.git"
   },
   "homepage": "https://github.com/yourusername/ramen#readme",
-  "license": "MIT"
+  "license": "MIT",
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "src/**/*.{json,md}": [
+      "prettier --write"
+    ]
+  }
 }

@@ -135,9 +135,10 @@ export default function OperatorNode({ data, id, selected }: NodeProps) {
                     <Flex direction="column" align="start" style={{gap: '0.5em'}}>
                         {nodeData.inputs.map((input, idx) => {
                             const IOType = typeReg.typesRegistries[input.type] || typeReg.typesRegistries['unknown'];
+                            const displayName = input.name.charAt(0).toUpperCase() + input.name.slice(1);
                             return (
                                 <Port key={input.name + idx} portId={`input${idx}`} typeId={input.type} isInput>
-                                    <Text size="2" weight="bold">{input.name}</Text>
+                                    <Text size="2" weight="bold">{displayName}</Text>
                                     <Text size="1" style={{color: IOType.color, opacity: 0.8}}>{IOType.name}</Text>
                                 </Port>
                             );
@@ -148,9 +149,10 @@ export default function OperatorNode({ data, id, selected }: NodeProps) {
                             const IOType = typeReg.typesRegistries[output.type] || typeReg.typesRegistries['unknown'];
                             const portId = `output${idx}`;
                             const connected = edges.some(e => e.source === id && e.sourceHandle === portId);
+                            const displayName = output.name.charAt(0).toUpperCase() + output.name.slice(1);
                             return (
                                 <Port key={output.name + idx} portId={portId} typeId={output.type} connected={connected}>
-                                    <Text size="2" weight="bold">{output.name}</Text>
+                                    <Text size="2" weight="bold">{displayName}</Text>
                                     <Text size="1" style={{color: IOType.color, opacity: 0.8}}>{IOType.name}</Text>
                                 </Port>
                             );

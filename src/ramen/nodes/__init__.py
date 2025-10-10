@@ -15,6 +15,7 @@ from ramen.nodes import type
 from ramen.nodes import flow
 from ramen.nodes import object
 from ramen.nodes import debug
+from ramen.nodes import io  # Import/Export nodes
 
 # Legacy imports for backward compatibility
 from ramen.engine.context import NodeContext as LegacyNodeContext

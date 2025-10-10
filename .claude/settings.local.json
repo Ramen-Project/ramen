@@ -11,9 +11,16 @@
       "Bash(awk:*)",
       "Bash(uv run:*)",
       "Bash(xargs kill:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(mkdir:*)",
+      "Bash(uv pip:*)",
+      "Bash(uv venv:*)",
+      "Bash(python3:*)",
+      "Bash(PYTHONPATH=. python3:*)",
+      "Bash(PYTHONPATH=/Users/progcat/Desktop/ramen/src python3:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "outputStyle": "Explanatory"
 }

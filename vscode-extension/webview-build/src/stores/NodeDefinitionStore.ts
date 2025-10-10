@@ -24,6 +24,7 @@ import {
   StackIcon,
 } from '@radix-ui/react-icons';
 import { getWebSocketClient, initializeWebSocketClient } from '../api/WebSocketClient';
+import { getExtensionClient, ExtensionMessageType } from '../api/ExtensionClient';
 
 export interface PortDefinition {
   name: string;
@@ -37,7 +38,7 @@ export interface PortDefinition {
 export interface NodeDefinition {
   type: string;  // Full type identifier (e.g., "numpy.array")
   namespace: string;
-  nodeType: string;
+  nodeTemplate: string;
   displayName: string;
   description: string;
   icon?: string;
@@ -200,11 +201,13 @@ function convertApiNodesToCategories(apiNodes: Record<string, any[]>): NodeCateg
       mergedCategories[mainCategory] = [];
     }
     
-    // Add nodes to the main category
-    mergedCategories[mainCategory].push(...nodes.map(node => ({
-      ...node,
-      originalCategory: categoryName // Keep track of original category
-    })));
+    // Add nodes to the main category (filter out hidden nodes)
+    mergedCategories[mainCategory].push(...nodes
+      .filter(node => !node.hidden)  // Filter out hidden nodes (type converters)
+      .map(node => ({
+        ...node,
+        originalCategory: categoryName // Keep track of original category
+      })));
   }
   
   // Now convert to NodeCategory array
@@ -227,7 +230,7 @@ function convertApiNodesToCategories(apiNodes: Record<string, any[]>): NodeCateg
         nodes: mergedCategories[categoryName].map(node => ({
           type: node.type,
           namespace: node.namespace,
-          nodeType: node.nodeType,
+          nodeTemplate: node.nodeTemplate,
           displayName: node.displayName,
           description: node.description,
           icon: node.icon,
@@ -252,7 +255,7 @@ function convertApiNodesToCategories(apiNodes: Record<string, any[]>): NodeCateg
       nodes: nodes.map(node => ({
         type: node.type,
         namespace: node.namespace,
-        nodeType: node.nodeType,
+        nodeTemplate: node.nodeTemplate,
         displayName: node.displayName,
         description: node.description,
         icon: node.icon,
@@ -274,47 +277,25 @@ async function fetchNodesFromAPI(): Promise<Record<string, any[]>> {
   try {
     // Check if we're in VSCode webview environment
     if (typeof window !== 'undefined' && (window as any).vscode) {
-      console.log('🍜 [NodeStore] VSCode webview detected, using message proxy');
+      console.log('🍜 [NodeStore] VSCode webview detected, using ExtensionClient');
 
-      // Use VSCode message passing instead of direct fetch
-      return new Promise((resolve, reject) => {
-        let timeoutId: number;
+      // Use ExtensionClient for unified communication
+      const extensionClient = getExtensionClient();
 
-        // Listen for response
-        const handleMessage = (event: MessageEvent) => {
-          const message = event.data;
-          console.log('🍜 [NodeStore] Received message:', message);
+      const response = await extensionClient.request<void, { nodes: Record<string, any[]> }>(
+        ExtensionMessageType.FETCH_NODES,
+        undefined,
+        30000 // 30 seconds timeout
+      );
 
-          if (message.command === 'nodesResponse') {
-            window.removeEventListener('message', handleMessage);
-            clearTimeout(timeoutId);
-
-            if (message.success && message.data && message.data.nodes) {
-              console.log('🍜 [NodeStore] Successfully received nodes:',
-                Object.keys(message.data.nodes).length, 'categories');
-              resolve(message.data.nodes);
-            } else {
-              console.error('🍜 [NodeStore] Failed response:', message);
-              reject(new Error(message.error || 'Failed to fetch nodes'));
-            }
-          }
-        };
-
-        window.addEventListener('message', handleMessage);
-
-        console.log('🍜 [NodeStore] Sending fetchNodes command to extension...');
-        // Request nodes from extension
-        (window as any).vscode.postMessage({
-          command: 'fetchNodes'
-        });
-
-        // Timeout after 20 seconds (increased for debugging)
-        timeoutId = window.setTimeout(() => {
-          console.error('🍜 [NodeStore] Request timeout after 20 seconds');
-          window.removeEventListener('message', handleMessage);
-          reject(new Error('Request timeout after 20 seconds'));
-        }, 20000);
-      });
+      if (response && response.nodes) {
+        console.log('🍜 [NodeStore] Successfully received nodes:',
+          Object.keys(response.nodes).length, 'categories');
+        return response.nodes;
+      } else {
+        console.error('🍜 [NodeStore] Invalid response format:', response);
+        throw new Error('Invalid response format');
+      }
     } else {
       // Use WebSocket for non-VSCode environments
       console.log('🍜 [NodeStore] Non-VSCode environment, using WebSocket');

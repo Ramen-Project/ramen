@@ -25,6 +25,7 @@ import GroupNode from '../Node/GroupNode';
 import { OpNodeProps } from '../Node/OperationNode';
 import { Box, Flex, Text, Kbd } from '@radix-ui/themes';
 import PerformanceMonitor from '../PerformanceMonitor';
+import NodeDebugInfo from '../NodeDebugInfo';
 import { 
   ungroupGroup, 
   autoResizeGroup, 
@@ -36,6 +37,8 @@ import { useSelectionStore } from '../../stores/SelectionStore';
 import { useNodeDefinitionStore } from '../../stores/NodeDefinitionStore';
 import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor';
 import { useGraphStore } from '../../stores/GraphStore';
+import { useTypeConverterStore } from '../../stores/TypeConverterStore';
+import { insertTypeConverterNode } from '../../utils/typeConverterInserter';
 
 import * as Constants from '../../constants';
 import { nanoid } from 'nanoid';
@@ -113,44 +116,51 @@ const edgeTypes = {
 
 
 
-// Connection validation will be done inside the Graph component with access to getNodes
-function connectionCheck(connection: Connection | Edge, nodes: Node[]): boolean {
+// Connection validation with type converter support
+function connectionCheck(connection: Connection | Edge, nodes: Node[], findConverter: (src: string, tgt: string) => string | null): boolean {
   // Prevent self-connections (node connecting to itself)
   if (connection.source === connection.target) {
     return false;
   }
-  
+
   const sourceNode = nodes.find((n: Node) => n.id === connection.source);
   const targetNode = nodes.find((n: Node) => n.id === connection.target);
-  
+
   if (!sourceNode || !targetNode) {
     return false;
   }
-  
+
   // Extract port indices from handles (e.g., "output0" -> 0, "input1" -> 1)
   const sourcePortIndex = connection.sourceHandle ? parseInt(connection.sourceHandle.replace('output', ''), 10) : 0;
   const targetPortIndex = connection.targetHandle ? parseInt(connection.targetHandle.replace('input', ''), 10) : 0;
-  
+
   // Get port type information from node data
   const sourceNodeData = sourceNode.data as OpNodeProps;
   const targetNodeData = targetNode.data as OpNodeProps;
-  
+
   const sourcePort = sourceNodeData.outputs?.[sourcePortIndex];
   const targetPort = targetNodeData.inputs?.[targetPortIndex];
-  
+
   if (!sourcePort || !targetPort) {
     return false;
   }
-  
+
   // Check if port types are compatible
   if (sourcePort.type !== targetPort.type) {
-    console.warn(`Port type mismatch: ${sourcePort.type} -> ${targetPort.type}`);
-    return false;
+    // Try to find a type converter
+    const converterType = findConverter(sourcePort.type, targetPort.type);
+    if (converterType) {
+      // Converter exists - allow connection (will auto-insert converter in onConnect)
+      console.log(`🔄 Type converter available: ${sourcePort.type} -> ${targetPort.type} via ${converterType}`);
+      return true;
+    } else {
+      console.warn(`❌ No type converter: ${sourcePort.type} -> ${targetPort.type}`);
+      return false;
+    }
   }
-  
+
   // TODO: Prevent any variables getter and setter connect directly
-  // TODO: Return if there's a caster, after that onConnectEnd should insert the caster in between
-  
+
   return true;
 }
 
@@ -162,20 +172,24 @@ interface GraphProps {
   graphId?: string;
   initialNodes?: Node[];
   initialEdges?: Edge[];
+  debugMode?: boolean;
 }
 
-export default function Graph({ 
-  onNodeSelect, 
-  onUndoRedoHandlers, 
-  onGraphDataChange, 
+export default function Graph({
+  onNodeSelect,
+  onUndoRedoHandlers,
+  onGraphDataChange,
   onSelectionChange,
   graphId,
   initialNodes,
-  initialEdges
+  initialEdges,
+  debugMode = false
 }: GraphProps) {
-  const { setSelection } = useSelectionStore();
+  const { setSelection, selectedNode } = useSelectionStore();
   const getGraph = useGraphStore(s => s.getGraph);
   const updateGraphData = useGraphStore(s => s.updateGraphData);
+  const { findConverter } = useTypeConverterStore();
+  const { getNodeDefinition } = useNodeDefinitionStore();
   const graph = graphId ? getGraph(graphId) : null;
   // Use initialNodes/initialEdges if provided, otherwise fall back to graph store
   const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes || graph?.nodes || []);
@@ -200,7 +214,7 @@ export default function Graph({
     incrementOperation,
     reset: resetPerformanceMetrics,
     isEnabled: isPerformanceEnabled
-  } = usePerformanceMonitor();
+  } = usePerformanceMonitor({ enabled: debugMode });
   
   // Track position changes for performance monitoring
   const positionChangeRef = useRef<{
@@ -454,11 +468,48 @@ export default function Graph({
   }, [handleUndo, handleRedo, goToHistory, handleHistoryChange, onDragStart]);
 
   const onConnect = useCallback(
-    (connection: any) => {
+    (connection: Connection) => {
       incrementOperation();
+
+      const sourceNode = nodes.find(n => n.id === connection.source);
+      const targetNode = nodes.find(n => n.id === connection.target);
+
+      if (!sourceNode || !targetNode) {
+        console.error('❌ Source or target node not found');
+        return;
+      }
+
+      // Get port type information
+      const sourcePortIndex = connection.sourceHandle ? parseInt(connection.sourceHandle.replace('output', ''), 10) : 0;
+      const targetPortIndex = connection.targetHandle ? parseInt(connection.targetHandle.replace('input', ''), 10) : 0;
+
+      const sourcePort = (sourceNode.data as OpNodeProps).outputs?.[sourcePortIndex];
+      const targetPort = (targetNode.data as OpNodeProps).inputs?.[targetPortIndex];
+
+      // Check if types match
+      if (sourcePort && targetPort && sourcePort.type !== targetPort.type) {
+        // Types don't match - check if converter exists
+        const converterType = findConverter(sourcePort.type, targetPort.type);
+
+        if (converterType) {
+          // Auto-insert type converter node
+          console.log(`🔄 Auto-inserting converter: ${converterType}`);
+          insertTypeConverterNode(
+            connection,
+            converterType,
+            sourceNode,
+            targetNode,
+            setNodes,
+            setEdges
+          );
+          return;
+        }
+      }
+
+      // Normal connection (same type or no converter needed)
       setEdges((eds) => addEdge(connection, eds));
     },
-    [setEdges, incrementOperation]
+    [nodes, setEdges, setNodes, incrementOperation, findConverter]
   );
 
   // Helper to generate a unique ID not in the provided set
@@ -496,9 +547,24 @@ export default function Graph({
 
       // Use getUniqueId to avoid collision
       const existingNodeIds = new Set(getNodes().map(n => n.id));
+
+      // Determine ReactFlow node type based on node_type
+      let reactFlowType = 'operator';
+      if (nodeDefinition.nodeTemplate === 'import') {
+        reactFlowType = 'import';
+      } else if (nodeDefinition.nodeTemplate === 'export') {
+        reactFlowType = 'export';
+      } else if (nodeDefinition.nodeTemplate === 'reference') {
+        reactFlowType = 'reference';
+      } else if (nodeDefinition.nodeTemplate === 'group') {
+        reactFlowType = 'group';
+      } else if (nodeDefinition.nodeTemplate === 'contextManager') {
+        reactFlowType = 'contextManager';
+      }
+
       const newNode = {
         id: getUniqueId(existingNodeIds, 'node'),
-        type: 'operator',
+        type: reactFlowType,
         position,
         data: {
           name: nodeDefinition.displayName,
@@ -1252,7 +1318,13 @@ export default function Graph({
           graphId={graphId}
         />
       </Box>
-      
+
+      {/* Node debug info in bottom right */}
+      <NodeDebugInfo
+        selectedNode={selectedNode}
+        isEnabled={debugMode}
+      />
+
       {/* Hotkey descriptions in bottom left (togglable) */}
       {showHotkeys && (
         <Box
@@ -1308,7 +1380,7 @@ export default function Graph({
         deleteKeyCode={'Delete'}
 
         // Callbacks
-        isValidConnection={(connection) => connectionCheck(connection, nodes)}
+        isValidConnection={(connection) => connectionCheck(connection, nodes, findConverter)}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onEdgeMouseEnter={onMouseEnterEdge}

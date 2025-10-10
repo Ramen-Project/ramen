@@ -61709,6 +61709,12 @@ template {
   A$1.forEach(function(e2) {
     dt[e2] = pt(e2);
   });
+  function mt(t2) {
+    for (var n2 = [], o2 = 1; o2 < arguments.length; o2++) n2[o2 - 1] = arguments[o2];
+    "undefined" != typeof navigator && "ReactNative" === navigator.product && console.warn("`keyframes` cannot be used on ReactNative, only on the web. To do animation in ReactNative please use Animated.");
+    var r2 = ae(lt.apply(void 0, __spreadArray([t2], n2, false))), s2 = $(r2);
+    return new We(s2, r2);
+  }
   "undefined" != typeof navigator && "ReactNative" === navigator.product && console.warn("It looks like you've imported 'styled-components' on React Native.\nPerhaps you're looking to import 'styled-components/native'?\nRead more about this at https://www.styled-components.com/docs/basics#react-native");
   var St = "__sc-".concat(f$2, "__");
   "undefined" != typeof window && (window[St] || (window[St] = 0), 1 === window[St] && console.warn("It looks like there are several instances of 'styled-components' initialized in this application. This may cause dynamic styles to not render properly, errors during the rehydration process, a missing theme prop, and makes your application bigger without good reason.\n\nSee https://s-c.sh/2BAXzed for more info."), window[St] += 1);
@@ -62837,6 +62843,222 @@ template {
     }
     return client2;
   }
+  var ExtensionMessageType = /* @__PURE__ */ ((ExtensionMessageType2) => {
+    ExtensionMessageType2["SAVE_GRAPH"] = "saveGraph";
+    ExtensionMessageType2["EXECUTE_GRAPH"] = "executeGraph";
+    ExtensionMessageType2["RELOAD_GRAPH"] = "reloadGraph";
+    ExtensionMessageType2["GRAPH_UPDATE"] = "graphUpdate";
+    ExtensionMessageType2["FETCH_NODES"] = "fetchNodes";
+    ExtensionMessageType2["NODES_RESPONSE"] = "nodesResponse";
+    ExtensionMessageType2["FETCH_TYPE_CONVERTERS"] = "fetchTypeConverters";
+    ExtensionMessageType2["TYPE_CONVERTERS_RESPONSE"] = "typeConvertersResponse";
+    ExtensionMessageType2["SHOW_MESSAGE"] = "showMessage";
+    ExtensionMessageType2["OPEN_EXTERNAL"] = "openExternal";
+    ExtensionMessageType2["UPDATE_THEME"] = "updateTheme";
+    ExtensionMessageType2["TOGGLE_DEBUG_MODE"] = "toggleDebugMode";
+    ExtensionMessageType2["GET_STATE"] = "getState";
+    ExtensionMessageType2["SET_STATE"] = "setState";
+    ExtensionMessageType2["STATE_UPDATED"] = "stateUpdated";
+    ExtensionMessageType2["WEBSOCKET_REQUEST"] = "websocket-request";
+    ExtensionMessageType2["WEBSOCKET_RESPONSE"] = "websocket-response";
+    ExtensionMessageType2["WEBSOCKET_ERROR"] = "websocket-error";
+    ExtensionMessageType2["WEBSOCKET_CONNECT"] = "websocket-connect";
+    ExtensionMessageType2["WEBSOCKET_STATUS"] = "websocket-status";
+    ExtensionMessageType2["FILE_CHANGED"] = "fileChanged";
+    ExtensionMessageType2["SERVER_RESTARTED"] = "serverRestarted";
+    ExtensionMessageType2["LOG"] = "log";
+    ExtensionMessageType2["ERROR"] = "error";
+    return ExtensionMessageType2;
+  })(ExtensionMessageType || {});
+  class ExtensionClient {
+    constructor() {
+      this.handlers = /* @__PURE__ */ new Map();
+      this.pendingRequests = /* @__PURE__ */ new Map();
+      if (typeof window === "undefined" || !window.vscode) {
+        throw new Error("ExtensionClient can only be used in VSCode webview");
+      }
+      this.vscode = window.vscode;
+      this.setupMessageListener();
+      console.log("🍜 [ExtensionClient] Initialized");
+    }
+    /**
+     * 設置訊息監聽器
+     */
+    setupMessageListener() {
+      this.messageListener = (event) => {
+        const message = event.data;
+        this.handleMessage(message);
+      };
+      window.addEventListener("message", this.messageListener);
+    }
+    /**
+     * 發送單向訊息到 Extension
+     *
+     * @param type 訊息類型
+     * @param data 訊息資料
+     */
+    send(type2, data) {
+      const message = {
+        type: type2,
+        data,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      this.vscode.postMessage(message);
+      console.log(`🍜 [ExtensionClient] Sent message: ${type2}`);
+    }
+    /**
+     * 發送請求並等待回應
+     *
+     * @param type 請求類型
+     * @param data 請求資料
+     * @param timeout 超時時間（毫秒），預設 30 秒
+     * @returns Promise<回應資料>
+     */
+    request(type2, data, timeout2 = 3e4) {
+      const id2 = this.generateRequestId();
+      const message = {
+        type: type2,
+        id: id2,
+        data,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      return new Promise((resolve, reject) => {
+        const timer2 = window.setTimeout(() => {
+          this.pendingRequests.delete(id2);
+          reject(new Error(`Request timeout: ${type2} (${timeout2}ms)`));
+        }, timeout2);
+        this.pendingRequests.set(id2, {
+          resolve,
+          reject,
+          timer: timer2,
+          type: type2
+        });
+        this.vscode.postMessage(message);
+        console.log(`🍜 [ExtensionClient] Sent request: ${type2} (id: ${id2})`);
+      });
+    }
+    /**
+     * 註冊訊息 handler
+     *
+     * @param type 訊息類型
+     * @param handler Handler 函數
+     * @returns 取消註冊函數
+     */
+    on(type2, handler) {
+      if (!this.handlers.has(type2)) {
+        this.handlers.set(type2, /* @__PURE__ */ new Set());
+      }
+      const handlers = this.handlers.get(type2);
+      handlers.add(handler);
+      console.log(`🍜 [ExtensionClient] Registered handler for: ${type2}`);
+      return () => {
+        handlers.delete(handler);
+        if (handlers.size === 0) {
+          this.handlers.delete(type2);
+        }
+        console.log(`🍜 [ExtensionClient] Unregistered handler for: ${type2}`);
+      };
+    }
+    /**
+     * 移除指定類型的所有 handlers
+     *
+     * @param type 訊息類型
+     */
+    off(type2) {
+      if (this.handlers.delete(type2)) {
+        console.log(`🍜 [ExtensionClient] Removed all handlers for: ${type2}`);
+      }
+    }
+    /**
+     * 處理來自 Extension 的訊息
+     */
+    handleMessage(message) {
+      if (!message || typeof message !== "object") {
+        return;
+      }
+      const { type: type2, id: id2, success, data, error } = message;
+      console.log(`🍜 [ExtensionClient] Received message: ${type2}`, id2 ? `(id: ${id2})` : "");
+      if (id2 && typeof success === "boolean") {
+        this.handleResponse(message);
+        return;
+      }
+      const handlers = this.handlers.get(type2);
+      if (handlers && handlers.size > 0) {
+        handlers.forEach((handler) => {
+          try {
+            handler(data);
+          } catch (error2) {
+            console.error(`🍜 [ExtensionClient] Handler error for ${type2}:`, error2);
+          }
+        });
+      } else {
+        console.log(`🍜 [ExtensionClient] No handlers registered for: ${type2}`);
+      }
+    }
+    /**
+     * 處理 response（回應之前的 request）
+     */
+    handleResponse(response) {
+      const { id: id2, success, data, error } = response;
+      if (!id2) {
+        console.warn("🍜 [ExtensionClient] Received response without id");
+        return;
+      }
+      const pending = this.pendingRequests.get(id2);
+      if (!pending) {
+        console.warn(`🍜 [ExtensionClient] No pending request for id: ${id2}`);
+        return;
+      }
+      clearTimeout(pending.timer);
+      this.pendingRequests.delete(id2);
+      if (success) {
+        console.log(`🍜 [ExtensionClient] Request succeeded: ${pending.type} (id: ${id2})`);
+        pending.resolve(data);
+      } else {
+        console.error(`🍜 [ExtensionClient] Request failed: ${pending.type} (id: ${id2})`, error);
+        pending.reject(new Error(error || "Request failed"));
+      }
+    }
+    /**
+     * 生成唯一的 request ID
+     */
+    generateRequestId() {
+      return `req_${Date.now()}_${nanoid(8)}`;
+    }
+    /**
+     * 清理資源
+     */
+    dispose() {
+      this.pendingRequests.forEach((pending, id2) => {
+        clearTimeout(pending.timer);
+        pending.reject(new Error("ExtensionClient disposed"));
+      });
+      this.pendingRequests.clear();
+      this.handlers.clear();
+      if (this.messageListener) {
+        window.removeEventListener("message", this.messageListener);
+        this.messageListener = void 0;
+      }
+      console.log("🍜 [ExtensionClient] Disposed");
+    }
+    /**
+     * 獲取統計資訊
+     */
+    getStats() {
+      return {
+        handlerCount: this.handlers.size,
+        pendingRequestCount: this.pendingRequests.size,
+        handlers: Array.from(this.handlers.keys()).map(String)
+      };
+    }
+  }
+  let globalExtensionClient = null;
+  function getExtensionClient() {
+    if (!globalExtensionClient) {
+      globalExtensionClient = new ExtensionClient();
+    }
+    return globalExtensionClient;
+  }
   const CATEGORY_ICONS = {
     "Core": CubeIcon,
     "Math": PlusIcon,
@@ -62960,7 +63182,7 @@ template {
       if (!mergedCategories[mainCategory]) {
         mergedCategories[mainCategory] = [];
       }
-      mergedCategories[mainCategory].push(...nodes.map((node2) => ({
+      mergedCategories[mainCategory].push(...nodes.filter((node2) => !node2.hidden).map((node2) => ({
         ...node2,
         originalCategory: categoryName
         // Keep track of original category
@@ -62991,7 +63213,7 @@ template {
           nodes: mergedCategories[categoryName].map((node2) => ({
             type: node2.type,
             namespace: node2.namespace,
-            nodeType: node2.nodeType,
+            nodeTemplate: node2.nodeTemplate,
             displayName: node2.displayName,
             description: node2.description,
             icon: node2.icon,
@@ -63014,7 +63236,7 @@ template {
         nodes: nodes.map((node2) => ({
           type: node2.type,
           namespace: node2.namespace,
-          nodeType: node2.nodeType,
+          nodeTemplate: node2.nodeTemplate,
           displayName: node2.displayName,
           description: node2.description,
           icon: node2.icon,
@@ -63032,39 +63254,25 @@ template {
   async function fetchNodesFromAPI() {
     try {
       if (typeof window !== "undefined" && window.vscode) {
-        console.log("🍜 [NodeStore] VSCode webview detected, using message proxy");
-        return new Promise((resolve, reject) => {
-          let timeoutId;
-          const handleMessage = (event) => {
-            const message = event.data;
-            console.log("🍜 [NodeStore] Received message:", message);
-            if (message.command === "nodesResponse") {
-              window.removeEventListener("message", handleMessage);
-              clearTimeout(timeoutId);
-              if (message.success && message.data && message.data.nodes) {
-                console.log(
-                  "🍜 [NodeStore] Successfully received nodes:",
-                  Object.keys(message.data.nodes).length,
-                  "categories"
-                );
-                resolve(message.data.nodes);
-              } else {
-                console.error("🍜 [NodeStore] Failed response:", message);
-                reject(new Error(message.error || "Failed to fetch nodes"));
-              }
-            }
-          };
-          window.addEventListener("message", handleMessage);
-          console.log("🍜 [NodeStore] Sending fetchNodes command to extension...");
-          window.vscode.postMessage({
-            command: "fetchNodes"
-          });
-          timeoutId = window.setTimeout(() => {
-            console.error("🍜 [NodeStore] Request timeout after 20 seconds");
-            window.removeEventListener("message", handleMessage);
-            reject(new Error("Request timeout after 20 seconds"));
-          }, 2e4);
-        });
+        console.log("🍜 [NodeStore] VSCode webview detected, using ExtensionClient");
+        const extensionClient = getExtensionClient();
+        const response = await extensionClient.request(
+          ExtensionMessageType.FETCH_NODES,
+          void 0,
+          3e4
+          // 30 seconds timeout
+        );
+        if (response && response.nodes) {
+          console.log(
+            "🍜 [NodeStore] Successfully received nodes:",
+            Object.keys(response.nodes).length,
+            "categories"
+          );
+          return response.nodes;
+        } else {
+          console.error("🍜 [NodeStore] Invalid response format:", response);
+          throw new Error("Invalid response format");
+        }
       } else {
         console.log("🍜 [NodeStore] Non-VSCode environment, using WebSocket");
         try {
@@ -63141,25 +63349,113 @@ template {
       set2({ error: null });
     }
   }));
-  let retryCount = 0;
-  const maxRetries = 3;
+  let retryCount$1 = 0;
+  const maxRetries$1 = 3;
   const tryFetchNodes = () => {
     const store = useNodeDefinitionStore.getState();
     if (store.categories.length > 0) {
       console.log("🍜 Nodes already loaded");
       return;
     }
-    console.log(`🍜 Attempting to fetch nodes (attempt ${retryCount + 1}/${maxRetries})`);
+    console.log(`🍜 Attempting to fetch nodes (attempt ${retryCount$1 + 1}/${maxRetries$1})`);
     store.fetchNodes().catch((error) => {
       console.error("🍜 Failed to fetch nodes:", error);
-      retryCount++;
-      if (retryCount < maxRetries) {
-        console.log(`🍜 Retrying in ${retryCount * 2} seconds...`);
-        setTimeout(tryFetchNodes, retryCount * 2e3);
+      retryCount$1++;
+      if (retryCount$1 < maxRetries$1) {
+        console.log(`🍜 Retrying in ${retryCount$1 * 2} seconds...`);
+        setTimeout(tryFetchNodes, retryCount$1 * 2e3);
       }
     });
   };
   setTimeout(tryFetchNodes, 500);
+  async function fetchConvertersFromAPI() {
+    try {
+      if (typeof window !== "undefined" && window.vscode) {
+        console.log("🔄 [TypeConverterStore] VSCode webview detected, using ExtensionClient");
+        const extensionClient = getExtensionClient();
+        const response = await extensionClient.request(
+          ExtensionMessageType.FETCH_TYPE_CONVERTERS,
+          void 0,
+          3e4
+          // 30 seconds timeout
+        );
+        if (response) {
+          console.log("🔄 [TypeConverterStore] Successfully received type converters");
+          return response.converters || response || {};
+        } else {
+          console.error("🔄 [TypeConverterStore] Invalid response format:", response);
+          throw new Error("Invalid response format");
+        }
+      } else {
+        console.log("🔄 [TypeConverterStore] Non-VSCode environment, using WebSocket");
+        console.warn("🔄 [TypeConverterStore] WebSocket not implemented yet");
+        return {};
+      }
+    } catch (error) {
+      console.error("Error fetching type converters:", error);
+      throw error;
+    }
+  }
+  const useTypeConverterStore = create()((set2, get2) => ({
+    converters: {},
+    isLoading: false,
+    error: null,
+    fetchConverters: async () => {
+      set2({ isLoading: true, error: null });
+      try {
+        console.log("🔄 Starting to fetch type converters from API...");
+        const converters = await fetchConvertersFromAPI();
+        console.log("🔄 Successfully fetched converters:", converters);
+        set2({ converters, isLoading: false });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to fetch type converters";
+        console.error("🔄 Error loading type converters:", errorMessage);
+        set2({
+          converters: {},
+          isLoading: false,
+          error: `Failed to load type converters: ${errorMessage}`
+        });
+      }
+    },
+    findConverter: (sourceType, targetType) => {
+      const { converters } = get2();
+      if (sourceType === targetType) {
+        return null;
+      }
+      if (converters[sourceType]?.[targetType]) {
+        return converters[sourceType][targetType];
+      }
+      if (sourceType === "any" && converters["any"]?.[targetType]) {
+        return converters["any"][targetType];
+      }
+      if (targetType === "any" && converters[sourceType]?.["any"]) {
+        return converters[sourceType]["any"];
+      }
+      return null;
+    },
+    clearError: () => {
+      set2({ error: null });
+    }
+  }));
+  let retryCount = 0;
+  const maxRetries = 3;
+  const tryFetchConverters = () => {
+    const store = useTypeConverterStore.getState();
+    if (Object.keys(store.converters).length > 0) {
+      console.log("🔄 Type converters already loaded");
+      return;
+    }
+    console.log(`🔄 Attempting to fetch type converters (attempt ${retryCount + 1}/${maxRetries})`);
+    store.fetchConverters().catch((error) => {
+      console.error("🔄 Failed to fetch type converters:", error);
+      retryCount++;
+      if (retryCount < maxRetries) {
+        console.log(`🔄 Retrying in ${retryCount * 2} seconds...`);
+        setTimeout(tryFetchConverters, retryCount * 2e3);
+      }
+    });
+  };
+  setTimeout(tryFetchConverters, 1e3);
   const { min: min$5, max: max$5 } = Math;
   const limit = (x2, low = 0, high = 1) => {
     return min$5(max$5(low, x2), high);
@@ -66052,6 +66348,9 @@ template {
     };
     return IconContext !== void 0 ? /* @__PURE__ */ React.createElement(IconContext.Consumer, null, (conf) => elem(conf)) : elem(DefaultContext);
   }
+  function FiArrowRight(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "line", "attr": { "x1": "5", "y1": "12", "x2": "19", "y2": "12" }, "child": [] }, { "tag": "polyline", "attr": { "points": "12 5 19 12 12 19" }, "child": [] }] })(props);
+  }
   function FiBarChart(props) {
     return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "line", "attr": { "x1": "12", "y1": "20", "x2": "12", "y2": "10" }, "child": [] }, { "tag": "line", "attr": { "x1": "18", "y1": "20", "x2": "18", "y2": "4" }, "child": [] }, { "tag": "line", "attr": { "x1": "6", "y1": "20", "x2": "6", "y2": "16" }, "child": [] }] })(props);
   }
@@ -66063,6 +66362,9 @@ template {
   }
   function FiDatabase(props) {
     return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "ellipse", "attr": { "cx": "12", "cy": "5", "rx": "9", "ry": "3" }, "child": [] }, { "tag": "path", "attr": { "d": "M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" }, "child": [] }, { "tag": "path", "attr": { "d": "M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" }, "child": [] }] })(props);
+  }
+  function FiDownload(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "path", "attr": { "d": "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }, "child": [] }, { "tag": "polyline", "attr": { "points": "7 10 12 15 17 10" }, "child": [] }, { "tag": "line", "attr": { "x1": "12", "y1": "15", "x2": "12", "y2": "3" }, "child": [] }] })(props);
   }
   function FiFileText(props) {
     return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "path", "attr": { "d": "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" }, "child": [] }, { "tag": "polyline", "attr": { "points": "14 2 14 8 20 8" }, "child": [] }, { "tag": "line", "attr": { "x1": "16", "y1": "13", "x2": "8", "y2": "13" }, "child": [] }, { "tag": "line", "attr": { "x1": "16", "y1": "17", "x2": "8", "y2": "17" }, "child": [] }, { "tag": "polyline", "attr": { "points": "10 9 9 9 8 9" }, "child": [] }] })(props);
@@ -66084,6 +66386,9 @@ template {
   }
   function FiTool(props) {
     return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "path", "attr": { "d": "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" }, "child": [] }] })(props);
+  }
+  function FiUpload(props) {
+    return GenIcon({ "attr": { "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "strokeWidth": "2", "strokeLinecap": "round", "strokeLinejoin": "round" }, "child": [{ "tag": "path", "attr": { "d": "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }, "child": [] }, { "tag": "polyline", "attr": { "points": "17 8 12 3 7 8" }, "child": [] }, { "tag": "line", "attr": { "x1": "12", "y1": "3", "x2": "12", "y2": "15" }, "child": [] }] })(props);
   }
   function setRef(ref, value) {
     if (typeof ref === "function") {
@@ -70673,8 +70978,9 @@ template {
         /* @__PURE__ */ jsxRuntimeExports.jsx(p, { mx: "4", mb: "4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(p$2, { direction: "row", justify: "between", style: { gap: "1em" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(p$2, { direction: "column", align: "start", style: { gap: "0.5em" }, children: nodeData.inputs.map((input2, idx) => {
             const IOType = typeReg.typesRegistries[input2.type] || typeReg.typesRegistries["unknown"];
+            const displayName = input2.name.charAt(0).toUpperCase() + input2.name.slice(1);
             return /* @__PURE__ */ jsxRuntimeExports.jsxs(Port, { portId: `input${idx}`, typeId: input2.type, isInput: true, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", weight: "bold", children: input2.name }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", weight: "bold", children: displayName }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "1", style: { color: IOType.color, opacity: 0.8 }, children: IOType.name })
             ] }, input2.name + idx);
           }) }),
@@ -70682,17 +70988,15 @@ template {
             const IOType = typeReg.typesRegistries[output.type] || typeReg.typesRegistries["unknown"];
             const portId = `output${idx}`;
             const connected = edges.some((e2) => e2.source === id2 && e2.sourceHandle === portId);
+            const displayName = output.name.charAt(0).toUpperCase() + output.name.slice(1);
             return /* @__PURE__ */ jsxRuntimeExports.jsxs(Port, { portId, typeId: output.type, connected, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", weight: "bold", children: output.name }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", weight: "bold", children: displayName }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "1", style: { color: IOType.color, opacity: 0.8 }, children: IOType.name })
             ] }, output.name + idx);
           }) })
         ] }) })
       ] })
     ] });
-  }
-  function ReferenceNode({ selected: selected2 }) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(NodeBody, { $selected: selected2 || false, $width: 2, $height: 1, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Reference Node" }) });
   }
   const GroupNodeContainer = dt.div.attrs(({ $width, $height, $backgroundColor, $borderColor, $isDragOver, $isVisible }) => ({
     style: {
@@ -71090,11 +71394,319 @@ template {
       }
     );
   };
+  const flowAnimation = mt`
+    0% {
+        transform: translateX(-100%) scaleX(0);
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateX(200%) scaleX(1);
+        opacity: 0;
+    }
+`;
+  const ConversionContainer = dt(p$5)`
+    position: relative;
+    background: linear-gradient(
+        135deg,
+        rgba(${(props) => hexToRgb(props.$color)}, 0.15) 0%,
+        rgba(${(props) => hexToRgb(props.$color)}, 0.05) 100%
+    );
+    border: 2px dashed ${(props) => props.$color};
+    border-radius: 12px;
+    padding: 16px;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 30%;
+        height: 2px;
+        background: linear-gradient(
+            90deg,
+            transparent 0%,
+            ${(props) => props.$color} 50%,
+            transparent 100%
+        );
+        transform: translateY(-50%);
+        animation: ${flowAnimation} 2s ease-in-out infinite;
+    }
+`;
+  const TypeBadge = dt(p$5)`
+    background: ${(props) => props.$color};
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+`;
+  const ConversionArrow = dt(p$5)`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${(props) => props.$color};
+    font-size: 24px;
+    animation: pulse 1.5s ease-in-out infinite;
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.7;
+        }
+        50% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+    }
+`;
+  function hexToRgb(hex2) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex2);
+    if (!result) return "121, 85, 72";
+    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+  }
+  function ToTypeNode({ data, id: id2, selected: selected2 }) {
+    const nodeData = data;
+    const typeReg = useTypeStore();
+    const nodeColor = nodeData.color || "#795548";
+    const inputType = nodeData.inputs[0]?.type;
+    const outputType = nodeData.outputs[0]?.type;
+    const inputTypeInfo = typeReg.typesRegistries[inputType] || typeReg.typesRegistries["unknown"];
+    const outputTypeInfo = typeReg.typesRegistries[outputType] || typeReg.typesRegistries["unknown"];
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      selected2 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        p$a,
+        {
+          weight: "medium",
+          style: {
+            position: "absolute",
+            top: "-1.5rem",
+            left: ".5em",
+            color: "var(--accent-9)",
+            zIndex: 10
+          },
+          children: nodeData.namespace
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(NodeBody, { $selected: Boolean(selected2), $width: 2.8, $height: 1, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(ConversionContainer, { $color: nodeColor, style: { marginTop: "16px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(p$2, { direction: "row", align: "center", justify: "center", gap: "3", style: { minHeight: "60px" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TypeBadge, { $color: inputTypeInfo.color, children: inputTypeInfo.name }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(ConversionArrow, { $color: nodeColor, children: /* @__PURE__ */ jsxRuntimeExports.jsx(FiArrowRight, {}) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(TypeBadge, { $color: outputTypeInfo.color, children: outputTypeInfo.name })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(p, { mx: "4", mb: "3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(p$2, { direction: "row", justify: "between", style: { gap: "1em" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(p$2, { direction: "column", align: "start", style: { gap: "0.5em" }, children: nodeData.inputs.map((input2, idx) => {
+            const IOType = typeReg.typesRegistries[input2.type] || typeReg.typesRegistries["unknown"];
+            const displayName = input2.name.charAt(0).toUpperCase() + input2.name.slice(1);
+            return /* @__PURE__ */ jsxRuntimeExports.jsxs(Port, { portId: `input${idx}`, typeId: input2.type, isInput: true, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", weight: "bold", children: displayName }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "1", style: { color: IOType.color, opacity: 0.8 }, children: IOType.name })
+            ] }, input2.name + idx);
+          }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(p$2, { direction: "column", align: "end", style: { gap: "0.5em" }, children: nodeData.outputs.map((output, idx) => {
+            const IOType = typeReg.typesRegistries[output.type] || typeReg.typesRegistries["unknown"];
+            const displayName = output.name.charAt(0).toUpperCase() + output.name.slice(1);
+            return /* @__PURE__ */ jsxRuntimeExports.jsxs(Port, { portId: `output${idx}`, typeId: output.type, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", weight: "bold", children: displayName }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "1", style: { color: IOType.color, opacity: 0.8 }, children: IOType.name })
+            ] }, output.name + idx);
+          }) })
+        ] }) })
+      ] })
+    ] });
+  }
+  function ImportHeader({ typeColor }) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      p$2,
+      {
+        px: "3",
+        py: "2",
+        align: "center",
+        gap: "2",
+        style: {
+          background: "linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
+          borderTopLeftRadius: "8px",
+          borderTopRightRadius: "8px",
+          borderBottom: "1px solid rgba(255,255,255,0.15)"
+        },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(p$5, { style: {
+            width: "20px",
+            height: "20px",
+            borderRadius: "4px",
+            background: typeColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0
+          }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(FiDownload, { size: 12, color: "#fff" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", weight: "bold", style: {
+            color: "#fff",
+            letterSpacing: "0.02em"
+          }, children: "Import" })
+        ]
+      }
+    );
+  }
+  function ImportNode({ data, id: id2, selected: selected2 }) {
+    const nodeData = data;
+    const typeReg = useTypeStore();
+    const outputType = nodeData.outputs?.[0]?.type || "any";
+    const IOType = typeReg.typesRegistries[outputType] || typeReg.typesRegistries["unknown"];
+    const typeColor = IOType.color || "#2196F3";
+    const [importName, setImportName] = reactExports.useState(nodeData.import_name || "input");
+    const handleImportNameChange = reactExports.useCallback((e2) => {
+      const newName = e2.target.value;
+      setImportName(newName);
+      if (data) {
+        data.import_name = newName;
+      }
+    }, [data]);
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      selected2 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        p$a,
+        {
+          weight: "medium",
+          style: {
+            position: "absolute",
+            top: "-1.5rem",
+            left: ".5em",
+            color: "var(--accent-9)",
+            zIndex: 10
+          },
+          children: nodeData.namespace
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(NodeBody, { $selected: Boolean(selected2), $width: 1.8, $height: 1, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(ImportHeader, { typeColor }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(p$5, { px: "3", py: "2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          u,
+          {
+            value: importName,
+            onChange: handleImportNameChange,
+            placeholder: "parameter",
+            size: "1",
+            style: {
+              fontFamily: "monospace",
+              fontSize: "11px",
+              fontWeight: 600
+            }
+          }
+        ) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(p, { mx: "3", mb: "2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$2, { direction: "column", align: "end", style: { gap: "0.4em" }, children: nodeData.outputs.map((output, idx) => {
+          const displayName = output.name.charAt(0).toUpperCase() + output.name.slice(1);
+          const portIOType = typeReg.typesRegistries[output.type] || typeReg.typesRegistries["unknown"];
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(Port, { portId: `output${idx}`, typeId: output.type, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "1", weight: "bold", children: displayName }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "1", style: { color: portIOType.color, opacity: 0.7, fontSize: "10px" }, children: portIOType.name })
+          ] }, output.name + idx);
+        }) }) })
+      ] })
+    ] });
+  }
+  function ExportHeader({ typeColor }) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      p$2,
+      {
+        px: "3",
+        py: "2",
+        align: "center",
+        gap: "2",
+        style: {
+          background: "linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)",
+          borderTopLeftRadius: "8px",
+          borderTopRightRadius: "8px",
+          borderBottom: "1px solid rgba(255,255,255,0.15)"
+        },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(p$5, { style: {
+            width: "20px",
+            height: "20px",
+            borderRadius: "4px",
+            background: typeColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0
+          }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(FiUpload, { size: 12, color: "#fff" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "2", weight: "bold", style: {
+            color: "#fff",
+            letterSpacing: "0.02em"
+          }, children: "Export" })
+        ]
+      }
+    );
+  }
+  function ExportNode({ data, id: id2, selected: selected2 }) {
+    const nodeData = data;
+    const typeReg = useTypeStore();
+    const inputType = nodeData.inputs?.[0]?.type || "any";
+    const IOType = typeReg.typesRegistries[inputType] || typeReg.typesRegistries["unknown"];
+    const typeColor = IOType.color || "#4CAF50";
+    const [exportName, setExportName] = reactExports.useState(nodeData.export_name || "output");
+    const handleExportNameChange = reactExports.useCallback((e2) => {
+      const newName = e2.target.value;
+      setExportName(newName);
+      if (data) {
+        data.export_name = newName;
+      }
+    }, [data]);
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      selected2 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        p$a,
+        {
+          weight: "medium",
+          style: {
+            position: "absolute",
+            top: "-1.5rem",
+            left: ".5em",
+            color: "var(--accent-9)",
+            zIndex: 10
+          },
+          children: nodeData.namespace
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(NodeBody, { $selected: Boolean(selected2), $width: 1.8, $height: 1, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(ExportHeader, { typeColor }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(p, { mx: "3", mt: "2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(p$2, { direction: "column", align: "start", style: { gap: "0.4em" }, children: nodeData.inputs.map((input2, idx) => {
+          const displayName = input2.name.charAt(0).toUpperCase() + input2.name.slice(1);
+          const portIOType = typeReg.typesRegistries[input2.type] || typeReg.typesRegistries["unknown"];
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(Port, { portId: `input${idx}`, typeId: input2.type, isInput: true, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "1", weight: "bold", children: displayName }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(p$a, { size: "1", style: { color: portIOType.color, opacity: 0.7, fontSize: "10px" }, children: portIOType.name })
+          ] }, input2.name + idx);
+        }) }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(p$5, { px: "3", py: "2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          u,
+          {
+            value: exportName,
+            onChange: handleExportNameChange,
+            placeholder: "output",
+            size: "1",
+            style: {
+              fontFamily: "monospace",
+              fontSize: "11px",
+              fontWeight: 600
+            }
+          }
+        ) })
+      ] })
+    ] });
+  }
   const nodeTypes = {
     operator: OperatorNode,
-    reference: ReferenceNode,
+    // reference: ReferenceNode,  // 移除：不需要 variables
     group: GroupNode,
-    contextManager: ContextManagerGroup
+    contextManager: ContextManagerGroup,
+    toType: ToTypeNode,
+    import: ImportNode,
+    export: ExportNode
   };
   const PerformanceMonitor = ({
     metrics,
@@ -71296,6 +71908,182 @@ template {
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: "10px", color: "#9ca3af" }, children: "16ms budget" })
         ] })
       ] })
+    ] });
+  };
+  const NodeDebugInfo = ({
+    selectedNode,
+    isEnabled,
+    className = ""
+  }) => {
+    const [isExpanded, setIsExpanded] = reactExports.useState(true);
+    const formatJSON = reactExports.useCallback((obj) => {
+      try {
+        return JSON.stringify(obj, null, 2);
+      } catch (error) {
+        return String(obj);
+      }
+    }, []);
+    if (!isEnabled) {
+      return null;
+    }
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `node-debug-info ${className}`, style: {
+      position: "absolute",
+      bottom: "10px",
+      right: "10px",
+      backgroundColor: "rgba(0, 0, 0, 0.85)",
+      color: "white",
+      padding: "10px",
+      borderRadius: "8px",
+      fontSize: "11px",
+      fontFamily: 'Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      zIndex: 1e3,
+      minWidth: "280px",
+      maxWidth: "400px",
+      backdropFilter: "blur(6px)",
+      border: "1px solid rgba(255, 255, 255, 0.1)",
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        cursor: "pointer",
+        marginBottom: isExpanded ? "8px" : "0"
+      }, onClick: () => setIsExpanded(!isExpanded), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: "bold" }, children: "Node Debug Info" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isExpanded ? "▼" : "▶" })
+      ] }),
+      isExpanded && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { lineHeight: "1.4" }, children: !selectedNode ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        color: "#9ca3af",
+        fontStyle: "italic",
+        padding: "10px 0",
+        textAlign: "center"
+      }, children: "No node selected" }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          borderBottom: "1px solid #374151",
+          paddingBottom: "6px",
+          marginBottom: "6px"
+        }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "2px"
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#60a5fa" }, children: "ID:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: {
+              color: "#fff",
+              maxWidth: "200px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap"
+            }, children: selectedNode.id })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "2px"
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#60a5fa" }, children: "Type:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#22c55e" }, children: selectedNode.type || "default" })
+          ] }),
+          selectedNode.data?.name && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "2px"
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#60a5fa" }, children: "Name:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: selectedNode.data.name })
+          ] }),
+          selectedNode.data?.namespace && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "2px"
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#60a5fa" }, children: "Namespace:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#f59e0b" }, children: selectedNode.data.namespace })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "2px"
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#60a5fa" }, children: "Position:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+              "(",
+              selectedNode.position.x.toFixed(0),
+              ", ",
+              selectedNode.position.y.toFixed(0),
+              ")"
+            ] })
+          ] })
+        ] }),
+        (selectedNode.data?.inputs || selectedNode.data?.outputs) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          borderBottom: "1px solid #374151",
+          paddingBottom: "6px",
+          marginBottom: "6px"
+        }, children: [
+          selectedNode.data.inputs && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: "4px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              color: "#60a5fa",
+              fontWeight: "bold",
+              marginBottom: "2px"
+            }, children: [
+              "Inputs: ",
+              selectedNode.data.inputs.length
+            ] }),
+            selectedNode.data.inputs.map((input2, idx) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              marginLeft: "10px",
+              fontSize: "10px",
+              color: "#d1d5db"
+            }, children: [
+              "• ",
+              input2.name,
+              ": ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#f59e0b" }, children: input2.type || input2.typeId || "any" })
+            ] }, idx))
+          ] }),
+          selectedNode.data.outputs && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              color: "#60a5fa",
+              fontWeight: "bold",
+              marginBottom: "2px"
+            }, children: [
+              "Outputs: ",
+              selectedNode.data.outputs.length
+            ] }),
+            selectedNode.data.outputs.map((output, idx) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              marginLeft: "10px",
+              fontSize: "10px",
+              color: "#d1d5db"
+            }, children: [
+              "• ",
+              output.name,
+              ": ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#22c55e" }, children: output.type || output.typeId || "any" })
+            ] }, idx))
+          ] })
+        ] }),
+        selectedNode.data && Object.keys(selectedNode.data).length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            color: "#60a5fa",
+            fontWeight: "bold",
+            marginBottom: "4px"
+          }, children: "Custom Data:" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("pre", { style: {
+            margin: 0,
+            padding: "6px",
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            borderRadius: "4px",
+            fontSize: "9px",
+            lineHeight: "1.3",
+            maxHeight: "200px",
+            overflowY: "auto",
+            color: "#d1d5db",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word"
+          }, children: formatJSON(selectedNode.data) })
+        ] })
+      ] }) })
     ] });
   };
   const getGroupNodes = (nodes, groupId) => {
@@ -72219,6 +73007,54 @@ template {
       isEnabled: finalConfig.enabled
     };
   }
+  function insertTypeConverterNode(connection, converterType, sourceNode, targetNode, setNodes, setEdges) {
+    const { getNodeDefinition } = useNodeDefinitionStore.getState();
+    const converterDef = getNodeDefinition(converterType);
+    if (!converterDef) {
+      console.error(`❌ Converter definition not found: ${converterType}`);
+      return;
+    }
+    const converterPosition = {
+      x: (sourceNode.position.x + targetNode.position.x) / 2,
+      y: (sourceNode.position.y + targetNode.position.y) / 2 - 50
+      // 稍微往上偏移
+    };
+    const converterId = `converter-${nanoid()}`;
+    const converterNode = {
+      id: converterId,
+      type: "toType",
+      // 使用新的 ToType 視覺樣式
+      position: converterPosition,
+      data: {
+        name: converterDef.displayName,
+        namespace: converterDef.namespace,
+        brief: converterDef.description,
+        color: converterDef.color || "#795548",
+        inputs: converterDef.inputs,
+        outputs: converterDef.outputs,
+        autoGenerated: true
+        // 標記為自動生成
+      }
+    };
+    const edge1 = {
+      id: `edge-${nanoid()}`,
+      source: connection.source,
+      sourceHandle: connection.sourceHandle,
+      target: converterId,
+      targetHandle: "input0"
+    };
+    const edge2 = {
+      id: `edge-${nanoid()}`,
+      source: converterId,
+      sourceHandle: "output0",
+      target: connection.target,
+      targetHandle: connection.targetHandle
+    };
+    console.log(`🔄 Auto-inserting type converter: ${converterType}`);
+    console.log(`   ${connection.source} -> ${converterId} -> ${connection.target}`);
+    setNodes((nds) => [...nds, converterNode]);
+    setEdges((eds) => [...eds, edge1, edge2]);
+  }
   const NAMESPACE_COLORS = {
     // Legacy namespaces
     FileIO: "#3b82f6",
@@ -72240,7 +73076,7 @@ template {
   const edgeTypes = {
     default: DefaultEdge
   };
-  function connectionCheck(connection, nodes) {
+  function connectionCheck(connection, nodes, findConverter) {
     if (connection.source === connection.target) {
       return false;
     }
@@ -72259,8 +73095,14 @@ template {
       return false;
     }
     if (sourcePort.type !== targetPort.type) {
-      console.warn(`Port type mismatch: ${sourcePort.type} -> ${targetPort.type}`);
-      return false;
+      const converterType = findConverter(sourcePort.type, targetPort.type);
+      if (converterType) {
+        console.log(`🔄 Type converter available: ${sourcePort.type} -> ${targetPort.type} via ${converterType}`);
+        return true;
+      } else {
+        console.warn(`❌ No type converter: ${sourcePort.type} -> ${targetPort.type}`);
+        return false;
+      }
     }
     return true;
   }
@@ -72271,11 +73113,14 @@ template {
     onSelectionChange,
     graphId,
     initialNodes,
-    initialEdges
+    initialEdges,
+    debugMode = false
   }) {
-    const { setSelection } = useSelectionStore();
+    const { setSelection, selectedNode } = useSelectionStore();
     const getGraph = useGraphStore((s2) => s2.getGraph);
     const updateGraphData = useGraphStore((s2) => s2.updateGraphData);
+    const { findConverter } = useTypeConverterStore();
+    const { getNodeDefinition } = useNodeDefinitionStore();
     const graph = graphId ? getGraph(graphId) : null;
     const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes || graph?.nodes || []);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges || graph?.edges || []);
@@ -72296,7 +73141,7 @@ template {
       incrementOperation,
       reset: resetPerformanceMetrics,
       isEnabled: isPerformanceEnabled
-    } = usePerformanceMonitor();
+    } = usePerformanceMonitor({ enabled: debugMode });
     const positionChangeRef = reactExports.useRef(null);
     const onDragStart = reactExports.useCallback((event, nodeType) => {
       setDragType(nodeType);
@@ -72427,9 +73272,34 @@ template {
     const onConnect = reactExports.useCallback(
       (connection) => {
         incrementOperation();
+        const sourceNode = nodes.find((n2) => n2.id === connection.source);
+        const targetNode = nodes.find((n2) => n2.id === connection.target);
+        if (!sourceNode || !targetNode) {
+          console.error("❌ Source or target node not found");
+          return;
+        }
+        const sourcePortIndex = connection.sourceHandle ? parseInt(connection.sourceHandle.replace("output", ""), 10) : 0;
+        const targetPortIndex = connection.targetHandle ? parseInt(connection.targetHandle.replace("input", ""), 10) : 0;
+        const sourcePort = sourceNode.data.outputs?.[sourcePortIndex];
+        const targetPort = targetNode.data.inputs?.[targetPortIndex];
+        if (sourcePort && targetPort && sourcePort.type !== targetPort.type) {
+          const converterType = findConverter(sourcePort.type, targetPort.type);
+          if (converterType) {
+            console.log(`🔄 Auto-inserting converter: ${converterType}`);
+            insertTypeConverterNode(
+              connection,
+              converterType,
+              sourceNode,
+              targetNode,
+              setNodes,
+              setEdges
+            );
+            return;
+          }
+        }
         setEdges((eds) => addEdge(connection, eds));
       },
-      [setEdges, incrementOperation]
+      [nodes, setEdges, setNodes, incrementOperation, findConverter]
     );
     function getUniqueId(existingIds, prefix2) {
       let id2 = `${prefix2}-${nanoid()}`;
@@ -72448,16 +73318,28 @@ template {
           x: event.clientX,
           y: event.clientY
         });
-        const { getNodeDefinition } = useNodeDefinitionStore.getState();
-        const nodeDefinition = getNodeDefinition(dragType);
+        const { getNodeDefinition: getNodeDefinition2 } = useNodeDefinitionStore.getState();
+        const nodeDefinition = getNodeDefinition2(dragType);
         if (!nodeDefinition) {
           console.warn(`No node definition found for: ${dragType}`);
           return;
         }
         const existingNodeIds = new Set(getNodes().map((n2) => n2.id));
+        let reactFlowType = "operator";
+        if (nodeDefinition.nodeTemplate === "import") {
+          reactFlowType = "import";
+        } else if (nodeDefinition.nodeTemplate === "export") {
+          reactFlowType = "export";
+        } else if (nodeDefinition.nodeTemplate === "reference") {
+          reactFlowType = "reference";
+        } else if (nodeDefinition.nodeTemplate === "group") {
+          reactFlowType = "group";
+        } else if (nodeDefinition.nodeTemplate === "contextManager") {
+          reactFlowType = "contextManager";
+        }
         const newNode = {
           id: getUniqueId(existingNodeIds, "node"),
-          type: "operator",
+          type: reactFlowType,
           position: position2,
           data: {
             name: nodeDefinition.displayName,
@@ -72987,6 +73869,13 @@ template {
           )
         }
       ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        NodeDebugInfo,
+        {
+          selectedNode,
+          isEnabled: debugMode
+        }
+      ),
       showHotkeys && /* @__PURE__ */ jsxRuntimeExports.jsx(
         p$5,
         {
@@ -73038,7 +73927,7 @@ template {
           connectionLineComponent: ConnectionLine,
           onlyRenderVisibleElements: true,
           deleteKeyCode: "Delete",
-          isValidConnection: (connection) => connectionCheck(connection, nodes),
+          isValidConnection: (connection) => connectionCheck(connection, nodes, findConverter),
           onNodesChange,
           onEdgesChange,
           onEdgeMouseEnter: onMouseEnterEdge,
@@ -73090,7 +73979,8 @@ template {
     onSelectionChange,
     initialNodes = [],
     initialEdges = [],
-    graphId
+    graphId,
+    debugMode = false
   }) {
     const style2 = {
       position: "relative",
@@ -73113,7 +74003,8 @@ template {
           onSelectionChange,
           initialNodes,
           initialEdges,
-          graphId
+          graphId,
+          debugMode
         }
       )
     ] }) }) });
@@ -76349,12 +77240,22 @@ template {
   const vscode = window.vscode;
   function convertRamenNodeToReactFlowNode(ramenNode) {
     let reactFlowType = "operator";
-    if (ramenNode.metadata?.type === "reference") {
+    const nodeType = ramenNode.metadata?.type || ramenNode.metadata?.nodeTemplate;
+    const originalType = ramenNode.type || "";
+    const nodeTypeFromOriginal = originalType.includes(".") ? originalType.split(".").pop() : null;
+    const effectiveNodeType = nodeType || nodeTypeFromOriginal;
+    if (effectiveNodeType === "reference") {
       reactFlowType = "reference";
-    } else if (ramenNode.metadata?.type === "group") {
+    } else if (effectiveNodeType === "group") {
       reactFlowType = "group";
-    } else if (ramenNode.metadata?.type === "contextManager") {
+    } else if (effectiveNodeType === "contextManager") {
       reactFlowType = "contextManager";
+    } else if (effectiveNodeType === "import") {
+      reactFlowType = "import";
+    } else if (effectiveNodeType === "export") {
+      reactFlowType = "export";
+    } else if (effectiveNodeType === "toType") {
+      reactFlowType = "toType";
     }
     const inputs = (ramenNode.inputs || []).map((input2) => ({
       name: input2.name,
@@ -76402,6 +77303,7 @@ template {
     const [isNodeLibraryVisible, setIsNodeLibraryVisible] = reactExports.useState(true);
     const [nodeLibraryWidth, setNodeLibraryWidth] = reactExports.useState(DEFAULT_NODE_LIBRARY_WIDTH);
     const [shouldRenderNodeLibrary, setShouldRenderNodeLibrary] = reactExports.useState(true);
+    const [debugMode, setDebugMode] = reactExports.useState(window.ramenConfig?.debugMode ?? false);
     console.log("🍜 [DEBUG] App component rendering");
     console.log("🍜 [DEBUG] window.ramenConfig:", window.ramenConfig);
     console.log("🍜 [DEBUG] isLoading:", isLoading, "error:", error);
@@ -76447,12 +77349,38 @@ template {
           case "graphUpdate":
             try {
               const parsed = typeof message.data === "string" ? JSON.parse(message.data) : message.data;
-              let nodes = parsed.nodes || [];
-              let edges = parsed.edges || [];
-              if (nodes.length > 0 && nodes[0].metadata) {
-                nodes = nodes.map(convertRamenNodeToReactFlowNode);
-                edges = edges.map(convertRamenEdgeToReactFlowEdge);
-              }
+              const graphData = parsed.graph || parsed;
+              let nodes = graphData.nodes || [];
+              let edges = graphData.edges || [];
+              const { getNodeDefinition } = useNodeDefinitionStore.getState();
+              nodes = nodes.map((node2) => {
+                if (node2.metadata) {
+                  return convertRamenNodeToReactFlowNode(node2);
+                }
+                const nodeType = node2.type;
+                const nodeDef = getNodeDefinition(nodeType);
+                console.log(`[App] Loading node ${node2.id}, type: ${nodeType}, found def:`, nodeDef ? "YES" : "NO");
+                if (nodeDef) {
+                  console.log(`[App] Node def for ${nodeType}:`, { nodeTemplate: nodeDef.nodeTemplate, type: nodeDef.type });
+                  const enrichedNode = {
+                    ...node2,
+                    metadata: {
+                      type: nodeDef.type,
+                      nodeTemplate: nodeDef.nodeTemplate,
+                      name: nodeDef.displayName,
+                      namespace: nodeDef.namespace,
+                      description: nodeDef.description,
+                      color: nodeDef.color
+                    },
+                    inputs: nodeDef.inputs || [],
+                    outputs: nodeDef.outputs || []
+                  };
+                  return convertRamenNodeToReactFlowNode(enrichedNode);
+                }
+                console.warn(`[App] No node definition found for ${nodeType}, using fallback`);
+                return node2;
+              });
+              edges = edges.map(convertRamenEdgeToReactFlowEdge);
               if (activeGraphId && nodes && edges) {
                 updateGraphData(activeGraphId, nodes, edges);
               }
@@ -76490,6 +77418,10 @@ template {
           case "updateTheme":
             document.body.dataset.theme = message.theme;
             break;
+          case "toggleDebugMode":
+            console.log("🍜 Debug mode toggled:", message.debugMode);
+            setDebugMode(message.debugMode);
+            break;
           case "serverRestarted":
             initApiClient();
             break;
@@ -76498,6 +77430,7 @@ template {
       window.addEventListener("message", handleMessage);
       return () => {
         window.removeEventListener("message", handleMessage);
+        console.log("🍜 [App] Component unmounting, message listener removed");
       };
     }, []);
     const initializeSessionBasedGraph = async () => {
@@ -76511,23 +77444,35 @@ template {
         console.log("🍜 [Session] Step 2: Requesting session from server");
         console.log("🍜 [Session] Graph path:", graphPath);
         if (vscode) {
-          vscode.postMessage({
-            command: "websocket-request",
-            type: "create_session",
-            id: `init-session-${Date.now()}`,
-            data: {
-              graph_id: graphId,
-              user_id: "vscode-user"
-            }
-          });
-          vscode.postMessage({
-            command: "websocket-request",
-            type: "load_graph",
-            id: `load-graph-${Date.now()}`,
-            data: {
-              path: graphPath
-            }
-          });
+          const extensionClient = getExtensionClient();
+          try {
+            await extensionClient.request(
+              ExtensionMessageType.WEBSOCKET_REQUEST,
+              {
+                type: "create_session",
+                data: {
+                  graph_id: graphId,
+                  user_id: "vscode-user"
+                }
+              }
+            );
+            console.log("🍜 [Session] Session created successfully");
+            const graphData = await extensionClient.request(
+              ExtensionMessageType.WEBSOCKET_REQUEST,
+              {
+                type: "load_graph",
+                data: {
+                  path: graphPath
+                }
+              }
+            );
+            console.log("🍜 [Session] Graph loaded from server:", graphData);
+            handleServerGraphData(graphData);
+          } catch (error2) {
+            console.error("🍜 [Session] Failed to load graph:", error2);
+            setError(`Failed to load graph: ${error2}`);
+            setIsLoading(false);
+          }
         }
         console.log("🍜 [Session] Waiting for server response...");
       } catch (err) {
@@ -76821,7 +77766,8 @@ template {
           onSelectionChange: handleSelectionChange,
           initialNodes: currentNodes,
           initialEdges: currentEdges,
-          graphId: activeGraphId || void 0
+          graphId: activeGraphId || void 0,
+          debugMode
         }
       ) }) })
     ] }) }) });

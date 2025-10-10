@@ -8,8 +8,10 @@ interface Variable {
 }
 
 export class RamenVariablesProvider implements vscode.TreeDataProvider<Variable> {
-    private _onDidChangeTreeData: vscode.EventEmitter<Variable | undefined | null | void> = new vscode.EventEmitter<Variable | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<Variable | undefined | null | void> = this._onDidChangeTreeData.event;
+    private _onDidChangeTreeData: vscode.EventEmitter<Variable | undefined | null | void> =
+        new vscode.EventEmitter<Variable | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<Variable | undefined | null | void> =
+        this._onDidChangeTreeData.event;
 
     private variables: Variable[] = [];
 
@@ -20,10 +22,7 @@ export class RamenVariablesProvider implements vscode.TreeDataProvider<Variable>
     }
 
     getTreeItem(element: Variable): vscode.TreeItem {
-        const item = new vscode.TreeItem(
-            element.name,
-            vscode.TreeItemCollapsibleState.None
-        );
+        const item = new vscode.TreeItem(element.name, vscode.TreeItemCollapsibleState.None);
 
         item.description = `${element.type}`;
         item.tooltip = new vscode.MarkdownString(
@@ -82,19 +81,21 @@ export class RamenVariablesProvider implements vscode.TreeDataProvider<Variable>
     // Parse variables from graph data
     extractVariablesFromGraph(graphData: any): Variable[] {
         const variables: Variable[] = [];
-        
+
         try {
             if (graphData && graphData.nodes) {
                 graphData.nodes.forEach((node: any) => {
                     if (node.data && node.data.variables) {
-                        Object.entries(node.data.variables).forEach(([name, value]: [string, any]) => {
-                            variables.push({
-                                name,
-                                type: typeof value,
-                                value,
-                                description: `From node: ${node.data.label || node.id}`
-                            });
-                        });
+                        Object.entries(node.data.variables).forEach(
+                            ([name, value]: [string, any]) => {
+                                variables.push({
+                                    name,
+                                    type: typeof value,
+                                    value,
+                                    description: `From node: ${node.data.label || node.id}`,
+                                });
+                            }
+                        );
                     }
                 });
             }

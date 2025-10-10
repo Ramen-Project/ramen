@@ -56,6 +56,7 @@ class NodeMetadata:
     inputs: List[Port] = field(default_factory=list)
     outputs: List[Port] = field(default_factory=list)
     properties: Dict[str, Any] = field(default_factory=dict)
+    hidden: bool = False  # Whether node should be hidden from node library
     
     @property
     def full_type(self) -> str:
@@ -67,7 +68,7 @@ class NodeMetadata:
         return {
             "type": self.full_type,
             "namespace": self.namespace,
-            "nodeType": self.node_type,
+            "nodeTemplate": self.node_type,
             "displayName": self.display_name,
             "category": self.category,
             "description": self.description,
@@ -75,7 +76,8 @@ class NodeMetadata:
             "color": self.color,
             "inputs": [p.to_dict() for p in self.inputs],
             "outputs": [p.to_dict() for p in self.outputs],
-            "properties": self.properties
+            "properties": self.properties,
+            "hidden": self.hidden
         }
 
 
@@ -154,7 +156,8 @@ def node(
     color: str = "#666666",
     inputs: Optional[List[Port]] = None,
     outputs: Optional[List[Port]] = None,
-    properties: Optional[Dict[str, Any]] = None
+    properties: Optional[Dict[str, Any]] = None,
+    hidden: bool = False
 ) -> Callable:
     """
     Decorator for registering a node.
@@ -188,7 +191,8 @@ def node(
             color=color,
             inputs=inputs or [],
             outputs=outputs or [],
-            properties=properties or {}
+            properties=properties or {},
+            hidden=hidden
         )
 
         # Register in legacy system

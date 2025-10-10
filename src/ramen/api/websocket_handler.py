@@ -94,6 +94,7 @@ class WebSocketMessageHandler:
                 MessageType.SAVE_GRAPH: self._handle_save_graph,
                 MessageType.CHECK_DEPENDENCIES: self._handle_check_dependencies,
                 MessageType.LIST_GRAPHS: self._handle_list_graphs,
+                MessageType.EXPORT_GRAPH_TO_PYTHON: self._handle_export_graph_to_python,
 
                 # System API
                 MessageType.GET_SYSTEM_STATS: self._handle_get_system_stats,
@@ -112,6 +113,9 @@ class WebSocketMessageHandler:
                 MessageType.GET_COMPONENT_MANIFEST: self._handle_get_component_manifest,
                 MessageType.DISCOVER_COMPONENTS: self._handle_discover_components,
                 MessageType.GET_COMPONENT_FOR_NODE: self._handle_get_component_for_node,
+
+                # Type Converter API
+                MessageType.GET_TYPE_CONVERTERS: self._handle_get_type_converters,
             }
 
             handler = handler_map.get(msg_type)
@@ -781,7 +785,7 @@ class WebSocketMessageHandler:
                     'position': node.get('position', {'x': 0, 'y': 0}),
                     'data': node.get('data', {}),
                     'metadata': {
-                        'type': node_type,
+                        'type': node_def.node_type,  # 只使用 node_type 部分 (e.g., "import" not "graph.import")
                         'name': node_def.display_name,
                         'namespace': node_def.namespace,
                         'description': node_def.description,
@@ -981,6 +985,61 @@ class WebSocketMessageHandler:
             )
         except Exception as e:
             return self._error_response(f"Failed to list graphs: {e}", request_id)
+
+    async def _handle_export_graph_to_python(
+        self,
+        data: Dict[str, Any],
+        request_id: Optional[str],
+        websocket: WebSocket
+    ) -> WebSocketResponse:
+        """處理匯出圖形為 Python 腳本"""
+        try:
+            graph_data = data.get("graph")
+            output_path_str = data.get("output_path")
+            include_imports = data.get("include_imports", True)
+            include_main = data.get("include_main", True)
+
+            if not graph_data:
+                return self._error_response("Missing graph data", request_id)
+
+            if not output_path_str:
+                return self._error_response("Missing output_path", request_id)
+
+            output_path = Path(output_path_str)
+
+            # 反序列化圖形
+            from ramen.core.models import GraphDeserializer, RamenGraph
+            graph = GraphDeserializer.from_dict(graph_data, RamenGraph)
+
+            # 使用 GraphCompiler 匯出
+            from ramen.engine.compiler import GraphCompiler
+            compiler = GraphCompiler()
+
+            python_code = compiler.export_to_python(
+                graph=graph,
+                output_path=output_path,
+                include_imports=include_imports,
+                include_main=include_main
+            )
+
+            return self._success_response(
+                MessageType.GRAPH_RESPONSE,
+                {
+                    "message": f"Graph exported to {output_path}",
+                    "output_path": str(output_path),
+                    "code_length": len(python_code),
+                    "success": True
+                },
+                request_id
+            )
+
+        except Exception as e:
+            import traceback
+            error_detail = traceback.format_exc()
+            return self._error_response(
+                f"Failed to export graph to Python: {e}\n{error_detail}",
+                request_id
+            )
 
     # ============= System API =============
 
@@ -1597,6 +1656,32 @@ class WebSocketMessageHandler:
                 request_id
             )
         except Exception as e:
+            return self._error_response(str(e), request_id)
+
+    # ============= Type Converter API =============
+
+    async def _handle_get_type_converters(
+        self,
+        data: Dict[str, Any],
+        request_id: Optional[str],
+        websocket: WebSocket
+    ) -> WebSocketResponse:
+        """獲取所有可用的型態轉換器"""
+        try:
+            from ramen.core.type_converter_registry import get_type_converter_registry
+
+            registry = get_type_converter_registry()
+            converters = registry.get_all_converters()
+
+            logger.info(f"✅ [TypeConverter] Retrieved {registry.count()} type converters")
+
+            return self._success_response(
+                MessageType.TYPE_CONVERTERS_RESPONSE,
+                {"converters": converters},
+                request_id
+            )
+        except Exception as e:
+            logger.error(f"❌ [TypeConverter] Error: {str(e)}")
             return self._error_response(str(e), request_id)
 
 

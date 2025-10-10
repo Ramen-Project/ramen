@@ -11,15 +11,17 @@ interface GraphEditorProps {
   initialNodes?: Node[];
   initialEdges?: Edge[];
   graphId?: string;
+  debugMode?: boolean;
 }
 
-export default function GraphEditor({ 
-  sidebarVisible: _sidebarVisible = true, 
-  onGraphDataChange, 
+export default function GraphEditor({
+  sidebarVisible: _sidebarVisible = true,
+  onGraphDataChange,
   onSelectionChange,
   initialNodes = [],
   initialEdges = [],
-  graphId
+  graphId,
+  debugMode = false
 }: GraphEditorProps) {
     // const [undoHandler, setUndoHandler] = useState<(() => void) | null>(null);
     // const [redoHandler, setRedoHandler] = useState<(() => void) | null>(null);
@@ -38,7 +40,7 @@ export default function GraphEditor({
             <div style={{ flex: 1, minHeight: 0, width: '100%', height: '100%', position: 'relative' }}>
                 <ReactFlowProvider>
                     <EditorCoordinate />
-                    <Workspace 
+                    <Workspace
                         onNodeSelect={() => {}}
                         onUndoRedoHandlers={(_undo, _redo) => {
                             // setUndoHandler(() => undo);
@@ -49,6 +51,7 @@ export default function GraphEditor({
                         initialNodes={initialNodes}
                         initialEdges={initialEdges}
                         graphId={graphId}
+                        debugMode={debugMode}
                     />
                 </ReactFlowProvider>
             </div>

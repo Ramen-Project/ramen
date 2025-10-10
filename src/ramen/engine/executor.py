@@ -68,13 +68,13 @@ class GraphExecutor:
     def validate_graph(self, graph: RamenGraph) -> List[str]:
         """驗證圖形結構"""
         errors = []
-        
+
         # 檢查節點是否有對應的執行器
         for node in graph.nodes:
             node_type = f"{node.metadata.namespace}.{node.metadata.type}"
             if node_type not in self.node_registry:
                 errors.append(f"No executor found for node type: {node_type}")
-        
+
         # 檢查邊的連接是否有效
         node_ids = {node.id for node in graph.nodes}
         for edge in graph.edges:
@@ -82,13 +82,97 @@ class GraphExecutor:
                 errors.append(f"Edge {edge.id} has invalid source node: {edge.source_node_id}")
             if edge.target_node_id not in node_ids:
                 errors.append(f"Edge {edge.id} has invalid target node: {edge.target_node_id}")
-        
+
         # 檢查是否有循環依賴
         if self._has_cycle(graph):
             errors.append("Graph contains cyclic dependencies")
-        
+
+        # 驗證 Import 和 Export 節點
+        import_export_errors = self._validate_import_export_nodes(graph)
+        errors.extend(import_export_errors)
+
         return errors
-    
+
+    def _validate_import_export_nodes(self, graph: RamenGraph) -> List[str]:
+        """驗證 Import 和 Export 節點的特殊規則"""
+        import re
+        errors = []
+
+        # Python 變數命名規則：字母或底線開頭，只含字母、數字、底線
+        python_identifier_pattern = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+
+        # 收集所有的 Import 和 Export 節點
+        import_nodes = []
+        export_nodes = []
+        node_map = {node.id: node for node in graph.nodes}
+
+        for node in graph.nodes:
+            node_type = f"{node.metadata.namespace}.{node.metadata.type}"
+            if node_type == "graph.import":
+                import_nodes.append(node)
+            elif node_type == "graph.export":
+                export_nodes.append(node)
+
+        # 驗證 Import 節點
+        import_names = {}  # {import_name: node_id}
+        for node in import_nodes:
+            # 獲取 import_name
+            import_name = node.data.get("import_name", "input") if node.data else "input"
+
+            # 檢查命名規範
+            if not python_identifier_pattern.match(import_name):
+                errors.append(
+                    f"Import node '{node.id}' has invalid import_name '{import_name}': "
+                    f"must be a valid Python identifier (letters, numbers, underscore; cannot start with number)"
+                )
+
+            # 檢查重複的 import_name
+            if import_name in import_names:
+                errors.append(
+                    f"Duplicate import_name '{import_name}' found in nodes '{import_names[import_name]}' and '{node.id}'"
+                )
+            else:
+                import_names[import_name] = node.id
+
+            # 檢查 Import 節點不應該有輸入連接
+            has_input = any(edge.target_node_id == node.id for edge in graph.edges)
+            if has_input:
+                errors.append(
+                    f"Import node '{node.id}' (import_name: '{import_name}') should not have input connections - "
+                    f"Import nodes are entry points and receive data from parent graph"
+                )
+
+        # 驗證 Export 節點
+        export_names = {}  # {export_name: node_id}
+        for node in export_nodes:
+            # 獲取 export_name
+            export_name = node.data.get("export_name", "output") if node.data else "output"
+
+            # 檢查命名規範
+            if not python_identifier_pattern.match(export_name):
+                errors.append(
+                    f"Export node '{node.id}' has invalid export_name '{export_name}': "
+                    f"must be a valid Python identifier (letters, numbers, underscore; cannot start with number)"
+                )
+
+            # 檢查重複的 export_name
+            if export_name in export_names:
+                errors.append(
+                    f"Duplicate export_name '{export_name}' found in nodes '{export_names[export_name]}' and '{node.id}'"
+                )
+            else:
+                export_names[export_name] = node.id
+
+            # 檢查 Export 節點必須有輸入連接
+            has_input = any(edge.target_node_id == node.id for edge in graph.edges)
+            if not has_input:
+                errors.append(
+                    f"Export node '{node.id}' (export_name: '{export_name}') must have an input connection - "
+                    f"Export nodes need data to export"
+                )
+
+        return errors
+
     def _has_cycle(self, graph: RamenGraph) -> bool:
         """檢查圖形是否有循環"""
         # 建立鄰接表

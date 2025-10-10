@@ -69,7 +69,9 @@ export default function VerticalNodeList({
     brief: node.description,
     inputs: node.inputs || [],
     outputs: node.outputs || [],
-    color: node.color  // Pass through the color from backend
+    color: node.color,  // Pass through the color from backend
+    nodeType: node.type,  // 傳遞節點類型用於判斷特殊渲染
+    nodeTemplate: node.nodeTemplate  // 傳遞 nodeTemplate
   }), []);
 
   return (

@@ -16,13 +16,15 @@
   "exclude": [
     "node_modules",
     ".vscode-test",
-    "out"
+    "out",
+    "src/extension/extension.old.ts"
   ],
   "include": [
     "src/extension/**/*",
     "src/language-server/**/*",
     "src/server/**/*",
     "src/webview/**/*",
-    "src/test/**/*"
+    "src/test/**/*",
+    "src/shared/**/*"
   ]
 }

@@ -493,27 +493,46 @@ class GraphMerger:
         # 新增節點
         for node_diff in diff.nodes_added:
             if node_diff.new_data:
-                # 這裡需要從 new_data 重建 RamenNode
-                # 實際實現時需要完整的反序列化邏輯
-                pass
-        
+                # 從 new_data 重建 RamenNode
+                node = RamenNode(
+                    id=node_diff.new_data.get("id", node_diff.node_id),
+                    type=node_diff.new_data.get("type", ""),
+                    position=node_diff.new_data.get("position", {"x": 0, "y": 0}),
+                    data=node_diff.new_data.get("data", {}),
+                )
+                nodes[node.id] = node
+
         # 刪除節點
         for node_diff in diff.nodes_removed:
             if node_diff.node_id in nodes:
                 del nodes[node_diff.node_id]
-        
+
         # 修改節點
         for node_diff in diff.nodes_modified + diff.nodes_moved:
             if node_diff.node_id in nodes and node_diff.new_data:
                 # 更新節點數據
-                # 實際實現時需要完整的數據更新邏輯
-                pass
-        
-        # 類似處理邊的變更
+                existing_node = nodes[node_diff.node_id]
+                if "position" in node_diff.new_data:
+                    existing_node.position = node_diff.new_data["position"]
+                if "data" in node_diff.new_data:
+                    existing_node.data = node_diff.new_data["data"]
+                if "type" in node_diff.new_data:
+                    existing_node.type = node_diff.new_data["type"]
+
+        # 新增邊
         for edge_diff in diff.edges_added:
             if edge_diff.new_data:
-                pass
-                
+                # 從 new_data 重建 RamenEdge
+                edge = RamenEdge(
+                    id=edge_diff.new_data.get("id", edge_diff.edge_id),
+                    source=edge_diff.new_data.get("source", ""),
+                    target=edge_diff.new_data.get("target", ""),
+                    source_port=edge_diff.new_data.get("source_port", ""),
+                    target_port=edge_diff.new_data.get("target_port", ""),
+                )
+                edges[edge.id] = edge
+
+        # 刪除邊
         for edge_diff in diff.edges_removed:
             if edge_diff.edge_id in edges:
                 del edges[edge_diff.edge_id]
@@ -522,11 +541,50 @@ class GraphMerger:
         """應用衝突解決結果"""
         if conflict.element_type == "node" and conflict.resolved_data:
             # 更新節點數據
-            # 實際實現時需要完整的數據更新邏輯
-            pass
+            element_id = conflict.element_id
+            if element_id in nodes:
+                existing_node = nodes[element_id]
+                # 應用解決後的數據
+                if "position" in conflict.resolved_data:
+                    existing_node.position = conflict.resolved_data["position"]
+                if "data" in conflict.resolved_data:
+                    existing_node.data = conflict.resolved_data["data"]
+                if "type" in conflict.resolved_data:
+                    existing_node.type = conflict.resolved_data["type"]
+            else:
+                # 如果節點不存在（可能是 KEEP_RIGHT 策略），創建新節點
+                node = RamenNode(
+                    id=conflict.resolved_data.get("id", element_id),
+                    type=conflict.resolved_data.get("type", ""),
+                    position=conflict.resolved_data.get("position", {"x": 0, "y": 0}),
+                    data=conflict.resolved_data.get("data", {}),
+                )
+                nodes[node.id] = node
+
         elif conflict.element_type == "edge" and conflict.resolved_data:
             # 更新邊數據
-            pass
+            element_id = conflict.element_id
+            if element_id in edges:
+                existing_edge = edges[element_id]
+                # 應用解決後的數據
+                if "source" in conflict.resolved_data:
+                    existing_edge.source = conflict.resolved_data["source"]
+                if "target" in conflict.resolved_data:
+                    existing_edge.target = conflict.resolved_data["target"]
+                if "source_port" in conflict.resolved_data:
+                    existing_edge.source_port = conflict.resolved_data["source_port"]
+                if "target_port" in conflict.resolved_data:
+                    existing_edge.target_port = conflict.resolved_data["target_port"]
+            else:
+                # 如果邊不存在，創建新邊
+                edge = RamenEdge(
+                    id=conflict.resolved_data.get("id", element_id),
+                    source=conflict.resolved_data.get("source", ""),
+                    target=conflict.resolved_data.get("target", ""),
+                    source_port=conflict.resolved_data.get("source_port", ""),
+                    target_port=conflict.resolved_data.get("target_port", ""),
+                )
+                edges[edge.id] = edge
     
     def _generate_merge_summary(self, result: MergeResult, left_diff: GraphDiffResult, right_diff: GraphDiffResult) -> str:
         """生成合併摘要"""

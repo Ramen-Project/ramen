@@ -4,16 +4,16 @@ import { errorHandler, RamenError, ErrorCategory, ErrorSeverity } from '../core/
  * Debounce options
  */
 export interface DebounceOptions {
-    leading?: boolean;  // Execute on leading edge
+    leading?: boolean; // Execute on leading edge
     trailing?: boolean; // Execute on trailing edge (default: true)
-    maxWait?: number;   // Maximum time to wait
+    maxWait?: number; // Maximum time to wait
 }
 
 /**
  * Throttle options
  */
 export interface ThrottleOptions {
-    leading?: boolean;  // Execute on leading edge (default: true)
+    leading?: boolean; // Execute on leading edge (default: true)
     trailing?: boolean; // Execute on trailing edge (default: true)
 }
 
@@ -51,24 +51,20 @@ export function debounce<T extends (...args: any[]) => any>(
     let lastCallTime: number | null = null;
     let lastInvokeTime = 0;
     let maxTimeout: NodeJS.Timeout | null = null;
-    
-    const {
-        leading = false,
-        trailing = true,
-        maxWait
-    } = options;
-    
+
+    const { leading = false, trailing = true, maxWait } = options;
+
     const maxing = maxWait !== undefined;
     const maxDelay = maxing ? Math.max(maxWait, wait) : 0;
-    
+
     function invokeFunc(time: number) {
         const args = lastArgs;
         const thisArg = lastThis;
-        
+
         lastArgs = null;
         lastThis = null;
         lastInvokeTime = time;
-        
+
         try {
             return func.apply(thisArg, args!);
         } catch (error) {
@@ -82,93 +78,93 @@ export function debounce<T extends (...args: any[]) => any>(
             );
         }
     }
-    
+
     function leadingEdge(time: number) {
         lastInvokeTime = time;
-        
+
         timeout = setTimeout(timerExpired, wait);
-        
+
         if (maxing) {
             maxTimeout = setTimeout(maxTimerExpired, maxDelay);
         }
-        
+
         return leading ? invokeFunc(time) : undefined;
     }
-    
+
     function timerExpired() {
         const time = Date.now();
-        
+
         if (shouldInvoke(time)) {
             return trailingEdge(time);
         }
-        
+
         timeout = setTimeout(timerExpired, remainingWait(time));
     }
-    
+
     function maxTimerExpired() {
         if (timeout) {
             clearTimeout(timeout);
         }
-        
+
         const time = Date.now();
-        
+
         if (trailing && lastArgs) {
             return invokeFunc(time);
         }
-        
+
         lastArgs = null;
         lastThis = null;
     }
-    
+
     function trailingEdge(time: number) {
         timeout = null;
-        
+
         if (maxTimeout) {
             clearTimeout(maxTimeout);
             maxTimeout = null;
         }
-        
+
         if (trailing && lastArgs) {
             return invokeFunc(time);
         }
-        
+
         lastArgs = null;
         lastThis = null;
     }
-    
+
     function shouldInvoke(time: number): boolean {
         const timeSinceLastCall = lastCallTime ? time - lastCallTime : 0;
         const timeSinceLastInvoke = time - lastInvokeTime;
-        
-        return !lastCallTime ||
+
+        return (
+            !lastCallTime ||
             timeSinceLastCall >= wait ||
             timeSinceLastCall < 0 ||
-            (maxing && timeSinceLastInvoke >= maxDelay);
+            (maxing && timeSinceLastInvoke >= maxDelay)
+        );
     }
-    
+
     function remainingWait(time: number): number {
         const timeSinceLastCall = time - (lastCallTime || 0);
         const timeSinceLastInvoke = time - lastInvokeTime;
         const timeWaiting = wait - timeSinceLastCall;
-        
-        return maxing
-            ? Math.min(timeWaiting, maxDelay - timeSinceLastInvoke)
-            : timeWaiting;
+
+        return maxing ? Math.min(timeWaiting, maxDelay - timeSinceLastInvoke) : timeWaiting;
     }
-    
+
     function debounced(this: any, ...args: Parameters<T>): void {
         const time = Date.now();
         const isInvoking = shouldInvoke(time);
-        
+
         lastArgs = args;
         lastThis = this;
         lastCallTime = time;
-        
+
         if (isInvoking) {
             if (!timeout) {
                 return leadingEdge(time);
             }
-            
+
             if (maxing) {
                 if (timeout) {
                     clearTimeout(timeout);
@@ -177,39 +173,39 @@ export function debounce<T extends (...args: any[]) => any>(
                 return invokeFunc(time);
             }
         }
-        
+
         if (!timeout) {
             timeout = setTimeout(timerExpired, wait);
         }
     }
-    
-    debounced.cancel = function() {
+
+    debounced.cancel = function () {
         if (timeout) {
             clearTimeout(timeout);
             timeout = null;
         }
-        
+
         if (maxTimeout) {
             clearTimeout(maxTimeout);
             maxTimeout = null;
         }
-        
+
         lastInvokeTime = 0;
         lastArgs = null;
         lastThis = null;
         lastCallTime = null;
     };
-    
-    debounced.flush = function() {
+
+    debounced.flush = function () {
         if (timeout) {
             trailingEdge(Date.now());
         }
     };
-    
-    debounced.pending = function() {
+
+    debounced.pending = function () {
         return timeout !== null;
     };
-    
+
     return debounced;
 }
 
@@ -222,15 +218,12 @@ export function throttle<T extends (...args: any[]) => any>(
     wait: number,
     options: ThrottleOptions = {}
 ): ThrottledFunction<T> {
-    const {
-        leading = true,
-        trailing = true
-    } = options;
-    
+    const { leading = true, trailing = true } = options;
+
     return debounce(func, wait, {
         leading,
         trailing,
-        maxWait: wait
+        maxWait: wait,
     });
 }
 
@@ -241,59 +234,59 @@ export class BatchProcessor<T> {
     private items: T[] = [];
     private timer: NodeJS.Timeout | null = null;
     private processing = false;
-    
+
     constructor(
         private processor: (items: T[]) => Promise<void>,
         private batchSize = 50,
         private delay = 100
     ) {}
-    
+
     add(item: T): void {
         this.items.push(item);
-        
+
         if (this.items.length >= this.batchSize) {
             this.flush();
         } else {
             this.scheduleFlush();
         }
     }
-    
+
     addMany(items: T[]): void {
         this.items.push(...items);
-        
+
         if (this.items.length >= this.batchSize) {
             this.flush();
         } else {
             this.scheduleFlush();
         }
     }
-    
+
     private scheduleFlush(): void {
         if (this.timer) {
             clearTimeout(this.timer);
         }
-        
+
         this.timer = setTimeout(() => {
             this.flush();
         }, this.delay);
     }
-    
+
     async flush(): Promise<void> {
         if (this.processing || this.items.length === 0) {
             return;
         }
-        
+
         if (this.timer) {
             clearTimeout(this.timer);
             this.timer = null;
         }
-        
+
         this.processing = true;
         const batch = this.items.splice(0, this.batchSize);
-        
+
         try {
             await this.processor(batch);
-            
+
             // Process remaining items if any
             if (this.items.length > 0) {
                 setTimeout(() => this.flush(), 0);
@@ -311,15 +304,15 @@ export class BatchProcessor<T> {
             this.processing = false;
         }
     }
-    
+
     get size(): number {
         return this.items.length;
     }
-    
+
     get isProcessing(): boolean {
         return this.processing;
     }
-    
+
     clear(): void {
         this.items = [];
         if (this.timer) {
@@ -338,16 +331,16 @@ export function memoize<T extends (...args: any[]) => any>(
 ): T {
     const cache = new Map<string, ReturnType<T>>();
     const maxCacheSize = 100;
-    
+
     return ((...args: Parameters<T>): ReturnType<T> => {
         const key = resolver ? resolver(...args) : JSON.stringify(args);
-        
+
         if (cache.has(key)) {
             return cache.get(key)!;
         }
-        
+
         const result = func(...args);
-        
+
         // Limit cache size
         if (cache.size >= maxCacheSize) {
             const firstKey = cache.keys().next().value;
@@ -355,7 +348,7 @@ export function memoize<T extends (...args: any[]) => any>(
                 cache.delete(firstKey);
             }
         }
-        
+
         cache.set(key, result);
         return result;
     }) as T;
@@ -368,7 +361,7 @@ export class RateLimiter {
     private tokens: number;
     private lastRefill: number;
     private queue: Array<() => void> = [];
-    
+
     constructor(
         private maxTokens: number,
         private refillRate: number, // tokens per second
@@ -376,19 +369,19 @@ export class RateLimiter {
     ) {
         this.tokens = maxTokens;
         this.lastRefill = Date.now();
-        
+
         // Start refill timer
         setInterval(() => this.refill(), 1000);
     }
-    
+
     async acquire(): Promise<void> {
         this.refill();
-        
+
         if (this.tokens > 0) {
             this.tokens--;
             return Promise.resolve();
         }
-        
+
         // Queue the request
         if (this.queue.length >= this.maxQueueSize) {
             throw new RamenError(
@@ -397,21 +390,21 @@ export class RateLimiter {
                 ErrorSeverity.WARNING
             );
         }
-        
+
         return new Promise<void>((resolve) => {
             this.queue.push(resolve);
         });
     }
-    
+
     private refill(): void {
         const now = Date.now();
         const elapsed = (now - this.lastRefill) / 1000;
         const tokensToAdd = Math.floor(elapsed * this.refillRate);
-        
+
         if (tokensToAdd > 0) {
             this.tokens = Math.min(this.maxTokens, this.tokens + tokensToAdd);
             this.lastRefill = now;
-            
+
             // Process queued requests
             while (this.tokens > 0 && this.queue.length > 0) {
                 const resolve = this.queue.shift()!;
@@ -420,12 +413,12 @@ export class RateLimiter {
             }
         }
     }
-    
+
     get availableTokens(): number {
         this.refill();
         return this.tokens;
     }
-    
+
     get queueSize(): number {
         return this.queue.length;
     }
@@ -437,9 +430,9 @@ export class RateLimiter {
 export class Lazy<T> {
     private value?: T;
     private initialized = false;
-    
+
     constructor(private initializer: () => T) {}
-    
+
     get(): T {
         if (!this.initialized) {
             this.value = this.initializer();
@@ -447,11 +440,11 @@ export class Lazy<T> {
         }
         return this.value!;
     }
-    
+
     isInitialized(): boolean {
         return this.initialized;
     }
-    
+
     reset(): void {
         this.value = undefined;
         this.initialized = false;
@@ -464,19 +457,19 @@ export class Lazy<T> {
 export class PerformanceMonitor {
     private metrics = new Map<string, number[]>();
     private maxSamples = 100;
-    
+
     start(name: string): () => void {
         const startTime = performance.now();
-        
+
         return () => {
             const duration = performance.now() - startTime;
             this.record(name, duration);
         };
     }
-    
+
     async measure<T>(name: string, operation: () => Promise<T>): Promise<T> {
         const startTime = performance.now();
-        
+
         try {
             const result = await operation();
             const duration = performance.now() - startTime;
@@ -488,21 +481,21 @@ export class PerformanceMonitor {
             throw error;
         }
     }
-    
+
     private record(name: string, duration: number): void {
         if (!this.metrics.has(name)) {
             this.metrics.set(name, []);
         }
-        
+
         const samples = this.metrics.get(name)!;
         samples.push(duration);
-        
+
         // Limit samples
         if (samples.length > this.maxSamples) {
             samples.shift();
         }
     }
-    
+
     getStats(name: string): {
         count: number;
         min: number;
@@ -512,11 +505,11 @@ export class PerformanceMonitor {
         p95: number;
     } | null {
         const samples = this.metrics.get(name);
-        
+
         if (!samples || samples.length === 0) {
             return null;
         }
-        
+
         const sorted = [...samples].sort((a, b) => a - b);
         const count = sorted.length;
         const min = sorted[0];
@@ -524,20 +517,20 @@ export class PerformanceMonitor {
         const avg = sorted.reduce((a, b) => a + b, 0) / count;
         const median = sorted[Math.floor(count / 2)];
         const p95 = sorted[Math.floor(count * 0.95)];
-        
+
         return { count, min, max, avg, median, p95 };
     }
-    
+
     getAllStats(): Map<string, ReturnType<typeof this.getStats>> {
         const allStats = new Map<string, ReturnType<typeof this.getStats>>();
-        
+
         for (const [name] of this.metrics) {
             allStats.set(name, this.getStats(name));
         }
-        
+
         return allStats;
     }
-    
+
     clear(name?: string): void {
         if (name) {
             this.metrics.delete(name);

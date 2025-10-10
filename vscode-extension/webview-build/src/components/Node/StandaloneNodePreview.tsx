@@ -1,10 +1,10 @@
 import React from 'react';
-import { FiFileText, FiFilter, FiHash, FiCpu, FiHome, FiPlus, FiDatabase, FiGitBranch, FiBox, FiTool, FiBarChart } from "react-icons/fi";
-import { NodeBody } from "./Bases";
+import { FiFileText, FiFilter, FiHash, FiCpu, FiHome, FiPlus, FiDatabase, FiGitBranch, FiBox, FiTool, FiBarChart, FiDownload, FiUpload, FiArrowRight } from "react-icons/fi";
+import { NodeBody, Port } from "./Bases";
 import { PreviewPort } from "./PreviewPort";
 import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import { useTypeStore } from "../../stores";
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
 export type NodeIOProps = {
     name: string,
@@ -17,7 +17,9 @@ export type OpNodeProps = {
     brief?: string,
     inputs: Array<NodeIOProps>,
     outputs: Array<NodeIOProps>,
-    color?: string
+    color?: string,
+    nodeType?: string,  // 節點類型 (e.g., "graph.import", "graph.export", "type.to_type")
+    nodeTemplate?: string  // 節點模板 (e.g., "import", "export", "to_type")
 }
 
 // Package/Category icons (not namespace)

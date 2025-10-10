@@ -23,9 +23,11 @@ const AnimatedNodeLibraryContainer = styled.div<{ $isVisible: boolean; $width: n
   background: var(--gray-2);
 `;
 import { useGraphStore } from './stores/GraphStore';
+import { useNodeDefinitionStore } from './stores/NodeDefinitionStore';
 import { nanoid } from 'nanoid';
 import { useCtrlHotkey } from './hooks/useHotkeys';
 import { getApiClient, RamenApiClient } from './services/apiClient';
+import { getExtensionClient, ExtensionMessageType, disposeExtensionClient } from './api/ExtensionClient';
 
 // VSCode webview API - use global variable set by the host HTML
 const vscode = (window as any).vscode;
@@ -34,17 +36,33 @@ const vscode = (window as any).vscode;
  * Convert .ramen file node format to ReactFlow Node format
  */
 function convertRamenNodeToReactFlowNode(ramenNode: any): Node {
-  // Determine ReactFlow node type based on metadata
+  // Determine ReactFlow node type based on metadata or original type field
   // Most Ramen nodes are 'operator' type in ReactFlow
   let reactFlowType = 'operator';
 
+  // Get node type from metadata (check both 'type' and 'nodeTemplate' fields)
+  const nodeType = ramenNode.metadata?.type || ramenNode.metadata?.nodeTemplate;
+
+  // Also check the original 'type' field for namespace.nodeTemplate format (e.g., "graph.import")
+  const originalType = ramenNode.type || '';
+  const nodeTypeFromOriginal = originalType.includes('.') ? originalType.split('.').pop() : null;
+
   // Special cases for other ReactFlow node types
-  if (ramenNode.metadata?.type === 'reference') {
+  // Priority: metadata type > original type field
+  const effectiveNodeType = nodeType || nodeTypeFromOriginal;
+
+  if (effectiveNodeType === 'reference') {
     reactFlowType = 'reference';
-  } else if (ramenNode.metadata?.type === 'group') {
+  } else if (effectiveNodeType === 'group') {
     reactFlowType = 'group';
-  } else if (ramenNode.metadata?.type === 'contextManager') {
+  } else if (effectiveNodeType === 'contextManager') {
     reactFlowType = 'contextManager';
+  } else if (effectiveNodeType === 'import') {
+    reactFlowType = 'import';
+  } else if (effectiveNodeType === 'export') {
+    reactFlowType = 'export';
+  } else if (effectiveNodeType === 'toType') {
+    reactFlowType = 'toType';
   }
 
   // Convert inputs/outputs to the format expected by OperatorNode
@@ -102,6 +120,7 @@ export default function App() {
   const [isNodeLibraryVisible, setIsNodeLibraryVisible] = useState(true);
   const [nodeLibraryWidth, setNodeLibraryWidth] = useState(DEFAULT_NODE_LIBRARY_WIDTH);
   const [shouldRenderNodeLibrary, setShouldRenderNodeLibrary] = useState(true);
+  const [debugMode, setDebugMode] = useState<boolean>(window.ramenConfig?.debugMode ?? false);
 
   console.log('🍜 [DEBUG] App component rendering');
   console.log('🍜 [DEBUG] window.ramenConfig:', window.ramenConfig);
@@ -167,15 +186,51 @@ export default function App() {
               ? JSON.parse(message.data)
               : message.data;
 
-            // Convert nodes and edges if needed
-            let nodes = parsed.nodes || [];
-            let edges = parsed.edges || [];
+            // Extract nodes and edges from graph structure
+            // Support both formats: {nodes, edges} and {graph: {nodes, edges}}
+            const graphData = parsed.graph || parsed;
+            let nodes = graphData.nodes || [];
+            let edges = graphData.edges || [];
 
-            // Check if nodes need conversion (has metadata field)
-            if (nodes.length > 0 && nodes[0].metadata) {
-              nodes = nodes.map(convertRamenNodeToReactFlowNode);
-              edges = edges.map(convertRamenEdgeToReactFlowEdge);
-            }
+            // Enrich nodes with metadata from node definitions
+            const { getNodeDefinition } = useNodeDefinitionStore.getState();
+            nodes = nodes.map((node: any) => {
+              // If node already has metadata, use conversion
+              if (node.metadata) {
+                return convertRamenNodeToReactFlowNode(node);
+              }
+
+              // Otherwise, get metadata from node definition store
+              const nodeType = node.type; // e.g., "io.import"
+              const nodeDef = getNodeDefinition(nodeType);
+
+              console.log(`[App] Loading node ${node.id}, type: ${nodeType}, found def:`, nodeDef ? 'YES' : 'NO');
+
+              if (nodeDef) {
+                console.log(`[App] Node def for ${nodeType}:`, { nodeTemplate: nodeDef.nodeTemplate, type: nodeDef.type });
+                // Build metadata from node definition
+                const enrichedNode = {
+                  ...node,
+                  metadata: {
+                    type: nodeDef.type,
+                    nodeTemplate: nodeDef.nodeTemplate,
+                    name: nodeDef.displayName,
+                    namespace: nodeDef.namespace,
+                    description: nodeDef.description,
+                    color: nodeDef.color,
+                  },
+                  inputs: nodeDef.inputs || [],
+                  outputs: nodeDef.outputs || [],
+                };
+                return convertRamenNodeToReactFlowNode(enrichedNode);
+              }
+
+              // Fallback: return as operator node
+              console.warn(`[App] No node definition found for ${nodeType}, using fallback`);
+              return node;
+            });
+
+            edges = edges.map(convertRamenEdgeToReactFlowEdge);
 
             // Update graph data in store
             if (activeGraphId && nodes && edges) {
@@ -223,6 +278,11 @@ export default function App() {
           document.body.dataset.theme = message.theme;
           break;
 
+        case 'toggleDebugMode':
+          console.log('🍜 Debug mode toggled:', message.debugMode);
+          setDebugMode(message.debugMode);
+          break;
+
         case 'serverRestarted':
           // Re-initialize API client when server restarts
           initApiClient();
@@ -234,6 +294,9 @@ export default function App() {
 
     return () => {
       window.removeEventListener('message', handleMessage);
+      // Note: ExtensionClient 是全域單例，不應在組件卸載時 dispose
+      // 它會在整個 Webview 關閉時由瀏覽器自動清理
+      console.log('🍜 [App] Component unmounting, message listener removed');
     };
   }, []); // Run only once on mount
 
@@ -251,27 +314,41 @@ export default function App() {
       console.log('🍜 [Session] Step 2: Requesting session from server');
       console.log('🍜 [Session] Graph path:', graphPath);
 
-      // Request session creation + graph loading from server
+      // Request session creation + graph loading from server using ExtensionClient
       if (vscode) {
-        vscode.postMessage({
-          command: 'websocket-request',
-          type: 'create_session',
-          id: `init-session-${Date.now()}`,
-          data: {
-            graph_id: graphId,
-            user_id: 'vscode-user'
-          }
-        });
+        const extensionClient = getExtensionClient();
 
-        // Then load the graph into the session
-        vscode.postMessage({
-          command: 'websocket-request',
-          type: 'load_graph',
-          id: `load-graph-${Date.now()}`,
-          data: {
-            path: graphPath
-          }
-        });
+        try {
+          // Create session
+          await extensionClient.request(
+            ExtensionMessageType.WEBSOCKET_REQUEST,
+            {
+              type: 'create_session',
+              data: {
+                graph_id: graphId,
+                user_id: 'vscode-user'
+              }
+            }
+          );
+          console.log('🍜 [Session] Session created successfully');
+
+          // Load the graph
+          const graphData = await extensionClient.request(
+            ExtensionMessageType.WEBSOCKET_REQUEST,
+            {
+              type: 'load_graph',
+              data: {
+                path: graphPath
+              }
+            }
+          );
+          console.log('🍜 [Session] Graph loaded from server:', graphData);
+          handleServerGraphData(graphData);
+        } catch (error) {
+          console.error('🍜 [Session] Failed to load graph:', error);
+          setError(`Failed to load graph: ${error}`);
+          setIsLoading(false);
+        }
       }
 
       // Loading state will be cleared when we receive the graph data
@@ -644,13 +721,14 @@ export default function App() {
           }}>
             {/* Graph editor */}
             <div style={{ flex: 1, minHeight: 0 }}>
-              <GraphEditor 
-                sidebarVisible={false} 
+              <GraphEditor
+                sidebarVisible={false}
                 onGraphDataChange={handleGraphDataChange}
                 onSelectionChange={handleSelectionChange}
                 initialNodes={currentNodes}
                 initialEdges={currentEdges}
                 graphId={activeGraphId || undefined}
+                debugMode={debugMode}
               />
             </div>
           </div>

@@ -7,7 +7,6 @@ import { RamenServerManager } from '../server/serverManager';
  * This makes Ramen graphs open in the visual editor by default
  */
 export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvider {
-
     constructor(
         private context: vscode.ExtensionContext,
         private webviewManager: RamenWebviewManager,
@@ -23,7 +22,7 @@ export class RamenCustomEditorProvider implements vscode.CustomTextEditorProvide
         token: vscode.CancellationToken
     ): Promise<void> {
         console.log('Resolving custom text editor for:', document.uri.fsPath);
-        
+
         // Use webviewManager to setup the webview with consistent implementation
         await this.webviewManager.setupCustomEditor(document.uri, webviewPanel, document);
     }

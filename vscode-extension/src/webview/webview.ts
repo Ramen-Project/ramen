@@ -32,13 +32,13 @@ class RamenWebviewBridge {
         getGraphData: () => string;
         setGraphData: (data: string) => void;
     } | null = null;
-    
+
     constructor() {
         this.vscode = vscode;
-        this.config = (window as typeof window & {ramenConfig: RamenConfig}).ramenConfig;
+        this.config = (window as typeof window & { ramenConfig: RamenConfig }).ramenConfig;
         this.init();
     }
-    
+
     private init() {
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
@@ -47,40 +47,40 @@ class RamenWebviewBridge {
             this.initializeApp();
         }
     }
-    
+
     private async initializeApp() {
         try {
             // Create a loading indicator
             this.showLoading('Loading Ramen Graph Editor...');
-            
+
             // Initialize the React application
             await this.loadReactApp();
-            
+
             // Set up message handling
             this.setupMessageHandling();
-            
+
             // Initialize the app with config
             this.initializeRamenApp();
-            
+
             this.hideLoading();
-            
+
             this.log('Ramen Graph Editor initialized successfully');
         } catch (error) {
             this.showError(`Failed to initialize Ramen Graph Editor: ${error}`);
             this.log(`Initialization error: ${error}`);
         }
     }
-    
+
     private async loadReactApp() {
         // Since we're in VSCode webview context, we need to create a bridge
         // to the existing React app. For now, we'll create a simplified version
         // that can communicate with the backend server
-        
+
         const root = document.getElementById('root');
         if (!root) {
             throw new Error('Root element not found');
         }
-        
+
         // Create a basic graph editor interface
         root.innerHTML = `
             <div class="graph-editor">
@@ -127,21 +127,21 @@ class RamenWebviewBridge {
                 </div>
             </div>
         `;
-        
+
         // Set up event listeners
         this.setupEventListeners();
     }
-    
+
     private setupEventListeners() {
         // Toolbar buttons
         document.getElementById('saveBtn')?.addEventListener('click', () => this.saveGraph());
         document.getElementById('executeBtn')?.addEventListener('click', () => this.executeGraph());
         document.getElementById('formatBtn')?.addEventListener('click', () => this.formatGraph());
         document.getElementById('helpBtn')?.addEventListener('click', () => this.showHelp());
-        
+
         // Node library
         const nodeItems = document.querySelectorAll('.node-item');
-        nodeItems.forEach(item => {
+        nodeItems.forEach((item) => {
             item.addEventListener('click', (e) => {
                 const target = e.target as HTMLElement;
                 const nodeType = target.getAttribute('data-type');
@@ -150,7 +150,7 @@ class RamenWebviewBridge {
                 }
             });
         });
-        
+
         // Search
         const searchInput = document.querySelector('.node-search') as HTMLInputElement;
         searchInput?.addEventListener('input', (e) => {
@@ -158,7 +158,7 @@ class RamenWebviewBridge {
             this.filterNodes(target.value);
         });
     }
-    
+
     private setupMessageHandling() {
         // Listen for messages from the extension
         window.addEventListener('message', (event) => {
@@ -166,30 +166,30 @@ class RamenWebviewBridge {
             this.handleExtensionMessage(message);
         });
     }
-    
+
     private handleExtensionMessage(message: WebviewMessage) {
         switch (message.command) {
             case 'updateTheme':
                 this.updateTheme(message.theme as string);
                 break;
-                
+
             case 'fileChanged':
                 this.reloadGraph();
                 break;
-                
+
             case 'serverRestarted':
                 this.reconnectToServer();
                 break;
-                
+
             case 'setState':
                 this.restoreState(message.state);
                 break;
-                
+
             default:
                 this.log(`Unknown message from extension: ${message.command}`);
         }
     }
-    
+
     private initializeRamenApp() {
         // Create a mock Ramen app interface
         this.ramenApp = {
@@ -197,53 +197,53 @@ class RamenWebviewBridge {
                 document.body.setAttribute('data-theme', theme);
                 this.log(`Theme updated to: ${theme}`);
             },
-            
+
             reloadGraph: () => {
                 this.reloadGraph();
             },
-            
+
             reconnect: () => {
                 this.reconnectToServer();
             },
-            
+
             getGraphData: () => {
                 return this.config.graphData;
             },
-            
+
             setGraphData: (data: string) => {
                 this.config.graphData = data;
                 this.updateGraphDisplay();
-            }
+            },
         };
-        
+
         // Make it globally available
         (window as any).ramenApp = this.ramenApp;
     }
-    
+
     private saveGraph() {
         try {
             const graphDataElement = document.getElementById('graphData');
             const graphData = graphDataElement?.textContent || this.config.graphData;
-            
+
             this.sendToExtension({
                 command: 'saveGraph',
-                data: graphData
+                data: graphData,
             });
-            
+
             this.updateStatus('Saving graph...', 'info');
         } catch (error) {
             this.showError(`Failed to save graph: ${error}`);
         }
     }
-    
+
     private executeGraph() {
         this.sendToExtension({
-            command: 'executeGraph'
+            command: 'executeGraph',
         });
-        
+
         this.updateStatus('Executing graph...', 'info');
     }
-    
+
     private formatGraph() {
         try {
             const graphDataElement = document.getElementById('graphData');
@@ -253,89 +253,95 @@ class RamenWebviewBridge {
                 graphDataElement.textContent = formatted;
                 this.config.graphData = formatted;
             }
-            
+
             this.updateStatus('Graph formatted', 'success');
         } catch (error) {
             this.showError(`Failed to format graph: ${error}`);
         }
     }
-    
+
     private showHelp() {
         this.sendToExtension({
             command: 'showMessage',
             type: 'info',
-            text: 'Ramen Graph Editor Help:\n\n' +
-                  '• Save: Save the current graph\n' +
-                  '• Execute: Run the graph\n' +
-                  '• Format: Pretty-print the JSON\n' +
-                  '• Click nodes in the library to add them to the graph'
+            text:
+                'Ramen Graph Editor Help:\n\n' +
+                '• Save: Save the current graph\n' +
+                '• Execute: Run the graph\n' +
+                '• Format: Pretty-print the JSON\n' +
+                '• Click nodes in the library to add them to the graph',
         });
     }
-    
+
     private addNode(nodeType: string) {
         this.log(`Adding node of type: ${nodeType}`);
         this.updateStatus(`Added ${nodeType} node`, 'success');
-        
+
         // In a real implementation, this would add a node to the graph
         // For now, just update the status
     }
-    
+
     private filterNodes(query: string) {
         const nodeItems = document.querySelectorAll('.node-item');
         const lowerQuery = query.toLowerCase();
-        
-        nodeItems.forEach(item => {
+
+        nodeItems.forEach((item) => {
             const text = item.textContent?.toLowerCase() || '';
             const element = item as HTMLElement;
             element.style.display = text.includes(lowerQuery) ? 'block' : 'none';
         });
     }
-    
+
     private updateTheme(theme: string) {
         this.config.theme = theme;
         if (this.ramenApp) {
             this.ramenApp.updateTheme(theme);
         }
     }
-    
+
     private reloadGraph() {
         this.updateStatus('Reloading graph...', 'info');
-        
+
         // In a real implementation, this would reload the graph from the file
         setTimeout(() => {
             this.updateStatus('Graph reloaded', 'success');
         }, 1000);
     }
-    
+
     private reconnectToServer() {
         this.updateStatus('Reconnecting to server...', 'info');
-        
+
         // In a real implementation, this would reconnect to the backend
         setTimeout(() => {
             this.updateStatus('Connected to server', 'success');
         }, 2000);
     }
-    
+
     private restoreState(state: unknown) {
-        const typedState = state as {graphData?: string};
+        const typedState = state as { graphData?: string };
         if (typedState && typedState.graphData) {
             this.config.graphData = typedState.graphData;
             this.updateGraphDisplay();
         }
     }
-    
+
     private updateGraphDisplay() {
         const graphDataElement = document.getElementById('graphData');
         if (graphDataElement) {
             graphDataElement.textContent = this.formatGraphData();
         }
     }
-    
+
     private getGraphName(): string {
         const path = this.config.graphPath;
-        return path.split(/[\\\\/]/).pop()?.replace('.ramen', '') || 'Unknown';
+        return (
+            path
+                .split(/[\\\\/]/)
+                .pop()
+                ?.replace('.ramen', '') || 'Unknown'
+        );
     }
-    
+
     private formatGraphData(): string {
         try {
             const data = JSON.parse(this.config.graphData);
@@ -344,18 +350,18 @@ class RamenWebviewBridge {
             return this.config.graphData;
         }
     }
-    
+
     private sendToExtension(message: WebviewMessage) {
         this.vscode.postMessage(message);
     }
-    
+
     private log(message: string) {
         this.sendToExtension({
             command: 'log',
-            message: message
+            message: message,
         });
     }
-    
+
     private showLoading(message: string) {
         const root = document.getElementById('root');
         if (root) {
@@ -367,11 +373,11 @@ class RamenWebviewBridge {
             `;
         }
     }
-    
+
     private hideLoading() {
         // Loading will be hidden when the main content is set
     }
-    
+
     private showError(message: string) {
         const root = document.getElementById('root');
         if (root) {
@@ -385,20 +391,20 @@ class RamenWebviewBridge {
                 </div>
             `;
         }
-        
+
         this.sendToExtension({
             command: 'showMessage',
             type: 'error',
-            text: message
+            text: message,
         });
     }
-    
+
     private updateStatus(message: string, type: 'info' | 'success' | 'error' = 'info') {
         const statusElement = document.getElementById('statusText');
         if (statusElement) {
             statusElement.textContent = message;
             statusElement.className = `status-${type}`;
-            
+
             // Clear status after 3 seconds
             setTimeout(() => {
                 if (statusElement.textContent === message) {

@@ -66,7 +66,7 @@ class NodeDefinition:
         data = {
             "type": self.node_id,
             "namespace": self.namespace,
-            "nodeType": self.node_type,
+            "nodeTemplate": self.node_type,
             "displayName": self.display_name,
             "category": self.category,
             "description": self.description,

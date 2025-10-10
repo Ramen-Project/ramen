@@ -8,9 +8,11 @@ The Ramen Graph Model defines the structure, serialization, and semantics of com
 ## Core Concepts
 
 - **Node:** Represents an operation, function, or data source/sink. Nodes can be built-in, provided by toppings, or user-defined.
+- **Group Node:** A special node type that contains other nodes (children), creating visual and logical scopes. Used for control structures like Map/Filter/Reduce, context managers, and conditionals. See [GroupNodes.md](./GroupNodes.md) for details.
 - **Edge:** Represents a connection between nodes, typically modeling data flow or control flow.
 - **Port:** Each node has input and output ports, which define the types and semantics of data that can flow through edges.
 - **Graph:** A collection of nodes and edges, with optional metadata and configuration.
+- **Embedded Graph:** A subgraph contained within a Group Node, defining the logic executed within that group's scope.
 
 ---
 
@@ -18,14 +20,18 @@ The Ramen Graph Model defines the structure, serialization, and semantics of com
 
 ### Node Properties
 - `id`: Unique identifier (string/UUID)
-- `type`: Node type (e.g., "operator", "reference", "custom")
+- `type`: Node type (e.g., "operator", "map_group", "filter_group", "context_group")
 - `name`: Human-readable name
 - `namespace`: (optional) Logical grouping or plugin/topping source
 - `inputs`: List of input ports
 - `outputs`: List of output ports
 - `position`: (x, y) coordinates for UI layout
+- `parent_id`: (optional) Parent group node ID (for child nodes)
+- `embedded_graph`: (optional) Embedded subgraph (for group nodes)
 - `data`: Arbitrary node-specific data (parameters, configuration, etc.)
 - `metadata`: (optional) Additional info for UI, debugging, or plugins
+  - `iteration_vars`: (for collection groups) List of iteration variable names
+  - `context_type`: (for context managers) Type of context (file, lock, transaction, etc.)
 
 ### Port Properties
 - `name`: Port name (string)

@@ -16,6 +16,7 @@ declare global {
       graphPath: string;
       serverPort: number;
       theme: string;
+      debugMode?: boolean;
       graphData: string;
       isVSCode: boolean;
       isCustomEditor: boolean;

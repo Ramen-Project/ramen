@@ -3,6 +3,44 @@
 import json
 from typing import Any
 from ramen.nodes.base import node, NodeContext, Port, PortType
+from ramen.core.type_converter_registry import get_type_converter_registry
+
+
+# Register all type converters on module import
+def _register_converters():
+    """Register all built-in type converters."""
+    registry = get_type_converter_registry()
+
+    # ANY -> specific types
+    registry.register("any", "string", "type.to_string")
+    registry.register("any", "number", "type.to_number")
+    registry.register("any", "boolean", "type.to_boolean")
+    registry.register("any", "array", "type.to_array")
+    registry.register("any", "object", "type.to_object")
+
+    # STRING -> other types
+    registry.register("string", "number", "type.to_number")
+    registry.register("string", "boolean", "type.to_boolean")
+    registry.register("string", "object", "type.parse_json")
+
+    # NUMBER -> other types
+    registry.register("number", "string", "type.to_string")
+    registry.register("number", "boolean", "type.to_boolean")
+
+    # BOOLEAN -> other types
+    registry.register("boolean", "string", "type.to_string")
+    registry.register("boolean", "number", "type.to_number")
+
+    # ARRAY -> other types
+    registry.register("array", "string", "type.to_string")
+    registry.register("array", "object", "type.to_object")
+
+    # OBJECT -> other types
+    registry.register("object", "string", "type.stringify_json")
+    registry.register("object", "array", "type.to_array")
+
+# Register on module import
+_register_converters()
 
 
 @node(
@@ -14,7 +52,8 @@ from ramen.nodes.base import node, NodeContext, Port, PortType
     icon="🔤",
     color="#795548",
     inputs=[Port("value", PortType.ANY, required=True)],
-    outputs=[Port("result", PortType.STRING)]
+    outputs=[Port("result", PortType.STRING)],
+    hidden=True
 )
 def to_string_node(context: NodeContext) -> Any:
     """Convert value to string."""
@@ -36,7 +75,8 @@ def to_string_node(context: NodeContext) -> Any:
         Port("value", PortType.ANY, required=True),
         Port("default", PortType.NUMBER, required=False)
     ],
-    outputs=[Port("result", PortType.NUMBER)]
+    outputs=[Port("result", PortType.NUMBER)],
+    hidden=True
 )
 def to_number_node(context: NodeContext) -> Any:
     """Convert value to number."""
@@ -70,7 +110,8 @@ def to_number_node(context: NodeContext) -> Any:
     icon="✅",
     color="#795548",
     inputs=[Port("value", PortType.ANY, required=True)],
-    outputs=[Port("result", PortType.BOOLEAN)]
+    outputs=[Port("result", PortType.BOOLEAN)],
+    hidden=True
 )
 def to_boolean_node(context: NodeContext) -> Any:
     """Convert value to boolean."""
@@ -101,7 +142,8 @@ def to_boolean_node(context: NodeContext) -> Any:
     icon="📋",
     color="#795548",
     inputs=[Port("value", PortType.ANY, required=True)],
-    outputs=[Port("result", PortType.ARRAY)]
+    outputs=[Port("result", PortType.ARRAY)],
+    hidden=True
 )
 def to_array_node(context: NodeContext) -> Any:
     """Convert value to array."""
@@ -131,7 +173,8 @@ def to_array_node(context: NodeContext) -> Any:
     icon="📦",
     color="#795548",
     inputs=[Port("value", PortType.ANY, required=True)],
-    outputs=[Port("result", PortType.OBJECT)]
+    outputs=[Port("result", PortType.OBJECT)],
+    hidden=True
 )
 def to_object_node(context: NodeContext) -> Any:
     """Convert value to object/dictionary."""
@@ -163,7 +206,8 @@ def to_object_node(context: NodeContext) -> Any:
         Port("json_string", PortType.STRING, required=True),
         Port("default", PortType.ANY, required=False)
     ],
-    outputs=[Port("result", PortType.ANY)]
+    outputs=[Port("result", PortType.ANY)],
+    hidden=True
 )
 def parse_json_node(context: NodeContext) -> Any:
     """Parse JSON string to object."""
@@ -191,7 +235,8 @@ def parse_json_node(context: NodeContext) -> Any:
         Port("value", PortType.ANY, required=True),
         Port("indent", PortType.NUMBER, required=False)
     ],
-    outputs=[Port("result", PortType.STRING)]
+    outputs=[Port("result", PortType.STRING)],
+    hidden=True
 )
 def stringify_json_node(context: NodeContext) -> Any:
     """Convert object to JSON string."""

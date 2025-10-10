@@ -10,14 +10,16 @@ interface Dependency {
 }
 
 export class RamenDependenciesProvider implements vscode.TreeDataProvider<Dependency> {
-    private _onDidChangeTreeData: vscode.EventEmitter<Dependency | undefined | null | void> = new vscode.EventEmitter<Dependency | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<Dependency | undefined | null | void> = this._onDidChangeTreeData.event;
+    private _onDidChangeTreeData: vscode.EventEmitter<Dependency | undefined | null | void> =
+        new vscode.EventEmitter<Dependency | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<Dependency | undefined | null | void> =
+        this._onDidChangeTreeData.event;
 
     private dependencies: Dependency[] = [];
 
     constructor(private context: vscode.ExtensionContext) {
         this.loadDependencies();
-        
+
         // Watch for changes to pyproject.toml
         const fileWatcher = vscode.workspace.createFileSystemWatcher('**/pyproject.toml');
         fileWatcher.onDidChange(() => this.loadDependencies());
@@ -31,10 +33,7 @@ export class RamenDependenciesProvider implements vscode.TreeDataProvider<Depend
     }
 
     getTreeItem(element: Dependency): vscode.TreeItem {
-        const item = new vscode.TreeItem(
-            element.name,
-            vscode.TreeItemCollapsibleState.None
-        );
+        const item = new vscode.TreeItem(element.name, vscode.TreeItemCollapsibleState.None);
 
         item.description = element.version;
         item.tooltip = new vscode.MarkdownString(
@@ -46,16 +45,28 @@ export class RamenDependenciesProvider implements vscode.TreeDataProvider<Depend
         // Set icon based on dependency type
         switch (element.type) {
             case 'dependency':
-                item.iconPath = new vscode.ThemeIcon('package', new vscode.ThemeColor('charts.blue'));
+                item.iconPath = new vscode.ThemeIcon(
+                    'package',
+                    new vscode.ThemeColor('charts.blue')
+                );
                 break;
             case 'dev-dependency':
-                item.iconPath = new vscode.ThemeIcon('tools', new vscode.ThemeColor('charts.orange'));
+                item.iconPath = new vscode.ThemeIcon(
+                    'tools',
+                    new vscode.ThemeColor('charts.orange')
+                );
                 break;
             case 'optional-dependency':
-                item.iconPath = new vscode.ThemeIcon('question', new vscode.ThemeColor('charts.yellow'));
+                item.iconPath = new vscode.ThemeIcon(
+                    'question',
+                    new vscode.ThemeColor('charts.yellow')
+                );
                 break;
             case 'topping':
-                item.iconPath = new vscode.ThemeIcon('extensions', new vscode.ThemeColor('charts.purple'));
+                item.iconPath = new vscode.ThemeIcon(
+                    'extensions',
+                    new vscode.ThemeColor('charts.purple')
+                );
                 break;
             default:
                 item.iconPath = new vscode.ThemeIcon('package');
@@ -74,7 +85,7 @@ export class RamenDependenciesProvider implements vscode.TreeDataProvider<Depend
 
     private async loadDependencies(): Promise<void> {
         const dependencies: Dependency[] = [];
-        
+
         // Find pyproject.toml in workspace
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
@@ -84,7 +95,7 @@ export class RamenDependenciesProvider implements vscode.TreeDataProvider<Depend
 
         for (const folder of workspaceFolders) {
             const pyprojectPath = path.join(folder.uri.fsPath, 'pyproject.toml');
-            
+
             if (fs.existsSync(pyprojectPath)) {
                 try {
                     const content = fs.readFileSync(pyprojectPath, 'utf-8');
@@ -101,7 +112,7 @@ export class RamenDependenciesProvider implements vscode.TreeDataProvider<Depend
 
     private parsePyprojectToml(content: string): Dependency[] {
         const dependencies: Dependency[] = [];
-        
+
         try {
             // Parse TOML-like content (simplified parser)
             const lines = content.split('\n');
@@ -113,34 +124,48 @@ export class RamenDependenciesProvider implements vscode.TreeDataProvider<Depend
 
             for (const line of lines) {
                 const trimmed = line.trim();
-                
+
                 // Check for section headers
                 if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
                     currentSection = trimmed.slice(1, -1);
-                    inDependencies = currentSection === 'project.dependencies' || currentSection === 'dependencies';
-                    inDevDependencies = currentSection.includes('dev') && currentSection.includes('dependencies');
-                    inOptionalDependencies = currentSection.includes('optional') && currentSection.includes('dependencies');
+                    inDependencies =
+                        currentSection === 'project.dependencies' ||
+                        currentSection === 'dependencies';
+                    inDevDependencies =
+                        currentSection.includes('dev') && currentSection.includes('dependencies');
+                    inOptionalDependencies =
+                        currentSection.includes('optional') &&
+                        currentSection.includes('dependencies');
                     inToppings = currentSection.includes('ramen.toppings');
                     continue;
                 }
 
                 // Parse dependency lines
-                if (trimmed.includes('=') && (inDependencies || inDevDependencies || inOptionalDependencies || inToppings)) {
-                    const match = trimmed.match(/^"?([^">=<~!]+)(?:[>=<~!].*?)?"?\s*=?\s*"?(.*)?"?$/);
+                if (
+                    trimmed.includes('=') &&
+                    (inDependencies || inDevDependencies || inOptionalDependencies || inToppings)
+                ) {
+                    const match = trimmed.match(
+                        /^"?([^">=<~!]+)(?:[>=<~!].*?)?"?\s*=?\s*"?(.*)?"?$/
+                    );
                     if (match) {
                         const name = match[1].trim();
                         const version = match[2] ? match[2].replace(/[",]/g, '').trim() : undefined;
-                        
+
                         let type: Dependency['type'] = 'dependency';
-                        if (inDevDependencies) {type = 'dev-dependency';}
-                        else if (inOptionalDependencies) {type = 'optional-dependency';}
-                        else if (inToppings) {type = 'topping';}
+                        if (inDevDependencies) {
+                            type = 'dev-dependency';
+                        } else if (inOptionalDependencies) {
+                            type = 'optional-dependency';
+                        } else if (inToppings) {
+                            type = 'topping';
+                        }
 
                         dependencies.push({
                             name,
                             version,
                             type,
-                            description: type === 'topping' ? 'Ramen topping extension' : undefined
+                            description: type === 'topping' ? 'Ramen topping extension' : undefined,
                         });
                     }
                 }
@@ -156,7 +181,7 @@ export class RamenDependenciesProvider implements vscode.TreeDataProvider<Depend
                         dependencies.push({
                             name,
                             version,
-                            type: inDevDependencies ? 'dev-dependency' : 'dependency'
+                            type: inDevDependencies ? 'dev-dependency' : 'dependency',
                         });
                     }
                 }
